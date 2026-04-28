@@ -1,0 +1,110 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Manrope", "Work Sans", sans-serif;
+}
+
+@layer base {
+  :root {
+    --steel-950: #304e58;
+    --steel-900: #314e58;
+    --steel-800: #3b606a;
+    --steel-200: #d9e0e2;
+    --steel-100: #f2f4f5;
+    --electric-600: #304e58;
+    --electric-400: #314e58;
+    --electric-200: #dce3e5;
+    --brand-0: #ffffff;
+    --adbar-height: 0px;
+  }
+}
+
+@layer base {
+  body {
+    @apply antialiased;
+    color: #304e58;
+    background-color: #ffffff;
+  }
+}
+
+.font-display {
+  font-family: "Space Grotesk", "Manrope", sans-serif;
+}
+
+@keyframes marquee {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+
+.animate-marquee {
+  animation: marquee 40s linear infinite;
+}
+
+.animate-marquee:hover {
+  animation-play-state: paused;
+}
+
+  /* Contact  */
+  .floating-contact-bar {
+    position: fixed;
+    top: 40%;
+    right: 0;
+    z-index: 9999;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+    border-radius: 8px 0 0 8px;
+    animation: pulse 2s infinite;
+  }
+
+  .contact-item {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 10px;
+    width: 60px;
+    color: white;
+    text-decoration: none;
+    font-size: 18px;
+    transition: all 0.3s ease;
+  }
+
+  .contact-item span {
+    display: none;
+  }
+
+  .contact-item.email {
+    background-color: #0b1e2d;
+    border-bottom: 1px solid #fff;
+  }
+
+  .contact-item.whatsapp {
+    background-color: #22C55E;
+    border-top: 1px solid #fff;
+  }
+
+  .contact-item:hover {
+    width: 150px;
+    justify-content: start;
+    padding-left: 15px;
+  }
+
+  .contact-item:hover span {
+    display: inline-block;
+    margin-left: 10px;
+  }
+
+  @keyframes pulse {
+    0% {
+      transform: translateY(0px);
+    }
+
+    50% {
+      transform: translateY(-5px);
+    }
+
+    100% {
+      transform: translateY(0px);
+    }
+  }
+

@@ -1,0 +1,3 @@
+User-agent: *
+Allow: /
+Sitemap: https://www.ramanisteelhouse.com/sitemap.xml

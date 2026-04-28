@@ -1,0 +1,7 @@
+{
+  "name": " - B2B Ramani Steel House Marketplace",
+  "description": "A high-performance, SEO-optimized B2B industrial product platform with AI-driven insights and scalable architecture.",
+  "requestFramePermissions": [
+    "geolocation"
+  ]
+}
