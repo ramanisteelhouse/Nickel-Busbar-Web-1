@@ -68,7 +68,7 @@ export const Navbar: React.FC<{ cartCount: number }> = ({ cartCount }) => {
         <div className="flex justify-between items-center">
           <Link to="/" className="flex items-center gap-2">
             <img
-              src="/img/upated-logo.png"
+              src="/img/icon-logo.jpg"
               title='Ramani Steel House'
               alt="Ramani Steel House"
               width="165"
