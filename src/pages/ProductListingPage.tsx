@@ -89,14 +89,37 @@ export const ProductListingPage: React.FC = () => {
     if (categoryFilter) url.searchParams.set('category', categoryFilter);
     if (searchQuery) url.searchParams.set('search', searchQuery);
 
-    Promise.all([
-      fetch(url.toString()).then(res => res.json()),
-      fetch('/api/categories').then(res => res.json())
-    ]).then(([pData, cData]) => {
-      setProducts(pData);
-      setCategories(cData);
-      setLoading(false);
-    });
+    const fetchData = async () => {
+      try {
+        const [productResponse, categoryResponse] = await Promise.all([
+          fetch(url.toString()),
+          fetch('/api/categories'),
+        ]);
+
+        if (!productResponse.ok) {
+          throw new Error(`Products API returned ${productResponse.status}`);
+        }
+        if (!categoryResponse.ok) {
+          throw new Error(`Categories API returned ${categoryResponse.status}`);
+        }
+
+        const [pData, cData] = await Promise.all([
+          productResponse.json(),
+          categoryResponse.json(),
+        ]);
+
+        setProducts(pData);
+        setCategories(cData);
+      } catch (error) {
+        console.error('Failed to load product listing data', error);
+        setProducts([]);
+        setCategories([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
   }, [categoryFilter, searchQuery]);
 
   const applySearch = (event: React.FormEvent) => {
