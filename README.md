@@ -27,3 +27,9 @@ View your app in AI Studio: https://ai.studio/apps/75adf731-e98b-40b4-9d9b-77276
    `npm start`
 
 This project requires the Node.js backend server to be running in production so `/api/*` routes are available.
+
+## GitHub Secrets (No `.env` commit)
+
+Use encrypted GitHub Secrets for CI/production workflows:
+- Setup guide: `docs/GITHUB_SECRETS_SETUP.md`
+- Workflow: `.github/workflows/production-secrets.yml`
