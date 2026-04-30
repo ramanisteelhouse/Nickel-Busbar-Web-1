@@ -224,7 +224,7 @@ const getSessionUserId = (req: express.Request) => {
 
 async function startServer() {
   const app = express();
-  const PORT = 3000;
+  const PORT = Number(process.env.PORT || 3000);
   const authCookieOptions = {
     httpOnly: true,
     sameSite: "lax" as const,
@@ -233,6 +233,14 @@ async function startServer() {
   };
 
   app.use(express.json());
+
+  app.get("/api/health", (_req, res) => {
+    res.json({
+      ok: true,
+      environment: process.env.NODE_ENV || "development",
+      timestamp: new Date().toISOString(),
+    });
+  });
   app.use((req, res, next) => {
     const sessionId = readCookie(req.headers.cookie, "site_session_id");
     if (!sessionId) {
@@ -834,7 +842,7 @@ async function startServer() {
   }
 
   app.listen(PORT, "0.0.0.0", () => {
-    console.log(`Server running on http://localhost:${PORT}`);
+    console.log(`Server running on http://localhost:${PORT} (${process.env.NODE_ENV || "development"})`);
   });
 }
 
