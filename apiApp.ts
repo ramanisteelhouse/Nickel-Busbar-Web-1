@@ -2,7 +2,7 @@ import express from "express";
 import jwt from "jsonwebtoken";
 import bcrypt from "bcryptjs";
 import { randomUUID } from "crypto";
-import pool, { query, queryOne } from "./db.ts";
+import pool, { query, queryOne } from "./db.js";
 import { GoogleGenAI } from "@google/genai";
 import dotenv from "dotenv";
 import nodemailer from "nodemailer";
