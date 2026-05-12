@@ -41,7 +41,7 @@ const fallbackVariants = [
     title: 'Custom Sizes & Coils',
     spec: 'Width 2mm - 50mm | Custom slitting',
     note: 'Built to your cell design, welding process, and load specs.',
-    image: 'https://images.unsplash.com/photo-1535813548-6601f6945379?auto=format&fit=crop&w=1200&q=80',
+    image: '/img/icon-logo.jpg',
     cta: '/products?search=custom%20nickel%20strip',
   },
 ];

@@ -90,7 +90,7 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({ cart }) => {
   };
 
   const handleWhatsAppRFQ = async () => {
-    const businessPhoneNumber = '919832347133';
+    const businessPhoneNumber = '8369724730';
     const countryCode = selectedCountry?.dial_code ?? '';
     const trimmedPhone = phoneNumber.replace(/\s+/g, '');
     const customerPhone = trimmedPhone ? `${countryCode}${trimmedPhone}` : '';

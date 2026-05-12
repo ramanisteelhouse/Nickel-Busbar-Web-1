@@ -146,6 +146,72 @@ const fetchJson = async <T>(url: string): Promise<T> => {
   return response.json() as Promise<T>;
 };
 
+const toFiniteNumber = (value: unknown, fallback = 0) => {
+  if (typeof value === "number" && Number.isFinite(value)) {
+    return value;
+  }
+  if (typeof value === "string") {
+    const normalized = value.trim().replace(/,/g, "");
+    const parsed = Number(normalized);
+    if (Number.isFinite(parsed)) {
+      return parsed;
+    }
+  }
+  return fallback;
+};
+
+const toFiniteInteger = (value: unknown, fallback = 0) => {
+  const parsed = toFiniteNumber(value, fallback);
+  return Number.isFinite(parsed) ? Math.trunc(parsed) : fallback;
+};
+
+const normalizeImageSource = (value: unknown) => {
+  if (typeof value !== "string") {
+    return "";
+  }
+
+  const compact = value.replace(/\u0000/g, "").trim();
+  if (!compact) {
+    return "";
+  }
+
+  // Some rows contain accidental multi-line image content. Keep the first usable source.
+  const candidates = compact
+    .split(/[\r\n]+/)
+    .map((entry) => entry.trim())
+    .filter(Boolean);
+
+  const firstUsable =
+    candidates.find((entry) => /^https?:\/\//i.test(entry) || entry.startsWith("/")) ||
+    candidates[0] ||
+    "";
+
+  const cleaned = firstUsable.trim();
+  if (cleaned.includes("images.unsplash.com/photo-1535813548-6601f6945379")) {
+    return "/img/icon-logo.jpg";
+  }
+
+  return cleaned;
+};
+
+const normalizeProductRow = (row: Record<string, unknown>) => ({
+  ...row,
+  id: toFiniteInteger(row.id, 0),
+  category_id: toFiniteInteger(row.category_id, 0),
+  price: toFiniteNumber(row.price, 0),
+  stock: toFiniteInteger(row.stock, 0),
+  image: normalizeImageSource(row.image),
+});
+
+const normalizeAdRow = (row: Record<string, unknown>) => ({
+  ...row,
+  id: toFiniteInteger(row.id, 0),
+  priority: toFiniteInteger(row.priority, 0),
+  discount_percent:
+    row.discount_percent == null ? null : toFiniteInteger(row.discount_percent, 0),
+  image_url: normalizeImageSource(row.image_url),
+});
+
 const getExchangeRates = async (baseCurrency: string) => {
   const base = baseCurrency.toUpperCase();
   const cached = exchangeRateCache.get(base);
@@ -536,7 +602,10 @@ export function createApiApp() {
          ORDER BY ci.created_at ASC`,
         [userId]
       );
-      res.json(items);
+      res.json(items.map((item) => ({
+        ...normalizeProductRow(item as Record<string, unknown>),
+        quantity: toFiniteInteger((item as Record<string, unknown>).quantity, 1),
+      })));
     } catch (error) {
       console.error("Failed to load cart", error);
       res.status(500).json({ error: "Failed to load cart" });
@@ -612,7 +681,7 @@ export function createApiApp() {
 
     try {
       const products = await query(sql, params);
-      res.json(products);
+      res.json(products.map((product) => normalizeProductRow(product as Record<string, unknown>)));
     } catch (e) {
       console.error("Failed to fetch products", e);
       res.status(500).json({ error: "Failed to fetch products" });
@@ -626,7 +695,7 @@ export function createApiApp() {
         [req.params.slug]
       );
       if (!product) return res.status(404).json({ error: "Product not found" });
-      res.json(product);
+      res.json(normalizeProductRow(product as Record<string, unknown>));
     } catch (e) {
       console.error("Failed to fetch product", e);
       res.status(500).json({ error: "Failed to fetch product" });
@@ -654,7 +723,7 @@ export function createApiApp() {
            AND (end_at IS NULL OR end_at >= now())
          ORDER BY priority DESC, created_at DESC`
       );
-      res.json(ads);
+      res.json(ads.map((ad) => normalizeAdRow(ad as Record<string, unknown>)));
     } catch (e) {
       const error = e as { code?: string };
       if (error?.code === "42P01") {
