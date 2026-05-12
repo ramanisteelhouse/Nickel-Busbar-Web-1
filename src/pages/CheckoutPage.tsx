@@ -90,10 +90,12 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({ cart }) => {
   };
 
   const handleWhatsAppRFQ = async () => {
-    const businessPhoneNumber = '8369724730';
+    const businessPhoneNumber = (import.meta.env.VITE_WHATSAPP_BUSINESS_NUMBER as string | undefined)?.trim() || '8369724730';
     const countryCode = selectedCountry?.dial_code ?? '';
     const trimmedPhone = phoneNumber.replace(/\s+/g, '');
     const customerPhone = trimmedPhone ? `${countryCode}${trimmedPhone}` : '';
+    const normalizePhoneForWa = (value: string) => value.replace(/[^\d]/g, '');
+    const recipientNumber = normalizePhoneForWa(customerPhone) || normalizePhoneForWa(businessPhoneNumber);
 
     let message = `*RFQ from Ramani Steel House*%0A`;
     message += `--------------------------%0A`;
@@ -158,7 +160,12 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({ cart }) => {
       setIsSavingQuote(false);
     }
 
-    const whatsappUrl = `https://wa.me/${businessPhoneNumber}?text=${message}`;
+    if (!recipientNumber) {
+      setSaveError('Please enter a valid mobile number with country code.');
+      return;
+    }
+
+    const whatsappUrl = `https://wa.me/${recipientNumber}?text=${message}`;
     window.open(whatsappUrl, '_blank');
   };
 

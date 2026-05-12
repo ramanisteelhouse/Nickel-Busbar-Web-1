@@ -325,41 +325,76 @@ export function createApiApp() {
 
   app.get("/api/localization/bootstrap", async (req, res) => {
     const fallback = {
-      countryCode: "US",
-      countryName: "United States",
-      currency: "USD",
+      countryCode: "IN",
+      countryName: "India",
+      currency: "INR",
       postalCode: "",
       city: "",
       region: "",
     };
 
-    if (!IPSTACK_API_KEY) {
-      return res.json(fallback);
-    }
-
     try {
       const requesterIp = getRequesterIp(req);
       const endpoint = requesterIp === "check" ? "check" : encodeURIComponent(requesterIp);
-      const fields = encodeURIComponent("country_code,country_name,zip,city,region_name,currency");
-      const geo = await fetchJson<{
-        country_code?: string;
-        country_name?: string;
-        zip?: string;
-        city?: string;
-        region_name?: string;
-        currency?: { code?: string };
-      }>(
-        `https://api.ipstack.com/${endpoint}?access_key=${encodeURIComponent(IPSTACK_API_KEY)}&fields=${fields}`,
-      );
 
-      res.json({
-        countryCode: String(geo.country_code || fallback.countryCode).toUpperCase(),
-        countryName: geo.country_name || fallback.countryName,
-        currency: String(geo.currency?.code || fallback.currency).toUpperCase(),
-        postalCode: geo.zip || "",
-        city: geo.city || "",
-        region: geo.region_name || "",
-      });
+      const fetchFromIpStack = async () => {
+        if (!IPSTACK_API_KEY) {
+          throw new Error("Missing ipstack API key");
+        }
+        const fields = encodeURIComponent("country_code,country_name,zip,city,region_name,currency");
+        const geo = await fetchJson<{
+          country_code?: string;
+          country_name?: string;
+          zip?: string;
+          city?: string;
+          region_name?: string;
+          currency?: { code?: string };
+        }>(
+          `https://api.ipstack.com/${endpoint}?access_key=${encodeURIComponent(IPSTACK_API_KEY)}&fields=${fields}`,
+        );
+
+        return {
+          countryCode: String(geo.country_code || fallback.countryCode).toUpperCase(),
+          countryName: geo.country_name || fallback.countryName,
+          currency: String(geo.currency?.code || fallback.currency).toUpperCase(),
+          postalCode: geo.zip || "",
+          city: geo.city || "",
+          region: geo.region_name || "",
+        };
+      };
+
+      const fetchFromIpApi = async () => {
+        const url =
+          requesterIp === "check"
+            ? "https://ipapi.co/json/"
+            : `https://ipapi.co/${encodeURIComponent(requesterIp)}/json/`;
+        const geo = await fetchJson<{
+          country_code?: string;
+          country_name?: string;
+          postal?: string;
+          city?: string;
+          region?: string;
+          currency?: string;
+        }>(url);
+
+        return {
+          countryCode: String(geo.country_code || fallback.countryCode).toUpperCase(),
+          countryName: geo.country_name || fallback.countryName,
+          currency: String(geo.currency || fallback.currency).toUpperCase(),
+          postalCode: geo.postal || "",
+          city: geo.city || "",
+          region: geo.region || "",
+        };
+      };
+
+      let localized = fallback;
+      try {
+        localized = await fetchFromIpStack();
+      } catch {
+        localized = await fetchFromIpApi();
+      }
+
+      res.json(localized);
     } catch (error) {
       console.error("Failed to fetch IP localization", error);
       res.json(fallback);

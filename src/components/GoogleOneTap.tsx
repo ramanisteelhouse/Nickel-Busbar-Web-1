@@ -2,7 +2,8 @@ import React from 'react';
 import { ensureGoogleIdentity, promptGoogleOneTap } from '../lib/googleIdentity';
 import { resolveGoogleClientId } from '../lib/googleAuthConfig';
 
-const PROMPT_KEY = 'gsi_one_tap_prompted';
+const PROMPT_KEY = 'gsi_one_tap_prompted_at';
+const PROMPT_COOLDOWN_MS = 10 * 60 * 1000;
 
 type GoogleCredentialResponse = {
   credential?: string;
@@ -13,16 +14,28 @@ export const GoogleOneTap: React.FC = () => {
     let isActive = true;
     if (typeof window === 'undefined') return () => {};
 
+    const shouldSkipPrompt = () => {
+      const promptedAtRaw = window.sessionStorage.getItem(PROMPT_KEY);
+      if (!promptedAtRaw) return false;
+      const promptedAt = Number(promptedAtRaw);
+      if (!Number.isFinite(promptedAt) || promptedAt <= 0) return false;
+      return Date.now() - promptedAt < PROMPT_COOLDOWN_MS;
+    };
+
+    const markPromptAttempt = () => {
+      window.sessionStorage.setItem(PROMPT_KEY, String(Date.now()));
+    };
+
     const run = async () => {
       const clientId = await resolveGoogleClientId();
       if (!clientId) return;
-      if (window.sessionStorage.getItem(PROMPT_KEY) === '1') return;
+      if (shouldSkipPrompt()) return;
       try {
         const sessionResponse = await fetch('/api/auth/session');
         if (sessionResponse.ok) {
           const data = await sessionResponse.json().catch(() => null);
           if (data?.user) {
-            window.sessionStorage.setItem(PROMPT_KEY, '1');
+            markPromptAttempt();
             return;
           }
         }
@@ -39,7 +52,7 @@ export const GoogleOneTap: React.FC = () => {
             body: JSON.stringify({ credential: response.credential }),
           });
           if (loginResponse.ok) {
-            window.sessionStorage.setItem(PROMPT_KEY, '1');
+            markPromptAttempt();
             window.dispatchEvent(new Event('auth-changed'));
           }
         } catch {
@@ -50,7 +63,7 @@ export const GoogleOneTap: React.FC = () => {
       if (!ready || !isActive) return;
       promptGoogleOneTap((notification: any) => {
         if (notification?.isNotDisplayed?.() || notification?.isSkippedMoment?.()) {
-          window.sessionStorage.setItem(PROMPT_KEY, '1');
+          markPromptAttempt();
         }
       });
     };

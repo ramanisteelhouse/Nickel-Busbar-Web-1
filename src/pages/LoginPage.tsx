@@ -138,6 +138,9 @@ export const LoginPage: React.FC = () => {
       await fetch('/api/auth/logout', { method: 'POST' });
       setCurrentUser(null);
       setPassword('');
+      if (typeof window !== 'undefined') {
+        window.sessionStorage.removeItem('gsi_one_tap_prompted_at');
+      }
       window.dispatchEvent(new Event('auth-changed'));
     } catch (logoutError) {
       setError(logoutError instanceof Error ? logoutError.message : t('login.authError'));
