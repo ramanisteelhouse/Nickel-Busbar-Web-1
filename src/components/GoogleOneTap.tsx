@@ -1,5 +1,6 @@
 import React from 'react';
 import { ensureGoogleIdentity, promptGoogleOneTap } from '../lib/googleIdentity';
+import { resolveGoogleClientId } from '../lib/googleAuthConfig';
 
 const PROMPT_KEY = 'gsi_one_tap_prompted';
 
@@ -10,10 +11,11 @@ type GoogleCredentialResponse = {
 export const GoogleOneTap: React.FC = () => {
   React.useEffect(() => {
     let isActive = true;
-    const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID as string | undefined;
-    if (!clientId || typeof window === 'undefined') return () => {};
+    if (typeof window === 'undefined') return () => {};
 
     const run = async () => {
+      const clientId = await resolveGoogleClientId();
+      if (!clientId) return;
       if (window.sessionStorage.getItem(PROMPT_KEY) === '1') return;
       try {
         const sessionResponse = await fetch('/api/auth/session');
@@ -38,7 +40,7 @@ export const GoogleOneTap: React.FC = () => {
           });
           if (loginResponse.ok) {
             window.sessionStorage.setItem(PROMPT_KEY, '1');
-            window.location.reload();
+            window.dispatchEvent(new Event('auth-changed'));
           }
         } catch {
           // Ignore login errors here.
@@ -51,7 +53,6 @@ export const GoogleOneTap: React.FC = () => {
           window.sessionStorage.setItem(PROMPT_KEY, '1');
         }
       });
-      window.sessionStorage.setItem(PROMPT_KEY, '1');
     };
 
     run();

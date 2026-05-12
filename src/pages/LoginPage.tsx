@@ -4,6 +4,7 @@ import { Mail, Lock, ArrowRight, UserPlus } from 'lucide-react';
 import { motion } from 'motion/react';
 import { useLanguage } from '../i18n/LanguageProvider';
 import { ensureGoogleIdentity, renderGoogleButton } from '../lib/googleIdentity';
+import { resolveGoogleClientId } from '../lib/googleAuthConfig';
 
 type SessionUser = {
   id: number;
@@ -74,17 +75,19 @@ export const LoginPage: React.FC = () => {
 
   React.useEffect(() => {
     let isActive = true;
-    const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID as string | undefined;
-    if (!clientId || !googleButtonRef.current || currentUser) return () => {};
+    if (!googleButtonRef.current || currentUser) return () => {};
 
-    ensureGoogleIdentity(clientId, handleGoogleCredential)
-      .then((ready) => {
-        if (!ready || !isActive || !googleButtonRef.current) return;
-        renderGoogleButton(googleButtonRef.current, {
-          theme: 'outline',
-          size: 'large',
-          text: 'continue_with',
-          shape: 'pill',
+    resolveGoogleClientId()
+      .then((clientId) => {
+        if (!clientId || !isActive || !googleButtonRef.current) return;
+        return ensureGoogleIdentity(clientId, handleGoogleCredential).then((ready) => {
+          if (!ready || !isActive || !googleButtonRef.current) return;
+          renderGoogleButton(googleButtonRef.current as HTMLElement, {
+            theme: 'outline',
+            size: 'large',
+            text: 'continue_with',
+            shape: 'pill',
+          });
         });
       })
       .catch(() => {

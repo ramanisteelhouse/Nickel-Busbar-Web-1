@@ -297,6 +297,17 @@ export function createApiApp() {
 
   app.use(express.json());
 
+  app.get("/api/auth/google/config", (_req, res) => {
+    const clientId = (process.env.GOOGLE_CLIENT_ID || process.env.VITE_GOOGLE_CLIENT_ID || "").trim();
+    if (!clientId) {
+      return res.json({ enabled: false });
+    }
+    res.json({
+      enabled: true,
+      clientId,
+    });
+  });
+
   app.get("/api/health", (_req, res) => {
     res.json({
       ok: true,
