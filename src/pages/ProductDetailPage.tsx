@@ -97,6 +97,10 @@ export const ProductDetailPage: React.FC<{ onAddToCart: (p: Product) => void }> 
               </p>
               {(() => {
                 const { strike, discountPercent } = getStrikePrice(product.price);
+                const actualPrice = Number(product.price);
+                if (!Number.isFinite(actualPrice) || !(strike > actualPrice)) {
+                  return null;
+                }
                 return (
                   <div className="mt-1 flex items-center gap-3 text-xs text-zinc-400">
                     <span className="uppercase tracking-wide">M.R.P.</span>

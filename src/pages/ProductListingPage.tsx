@@ -346,6 +346,10 @@ export const ProductListingPage: React.FC = () => {
                           </span>
                           {(() => {
                             const { strike, discountPercent } = getStrikePrice(product.price);
+                            const actualPrice = Number(product.price);
+                            if (!Number.isFinite(actualPrice) || !(strike > actualPrice)) {
+                              return null;
+                            }
                             return (
                               <div className="flex items-center gap-2 text-[11px] text-zinc-400">
                                 <span className="uppercase tracking-wide">M.R.P.</span>

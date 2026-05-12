@@ -13,11 +13,22 @@ export function formatCurrency(amount: number, locale = 'en-US', currency = 'USD
 }
 
 export function getStrikePrice(amount: number, markup = 0.18) {
-  if (!amount || amount <= 0) {
-    return { strike: amount, discountPercent: 0 };
+  const safeAmount = Number.isFinite(amount) ? amount : Number(String(amount).replace(/,/g, "").trim());
+  const safeMarkup = Number.isFinite(markup) && markup > 0 ? markup : 0.18;
+
+  if (!Number.isFinite(safeAmount) || safeAmount <= 0) {
+    return { strike: 0, discountPercent: 0 };
   }
-  const strike = Math.max(amount, Math.round(amount * (1 + markup)));
-  const discountPercent = Math.max(0, Math.round(((strike - amount) / strike) * 100));
+
+  const rawStrike = safeAmount * (1 + safeMarkup);
+  let strike = Number(rawStrike.toFixed(2));
+
+  // Guarantee strike value is always above the actual value.
+  if (strike <= safeAmount) {
+    strike = Number((safeAmount + 0.01).toFixed(2));
+  }
+
+  const discountPercent = Math.max(0, Math.round(((strike - safeAmount) / strike) * 100));
   return { strike, discountPercent };
 }
 
