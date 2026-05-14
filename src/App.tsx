@@ -14,6 +14,8 @@ import { CartPage } from './pages/CartPage';
 import { CheckoutPage } from './pages/CheckoutPage';
 import { LoginPage } from './pages/LoginPage';
 import { AboutPage } from './pages/AboutPage';
+import { ContactPage } from './pages/ContactPage';
+import { BlogNickelStripsLithiumPage } from './pages/BlogNickelStripsLithiumPage';
 import { Product, CartItem } from './types';
 
 function ScrollToTop() {
@@ -212,6 +214,8 @@ export default function App() {
               <Route path="/checkout" element={<CheckoutPage cart={cart} />} />
               <Route path="/login" element={<LoginPage />} />
               <Route path="/about" element={<AboutPage />} />
+              <Route path="/contact" element={<ContactPage />} />
+              <Route path="/blog/nickel-strips-lithium-batteries" element={<BlogNickelStripsLithiumPage />} />
               {/* Add more routes as needed */}
             </Routes>
           </main>
