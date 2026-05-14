@@ -2,6 +2,7 @@ import React from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { Filter, Search, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
+import { Helmet } from 'react-helmet-async';
 import { Product, Category } from '../types';
 import { cn, getProductUnitLabel, getStrikePrice } from '../lib/utils';
 import { useLanguage } from '../i18n/LanguageProvider';
@@ -192,6 +193,14 @@ export const ProductListingPage: React.FC = () => {
 
   return (
     <>
+      <Helmet>
+        <title>Products | Nickel Strips, Battery Tabs & Industrial Alloys</title>
+        <meta
+          name="description"
+          content="Explore nickel strips, battery tabs, and industrial alloy products from Ramani Steel House. Request technical quotes for bulk and custom requirements."
+        />
+        <link rel="canonical" href="https://www.nickelbusbar.com/products" />
+      </Helmet>
       <div className="pt-28 pb-24 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-12 gap-6">
           <div>

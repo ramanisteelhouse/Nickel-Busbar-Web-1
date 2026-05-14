@@ -209,7 +209,7 @@ export const HomePage: React.FC = () => {
             '@context': 'https://schema.org',
             '@type': 'Organization',
             name: 'Ramani Nickel Strips',
-            url: 'https://www.ramanisteelhouse.com/',
+            url: 'https://www.nickelbusbar.com/',
             sameAs: ['https://www.linkedin.com/'],
           })}
         </script>

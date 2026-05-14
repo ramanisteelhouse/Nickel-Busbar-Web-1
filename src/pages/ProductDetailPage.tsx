@@ -2,6 +2,7 @@ import React from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { ShoppingCart, Shield, Truck, RotateCcw, ChevronRight, X } from 'lucide-react';
 import { motion } from 'motion/react';
+import { Helmet } from 'react-helmet-async';
 import { Product } from '../types';
 import { getProductUnitLabel, getStrikePrice } from '../lib/utils';
 import { useLanguage } from '../i18n/LanguageProvider';
@@ -14,6 +15,7 @@ export const ProductDetailPage: React.FC<{ onAddToCart: (p: Product) => void }> 
   const [showCartToast, setShowCartToast] = React.useState(false);
   const [isMobile, setIsMobile] = React.useState(false);
   const { t, formatPrice } = useLanguage();
+  const siteUrl = 'https://www.nickelbusbar.com';
 
   React.useEffect(() => {
     fetch(`/api/products/${slug}`)
@@ -51,8 +53,46 @@ export const ProductDetailPage: React.FC<{ onAddToCart: (p: Product) => void }> 
   if (loading) return <div className="pt-32 text-center">{t('productDetail.loading')}</div>;
   if (!product) return <div className="pt-32 text-center">{t('productDetail.notFound')}</div>;
 
+  const canonicalUrl = `${siteUrl}/product/${product.slug}`;
+  const pageTitle = `${product.name} | Nickel Strips Manufacturer`;
+  const pageDescription = `${product.name} by Ramani Steel House. ${product.description || 'Industrial-grade nickel strip for lithium-ion battery and precision applications.'}`.slice(0, 160);
+  const imageUrl = product.image?.startsWith('http') ? product.image : `${siteUrl}${product.image || '/img/logo.png'}`;
+
   return (
     <div className="pt-28 pb-24 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <Helmet>
+        <title>{pageTitle}</title>
+        <meta name="description" content={pageDescription} />
+        <link rel="canonical" href={canonicalUrl} />
+        <meta property="og:type" content="product" />
+        <meta property="og:title" content={pageTitle} />
+        <meta property="og:description" content={pageDescription} />
+        <meta property="og:url" content={canonicalUrl} />
+        <meta property="og:image" content={imageUrl} />
+        <meta name="twitter:card" content="summary_large_image" />
+        <meta name="twitter:title" content={pageTitle} />
+        <meta name="twitter:description" content={pageDescription} />
+        <meta name="twitter:image" content={imageUrl} />
+        <script type="application/ld+json">
+          {JSON.stringify({
+            '@context': 'https://schema.org',
+            '@type': 'Product',
+            name: product.name,
+            description: product.description || pageDescription,
+            image: [imageUrl],
+            brand: { '@type': 'Brand', name: 'Ramani Steel House' },
+            category: product.category_name || 'Nickel Strips',
+            sku: product.slug,
+            offers: {
+              '@type': 'Offer',
+              priceCurrency: 'INR',
+              price: Number(product.price) || 0,
+              availability: product.stock > 0 ? 'https://schema.org/InStock' : 'https://schema.org/OutOfStock',
+              url: canonicalUrl,
+            },
+          })}
+        </script>
+      </Helmet>
       {/* Breadcrumbs */}
       <nav className="flex items-center gap-2 text-xs text-zinc-400 mb-8">
         <Link to="/" className="hover:text-zinc-900">{t('productDetail.breadcrumbHome')}</Link>

@@ -48,6 +48,8 @@ const whatsappClient =
     : null;
 let adsTableMissingWarned = false;
 const exchangeRateCache = new Map<string, { expiresAt: number; payload: Record<string, unknown> }>();
+const localizationCache = new Map<string, { expiresAt: number; payload: Record<string, string> }>();
+let ipApiCooldownUntil = 0;
 
 type EnquiryNotificationPayload = {
   productId?: string | number | null;
@@ -335,6 +337,11 @@ export function createApiApp() {
 
     try {
       const requesterIp = getRequesterIp(req);
+      const cacheKey = requesterIp || "check";
+      const cached = localizationCache.get(cacheKey);
+      if (cached && cached.expiresAt > Date.now()) {
+        return res.json(cached.payload);
+      }
       const endpoint = requesterIp === "check" ? "check" : encodeURIComponent(requesterIp);
 
       const fetchFromIpStack = async () => {
@@ -364,18 +371,30 @@ export function createApiApp() {
       };
 
       const fetchFromIpApi = async () => {
+        if (ipApiCooldownUntil > Date.now()) {
+          throw new Error("ipapi provider cooling down after rate limit");
+        }
         const url =
           requesterIp === "check"
             ? "https://ipapi.co/json/"
             : `https://ipapi.co/${encodeURIComponent(requesterIp)}/json/`;
-        const geo = await fetchJson<{
+        let geo: {
           country_code?: string;
           country_name?: string;
           postal?: string;
           city?: string;
           region?: string;
           currency?: string;
-        }>(url);
+        };
+        try {
+          geo = await fetchJson(url);
+        } catch (error) {
+          const message = error instanceof Error ? error.message : "";
+          if (message.includes("status 429")) {
+            ipApiCooldownUntil = Date.now() + 10 * 60 * 1000;
+          }
+          throw error;
+        }
 
         return {
           countryCode: String(geo.country_code || fallback.countryCode).toUpperCase(),
@@ -391,9 +410,17 @@ export function createApiApp() {
       try {
         localized = await fetchFromIpStack();
       } catch {
-        localized = await fetchFromIpApi();
+        try {
+          localized = await fetchFromIpApi();
+        } catch {
+          localized = fallback;
+        }
       }
 
+      localizationCache.set(cacheKey, {
+        expiresAt: Date.now() + 60 * 60 * 1000,
+        payload: localized,
+      });
       res.json(localized);
     } catch (error) {
       console.error("Failed to fetch IP localization", error);
