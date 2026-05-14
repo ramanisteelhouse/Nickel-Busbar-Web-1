@@ -78,8 +78,8 @@ const qualityPoints = [
 const blogArticles = [
   {
     title: 'Why Nickel Strips are Essential in Lithium Batteries',
-    excerpt: 'Discover how high conductivity and corrosion resistance improve cell performance and safety.',
-    link: '/blog/nickel-strips-lithium-batteries',
+    excerpt: 'Read how we manufacture nickel strips used in lithium-ion batteries and deliver competitive pricing to battery manufacturers.',
+    link: 'https://nickelbusbar.com/blog/nickel-strips-lithium-batteries',
   },
   {
     title: 'Difference Between Pure Nickel vs Nickel Plated Strips',
@@ -202,7 +202,7 @@ export const HomePage: React.FC = () => {
         <title>Nickel Strips Manufacturer | Lithium-Ion Battery Strips</title>
         <meta
           name="description"
-          content="Premium nickel strips manufacturer with 52+ years of experience. Supplying pure nickel strips for lithium-ion batteries, EVs, and industrial energy storage."
+          content="We are a nickel strips manufacturer for lithium-ion battery manufacturers, delivering high-purity strips at competitive prices with consistent quality and reliable supply."
         />
         <script type="application/ld+json">
           {JSON.stringify({
@@ -488,6 +488,9 @@ export const HomePage: React.FC = () => {
             and industrial energy storage. Our precision slitting and strict QA make us a preferred nickel strips supplier and nickel strip exporter.
             If you need pure nickel strips in India or lithium battery nickel strips for global assembly lines, our team delivers quality and scale.
           </p>
+          <p className="mt-3 text-slate-600">
+            Learn more: <a href="https://nickelbusbar.com/blog/nickel-strips-lithium-batteries" className="font-semibold text-[#304e58] underline">https://nickelbusbar.com/blog/nickel-strips-lithium-batteries</a>
+          </p>
         </div>
       </section>
 
@@ -503,11 +506,11 @@ export const HomePage: React.FC = () => {
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {blogArticles.map((article) => (
-              <Link key={article.title} to={article.link} className="rounded-3xl border border-slate-200 bg-white p-6 hover:shadow-lg transition-shadow">
+              <a key={article.title} href={article.link} className="rounded-3xl border border-slate-200 bg-white p-6 hover:shadow-lg transition-shadow">
                 <h3 className="text-lg font-semibold text-[#304e58]">{article.title}</h3>
                 <p className="mt-3 text-sm text-slate-500">{article.excerpt}</p>
                 <span className="mt-4 inline-flex items-center gap-2 text-sm font-semibold text-[#304e58]">Read more <ArrowRight size={14} /></span>
-              </Link>
+              </a>
             ))}
           </div>
         </div>
