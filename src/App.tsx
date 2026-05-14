@@ -13,6 +13,7 @@ import { ProductDetailPage } from './pages/ProductDetailPage';
 import { CartPage } from './pages/CartPage';
 import { CheckoutPage } from './pages/CheckoutPage';
 import { LoginPage } from './pages/LoginPage';
+import { AboutPage } from './pages/AboutPage';
 import { Product, CartItem } from './types';
 
 function ScrollToTop() {
@@ -210,6 +211,7 @@ export default function App() {
               <Route path="/cart" element={<CartPage cart={cart} updateQuantity={updateQuantity} removeItem={removeItem} />} />
               <Route path="/checkout" element={<CheckoutPage cart={cart} />} />
               <Route path="/login" element={<LoginPage />} />
+              <Route path="/about" element={<AboutPage />} />
               {/* Add more routes as needed */}
             </Routes>
           </main>
