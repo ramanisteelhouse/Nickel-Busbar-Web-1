@@ -26,7 +26,7 @@ export const FloatingContact: React.FC = () => {
           <span className="hidden sm:inline">{t('product.email')}</span>
         </motion.a>
         <motion.a
-          href="https://wa.me/912245678900?text=Hello%20Team%2C%20we%20need%20a%20quote%20for%20nickel%20strips%20for%20lithium-ion%20batteries."
+          href="https://wa.me/918369724730?text=Hello%20Team%2C%20we%20need%20a%20quote%20for%20nickel%20strips%20for%20lithium-ion%20batteries."
           target="_blank"
           rel="noreferrer"
           aria-label={t('product.whatsapp')}

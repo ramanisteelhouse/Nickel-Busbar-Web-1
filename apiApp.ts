@@ -55,6 +55,7 @@ type EnquiryNotificationPayload = {
   productId?: string | number | null;
   productName?: string | null;
   requirement?: string | null;
+  thickness?: string | null;
   fullName: string;
   email: string;
   phone: string;
@@ -69,6 +70,7 @@ const formatEnquiryMessage = (payload: EnquiryNotificationPayload) => {
     `New product enquiry received`,
     `Product: ${payload.productName || "Not selected"}${payload.productId ? ` (#${payload.productId})` : ""}`,
     `Requirement: ${payload.requirement || "N/A"}`,
+    `Thickness: ${payload.thickness || "N/A"}`,
     `Name: ${payload.fullName}`,
     `Email: ${payload.email}`,
     `Phone: ${payload.phone}`,
@@ -761,6 +763,39 @@ export function createApiApp() {
     }
   });
 
+  app.get("/api/products/suggestions", async (req, res) => {
+    const rawQuery = typeof req.query.q === "string" ? req.query.q.trim() : "";
+    const limit = Math.min(Math.max(Number(req.query.limit) || 8, 1), 20);
+
+    if (!rawQuery) {
+      return res.json([]);
+    }
+
+    try {
+      const searchPattern = `${rawQuery}%`;
+      const containsPattern = `%${rawQuery}%`;
+      const suggestions = await query(
+        `SELECT
+          p.id,
+          p.slug,
+          p.name,
+          c.name AS category_name
+         FROM products p
+         JOIN categories c ON c.id = p.category_id
+         WHERE p.name ILIKE $1 OR p.name ILIKE $2
+         ORDER BY
+           CASE WHEN p.name ILIKE $1 THEN 0 ELSE 1 END,
+           p.name ASC
+         LIMIT $3`,
+        [searchPattern, containsPattern, limit],
+      );
+      res.json(suggestions);
+    } catch (error) {
+      console.error("Failed to fetch product suggestions", error);
+      res.status(500).json({ error: "Failed to fetch product suggestions" });
+    }
+  });
+
   app.get("/api/products/:slug", async (req, res) => {
     try {
       const product = await queryOne(
@@ -849,7 +884,7 @@ export function createApiApp() {
 
   // --- Product Enquiries ---
   app.post("/api/enquiries", async (req, res) => {
-    const { productId, productName, requirement, fullName, email, phone, company, location, quantity, message } = req.body;
+    const { productId, productName, requirement, thickness, fullName, email, phone, company, location, quantity, message } = req.body;
     if (!fullName || !email || !phone) {
       return res.status(400).json({ error: "Full name, email, and phone are required." });
     }
@@ -858,12 +893,13 @@ export function createApiApp() {
       const userId = getSessionUserId(req);
       await query(
         `INSERT INTO product_enquiries
-          (product_id, product_name, requirement, full_name, email, phone, company, location, quantity, message, user_id)
-          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)`,
+          (product_id, product_name, requirement, thickness, full_name, email, phone, company, location, quantity, message, user_id)
+          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)`,
         [
           productId ?? null,
           productName ?? null,
           requirement ?? null,
+          thickness ?? null,
           fullName,
           email,
           phone,
@@ -878,6 +914,7 @@ export function createApiApp() {
         productId,
         productName,
         requirement,
+        thickness,
         fullName,
         email,
         phone,

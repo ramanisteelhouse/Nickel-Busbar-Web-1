@@ -7,6 +7,8 @@ import { LanguageProvider } from './i18n/LanguageProvider';
 import { FloatingContact } from './components/FloatingContact';
 import { AdPopup } from './components/AdPopup';
 import { GoogleOneTap } from './components/GoogleOneTap';
+import { Footer } from './components/Footer';
+import { BackNavButton } from './components/BackNavButton';
 import { HomePage } from './pages/HomePage';
 import { ProductListingPage } from './pages/ProductListingPage';
 import { ProductDetailPage } from './pages/ProductDetailPage';
@@ -205,6 +207,7 @@ export default function App() {
           <AdPopup />
 
           <main style={{ paddingTop: 'var(--adbar-height, 0px)' }}>
+            <BackNavButton />
             <Routes>
               <Route path="/" element={<HomePage />} />
               <Route path="/products" element={<ProductListingPage />} />
@@ -220,6 +223,7 @@ export default function App() {
             </Routes>
           </main>
 
+          <Footer />
           <Chatbot />
           <FloatingContact />
           <CookieBanner />

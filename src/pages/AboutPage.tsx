@@ -3,7 +3,7 @@ import { Globe, Target, Gem, Factory } from 'lucide-react';
 
 const keyPoints = [
   'Established in 1974 and built on decades of trusted supply relationships.',
-  '100% family-owned partnership firm with a long-term, customer-first approach.',
+  '100% family-owned partnership firm with a long-term customer-first approach.',
   'Manufacturer of nickel strips used in lithium-ion batteries and energy storage packs.',
   'Serving customers across PAN India and selected international markets.',
 ];

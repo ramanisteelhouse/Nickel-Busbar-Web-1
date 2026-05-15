@@ -393,40 +393,42 @@ export const LanguageProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     const ratesKey = 'exchange_rates_INR';
     const tsKey = 'exchange_rates_INR_ts';
     const cached = getSessionValue(ratesKey) || window.localStorage.getItem(ratesKey);
-    const cachedTs = Number(getSessionValue(tsKey) || window.localStorage.getItem(tsKey) || 0);
-    const isFresh = cached && cachedTs && Date.now() - cachedTs < 12 * 60 * 60 * 1000;
-
-    if (isFresh) {
+    if (cached) {
       try {
         setExchangeRates(JSON.parse(cached));
-        return;
       } catch {
         // Ignore invalid cache.
       }
     }
 
-    fetch('/api/localization/exchange-rates?base=INR')
-      .then((res) => {
-        if (!res.ok) {
-          throw new Error('Unable to load exchange rates');
-        }
-        return res.json();
-      })
-      .then((data) => {
-        if (!data?.rates) return;
-        const serialized = JSON.stringify(data.rates);
-        setExchangeRates(data.rates);
-        setSessionValue(ratesKey, serialized);
-        setSessionValue(tsKey, String(Date.now()));
+    const refreshRates = () => {
+      fetch('/api/localization/exchange-rates?base=INR')
+        .then((res) => {
+          if (!res.ok) {
+            throw new Error('Unable to load exchange rates');
+          }
+          return res.json();
+        })
+        .then((data) => {
+          if (!data?.rates) return;
+          const serialized = JSON.stringify(data.rates);
+          setExchangeRates(data.rates);
+          setSessionValue(ratesKey, serialized);
+          setSessionValue(tsKey, String(Date.now()));
 
-        if (getCookieConsentState() === 'accepted') {
-          window.localStorage.setItem(ratesKey, serialized);
-          window.localStorage.setItem(tsKey, String(Date.now()));
-        }
-      })
-      .catch(() => {
-        // Ignore exchange rate errors.
-      });
+          if (getCookieConsentState() === 'accepted') {
+            window.localStorage.setItem(ratesKey, serialized);
+            window.localStorage.setItem(tsKey, String(Date.now()));
+          }
+        })
+        .catch(() => {
+          // Ignore exchange rate errors.
+        });
+    };
+
+    refreshRates();
+    const interval = window.setInterval(refreshRates, 5 * 60 * 1000);
+    return () => window.clearInterval(interval);
   }, []);
 
   React.useEffect(() => {

@@ -11,7 +11,10 @@ export const Navbar: React.FC<{ cartCount: number }> = ({ cartCount }) => {
   const [isMenuOpen, setIsMenuOpen] = React.useState(false);
   const [isScrolled, setIsScrolled] = React.useState(false);
   const [searchInput, setSearchInput] = React.useState('');
+  const [searchSuggestions, setSearchSuggestions] = React.useState<Array<{ id: number; slug: string; name: string; category_name?: string }>>([]);
+  const [showSearchSuggestions, setShowSearchSuggestions] = React.useState(false);
   const [isLocaleOpen, setIsLocaleOpen] = React.useState(false);
+  const [countrySearchInput, setCountrySearchInput] = React.useState('');
   const location = useLocation();
   const navigate = useNavigate();
   const {
@@ -40,17 +43,81 @@ export const Navbar: React.FC<{ cartCount: number }> = ({ cartCount }) => {
   React.useEffect(() => {
     const params = new URLSearchParams(location.search);
     setSearchInput(params.get('search') ?? '');
+    setShowSearchSuggestions(false);
   }, [location.search]);
+
+  React.useEffect(() => {
+    setCountrySearchInput(countryName ? `${countryFlag} ${countryName} (${country})` : country);
+  }, [country, countryName, countryFlag]);
+
+  React.useEffect(() => {
+    const query = searchInput.trim();
+    if (query.length < 1) {
+      setSearchSuggestions([]);
+      setShowSearchSuggestions(false);
+      return;
+    }
+
+    const controller = new AbortController();
+    const timer = window.setTimeout(() => {
+      fetch(`/api/products/suggestions?q=${encodeURIComponent(query)}&limit=7`, { signal: controller.signal })
+        .then((response) => {
+          if (!response.ok) {
+            throw new Error('Failed to load suggestions');
+          }
+          return response.json();
+        })
+        .then((data) => {
+          const suggestions = Array.isArray(data) ? data : [];
+          setSearchSuggestions(suggestions);
+          setShowSearchSuggestions(suggestions.length > 0);
+        })
+        .catch(() => {
+          setSearchSuggestions([]);
+          setShowSearchSuggestions(false);
+        });
+    }, 180);
+
+    return () => {
+      window.clearTimeout(timer);
+      controller.abort();
+    };
+  }, [searchInput]);
 
   const submitSearch = (event: React.FormEvent) => {
     event.preventDefault();
     const value = searchInput.trim();
+    setShowSearchSuggestions(false);
     setIsMenuOpen(false);
     if (value) {
       navigate(`/products?search=${encodeURIComponent(value)}`);
       return;
     }
     navigate('/products');
+  };
+
+  const selectSuggestion = (slug: string, name: string) => {
+    setSearchInput(name);
+    setShowSearchSuggestions(false);
+    setIsMenuOpen(false);
+    navigate(`/product/${slug}`);
+  };
+
+  const handleCountryInputChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const value = event.target.value;
+    setCountrySearchInput(value);
+    const normalized = value.trim().toLowerCase();
+    if (!normalized) return;
+    const normalizedNamePart = normalized.split('(')[0]?.trim() ?? normalized;
+    const matchedCountry = countries.find((option) =>
+      option.name.toLowerCase().startsWith(normalized) ||
+      option.name.toLowerCase() === normalizedNamePart ||
+      option.code.toLowerCase() === normalized ||
+      `${option.flag} ${option.name}`.toLowerCase().startsWith(normalizedNamePart)
+    );
+    if (matchedCountry) {
+      setCountry(matchedCountry.code);
+    }
   };
 
   const closeLocaleModal = () => setIsLocaleOpen(false);
@@ -93,9 +160,32 @@ export const Navbar: React.FC<{ cartCount: number }> = ({ cartCount }) => {
                 type="search"
                 value={searchInput}
                 onChange={(event) => setSearchInput(event.target.value)}
+                onFocus={() => {
+                  if (searchSuggestions.length > 0) setShowSearchSuggestions(true);
+                }}
+                onBlur={() => {
+                  window.setTimeout(() => setShowSearchSuggestions(false), 120);
+                }}
                 placeholder={t('nav.searchPlaceholder')}
                 className="w-64 bg-white/80 border border-slate-200 rounded-full pl-9 pr-4 py-2 text-sm text-[#304e58] focus:ring-2 focus:ring-[#314e58]/20 focus:border-[#314e58] outline-none"
               />
+              {showSearchSuggestions && searchSuggestions.length > 0 ? (
+                <div className="absolute z-50 mt-2 w-full overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-lg">
+                  {searchSuggestions.map((item) => (
+                    <button
+                      key={item.id}
+                      type="button"
+                      onMouseDown={() => selectSuggestion(item.slug, item.name)}
+                      className="w-full border-b border-slate-100 px-3 py-2 text-left text-xs text-[#304e58] hover:bg-slate-50 last:border-b-0"
+                    >
+                      <span className="block font-semibold">{item.name}</span>
+                      {item.category_name ? (
+                        <span className="text-[10px] text-slate-500">{item.category_name}</span>
+                      ) : null}
+                    </button>
+                  ))}
+                </div>
+              ) : null}
             </form>
             <button
               type="button"
@@ -146,9 +236,32 @@ export const Navbar: React.FC<{ cartCount: number }> = ({ cartCount }) => {
                   type="search"
                   value={searchInput}
                   onChange={(event) => setSearchInput(event.target.value)}
+                  onFocus={() => {
+                    if (searchSuggestions.length > 0) setShowSearchSuggestions(true);
+                  }}
+                  onBlur={() => {
+                    window.setTimeout(() => setShowSearchSuggestions(false), 120);
+                  }}
                   placeholder={t('nav.searchPlaceholder')}
                 className="w-full bg-zinc-100 border border-zinc-200 rounded-full pl-9 pr-4 py-2.5 text-sm text-[#304e58] focus:ring-2 focus:ring-[#314e58]/20 focus:border-[#314e58] outline-none"
               />
+                {showSearchSuggestions && searchSuggestions.length > 0 ? (
+                  <div className="absolute z-50 mt-2 w-full overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-lg">
+                    {searchSuggestions.map((item) => (
+                      <button
+                        key={item.id}
+                        type="button"
+                        onMouseDown={() => selectSuggestion(item.slug, item.name)}
+                        className="w-full border-b border-slate-100 px-3 py-2 text-left text-xs text-[#304e58] hover:bg-slate-50 last:border-b-0"
+                      >
+                        <span className="block font-semibold">{item.name}</span>
+                        {item.category_name ? (
+                          <span className="text-[10px] text-slate-500">{item.category_name}</span>
+                        ) : null}
+                      </button>
+                    ))}
+                  </div>
+                ) : null}
             </form>
             <Link to="/products" className="block text-lg font-semibold text-[#304e58]" onClick={() => setIsMenuOpen(false)}>{t('nav.products')}</Link>
             <Link to="/categories" className="block text-lg font-semibold text-[#304e58]" onClick={() => setIsMenuOpen(false)}>{t('nav.categories')}</Link>
@@ -214,23 +327,22 @@ export const Navbar: React.FC<{ cartCount: number }> = ({ cartCount }) => {
               <div className="px-6 py-5 space-y-4 border-b border-zinc-200">
                 <label className="block text-xs font-semibold text-[#304e58]">
                   {t('language.countryRegion')}
-                  <select
-                    value={country}
-                    onChange={(event) => setCountry(event.target.value)}
+                  <input
+                    list="navbar-country-options"
+                    value={countrySearchInput}
+                    onChange={handleCountryInputChange}
+                    placeholder="Type country name"
                     className="mt-2 w-full rounded-xl border border-zinc-200 bg-white px-3 py-2.5 text-sm text-[#304e58] focus:ring-2 focus:ring-[#314e58]/20 outline-none"
-                  >
+                  />
+                  <datalist id="navbar-country-options">
                     {countries.length > 0 ? (
                       countries.map((option) => (
-                        <option key={option.code} value={option.code}>
-                          {option.flag} {option.name} ({option.code})
-                        </option>
+                        <option key={option.code} value={`${option.flag} ${option.name} (${option.code})`} />
                       ))
                     ) : (
-                      <option value={country}>
-                        {countryFlag} {countryName} ({country})
-                      </option>
+                      <option value={`${countryFlag} ${countryName} (${country})`} />
                     )}
-                  </select>
+                  </datalist>
                 </label>
 
                 <label className="block text-xs font-semibold text-[#304e58]">

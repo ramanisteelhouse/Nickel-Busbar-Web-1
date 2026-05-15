@@ -25,6 +25,7 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({ cart }) => {
   const [selectedShipping, setSelectedShipping] = useState('Bluedart Air');
   const countryOptions = useMemo(() => getCountryOptions(), []);
   const [selectedCountry, setSelectedCountry] = useState<Country | null>(null);
+  const [countrySearchInput, setCountrySearchInput] = useState('');
   const [phoneNumber, setPhoneNumber] = useState('');
   const [gstNumber, setGstNumber] = useState('');
   const [pinCode, setPinCode] = useState('');
@@ -37,6 +38,11 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({ cart }) => {
       setSelectedCountry(preferred);
     }
   }, [countryOptions, country, selectedCountry]);
+
+  useEffect(() => {
+    if (!selectedCountry) return;
+    setCountrySearchInput(`${selectedCountry.name} (${selectedCountry.dial_code})`);
+  }, [selectedCountry]);
 
   useEffect(() => {
     if (!countryOptions.length) return;
@@ -60,6 +66,24 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({ cart }) => {
   const handleCountryChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const country = countryOptions.find(c => c.code === e.target.value);
     if (country) setSelectedCountry(country);
+  };
+
+  const handleCountryInputChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const value = event.target.value;
+    setCountrySearchInput(value);
+    const normalized = value.trim().toLowerCase();
+    if (!normalized) return;
+    const normalizedNamePart = normalized.split('(')[0]?.trim() ?? normalized;
+    const matchedCountry = countryOptions.find((item) =>
+      item.name.toLowerCase().startsWith(normalized) ||
+      item.name.toLowerCase() === normalizedNamePart ||
+      item.code.toLowerCase() === normalized ||
+      item.dial_code.toLowerCase() === normalized ||
+      `${item.name.toLowerCase()} (${item.dial_code.toLowerCase()})` === normalized
+    );
+    if (matchedCountry) {
+      setSelectedCountry(matchedCountry);
+    }
   };
 
   const shippingOptions = [
@@ -91,13 +115,22 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({ cart }) => {
 
   const handleWhatsAppRFQ = async () => {
     const businessPhoneNumber = (import.meta.env.VITE_WHATSAPP_BUSINESS_NUMBER as string | undefined)?.trim() || '8369724730';
+    if (!phoneNumber.trim()) {
+      setSaveError('Mobile number is required to continue.');
+      return;
+    }
+
     const countryCode = selectedCountry?.dial_code ?? '';
     const trimmedPhone = phoneNumber.replace(/\s+/g, '');
     const customerPhone = trimmedPhone ? `${countryCode}${trimmedPhone}` : '';
     const normalizePhoneForWa = (value: string) => value.replace(/[^\d]/g, '');
-    const recipientNumber = normalizePhoneForWa(customerPhone) || normalizePhoneForWa(businessPhoneNumber);
+    const recipientNumber = normalizePhoneForWa(businessPhoneNumber);
 
     let message = `*RFQ from Ramani Steel House*%0A`;
+    message += `--------------------------%0A`;
+    message += `Customer Phone: ${customerPhone || 'N/A'}%0A`;
+    message += `Delivery PIN: ${pinCode || 'N/A'}%0A`;
+    message += `Shipping: ${selectedShipping}%0A`;
     message += `--------------------------%0A`;
 
     cart.forEach((item, index) => {
@@ -161,7 +194,7 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({ cart }) => {
     }
 
     if (!recipientNumber) {
-      setSaveError('Please enter a valid mobile number with country code.');
+      setSaveError('Unable to open WhatsApp. Please try again.');
       return;
     }
 
@@ -202,18 +235,35 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({ cart }) => {
                 <div className="flex flex-col sm:flex-row sm:items-center gap-3">
                   <div className="flex items-center gap-3 w-full sm:w-auto">
                     <span className="text-lg">{selectedCountry?.flag}</span>
-                    <select
-                      className="bg-transparent text-sm font-semibold text-zinc-700 outline-none w-full sm:w-auto"
-                      aria-label="Country code"
-                      value={selectedCountry?.code ?? ''}
-                      onChange={handleCountryChange}
-                    >
-                      {countryOptions.map((c) => (
-                        <option key={c.code} value={c.code}>
-                          {c.name} {c.dial_code}
-                        </option>
-                      ))}
-                    </select>
+                    <div className="w-full sm:w-64">
+                      <input
+                        list="checkout-country-options"
+                        value={countrySearchInput}
+                        onChange={handleCountryInputChange}
+                        placeholder="Type country name"
+                        className="w-full bg-transparent text-sm font-semibold text-zinc-700 outline-none"
+                        aria-label="Country code"
+                      />
+                      <datalist id="checkout-country-options">
+                        {countryOptions.map((c) => (
+                          <option key={c.code} value={`${c.name} (${c.dial_code})`}>
+                            {c.code}
+                          </option>
+                        ))}
+                      </datalist>
+                      <select
+                        className="sr-only"
+                        value={selectedCountry?.code ?? ''}
+                        onChange={handleCountryChange}
+                        aria-hidden
+                      >
+                        {countryOptions.map((c) => (
+                          <option key={c.code} value={c.code}>
+                            {c.name} {c.dial_code}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
                   </div>
                   <input
                     type="tel"
@@ -221,6 +271,7 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({ cart }) => {
                     className="w-full sm:flex-1 text-sm text-zinc-900 outline-none"
                     value={phoneNumber}
                     onChange={(e) => setPhoneNumber(e.target.value)}
+                    required
                   />
                 </div>
               </div>
@@ -292,7 +343,7 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({ cart }) => {
             <button
               onClick={handleWhatsAppRFQ}
               className="w-full bg-[#22C55E] text-white py-4 rounded-full font-bold hover:bg-[#16A34A] transition-all flex items-center justify-center gap-2 disabled:opacity-60"
-              disabled={isSavingQuote}
+              disabled={isSavingQuote || !phoneNumber.trim()}
             >
               <MessageCircle size={20} />
               {isSavingQuote ? t('checkout.savingQuote') : t('checkout.placeRfq')}

@@ -1,5 +1,5 @@
 import React from 'react';
-import { Link, useSearchParams } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { Filter, Search, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Helmet } from 'react-helmet-async';
@@ -9,6 +9,7 @@ import { useLanguage } from '../i18n/LanguageProvider';
 
 type EnquiryFormData = {
   requirement: string;
+  thickness: string;
   fullName: string;
   email: string;
   phone: string;
@@ -20,6 +21,7 @@ type EnquiryFormData = {
 
 const initialEnquiryData: EnquiryFormData = {
   requirement: '',
+  thickness: '',
   fullName: '',
   email: '',
   phone: '',
@@ -30,11 +32,14 @@ const initialEnquiryData: EnquiryFormData = {
 };
 
 export const ProductListingPage: React.FC = () => {
+  const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const [products, setProducts] = React.useState<Product[]>([]);
   const [categories, setCategories] = React.useState<Category[]>([]);
   const [loading, setLoading] = React.useState(true);
   const [searchInput, setSearchInput] = React.useState('');
+  const [searchSuggestions, setSearchSuggestions] = React.useState<Array<{ id: number; slug: string; name: string; category_name?: string }>>([]);
+  const [showSearchSuggestions, setShowSearchSuggestions] = React.useState(false);
   const [isEnquiryOpen, setIsEnquiryOpen] = React.useState(false);
   const [selectedProduct, setSelectedProduct] = React.useState<Product | null>(null);
   const [enquiryData, setEnquiryData] = React.useState<EnquiryFormData>(initialEnquiryData);
@@ -50,6 +55,40 @@ export const ProductListingPage: React.FC = () => {
   React.useEffect(() => {
     setSearchInput(searchQuery);
   }, [searchQuery]);
+
+  React.useEffect(() => {
+    const query = searchInput.trim();
+    if (query.length < 1) {
+      setSearchSuggestions([]);
+      setShowSearchSuggestions(false);
+      return;
+    }
+
+    const controller = new AbortController();
+    const timer = window.setTimeout(() => {
+      fetch(`/api/products/suggestions?q=${encodeURIComponent(query)}&limit=8`, { signal: controller.signal })
+        .then((response) => {
+          if (!response.ok) {
+            throw new Error('Failed to load suggestions');
+          }
+          return response.json();
+        })
+        .then((data) => {
+          const suggestions = Array.isArray(data) ? data : [];
+          setSearchSuggestions(suggestions);
+          setShowSearchSuggestions(suggestions.length > 0);
+        })
+        .catch(() => {
+          setSearchSuggestions([]);
+          setShowSearchSuggestions(false);
+        });
+    }, 180);
+
+    return () => {
+      window.clearTimeout(timer);
+      controller.abort();
+    };
+  }, [searchInput]);
 
   React.useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -125,6 +164,7 @@ export const ProductListingPage: React.FC = () => {
 
   const applySearch = (event: React.FormEvent) => {
     event.preventDefault();
+    setShowSearchSuggestions(false);
     const params = new URLSearchParams(searchParams);
     const value = searchInput.trim();
     if (value) {
@@ -133,6 +173,12 @@ export const ProductListingPage: React.FC = () => {
       params.delete('search');
     }
     setSearchParams(params);
+  };
+
+  const openFromSuggestion = (slug: string, name: string) => {
+    setSearchInput(name);
+    setShowSearchSuggestions(false);
+    navigate(`/product/${slug}`);
   };
 
   const openEnquiryForm = (product?: Product) => {
@@ -217,9 +263,32 @@ export const ProductListingPage: React.FC = () => {
                 type="search"
                 value={searchInput}
                 onChange={(event) => setSearchInput(event.target.value)}
+                onFocus={() => {
+                  if (searchSuggestions.length > 0) setShowSearchSuggestions(true);
+                }}
+                onBlur={() => {
+                  window.setTimeout(() => setShowSearchSuggestions(false), 120);
+                }}
                 placeholder={t('product.searchPlaceholder')}
                 className="w-full bg-zinc-100 border border-zinc-200 rounded-full pl-10 pr-4 py-2.5 text-sm text-zinc-900 placeholder:text-zinc-400 focus:ring-2 focus:ring-[#304e58]/20 outline-none"
               />
+              {showSearchSuggestions && searchSuggestions.length > 0 ? (
+                <div className="absolute z-30 mt-2 w-full overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-lg">
+                  {searchSuggestions.map((item) => (
+                    <button
+                      key={item.id}
+                      type="button"
+                      onMouseDown={() => openFromSuggestion(item.slug, item.name)}
+                      className="w-full border-b border-slate-100 px-3 py-2 text-left text-xs text-[#304e58] hover:bg-slate-50 last:border-b-0"
+                    >
+                      <span className="block font-semibold">{item.name}</span>
+                      {item.category_name ? (
+                        <span className="text-[10px] text-slate-500">{item.category_name}</span>
+                      ) : null}
+                    </button>
+                  ))}
+                </div>
+              ) : null}
             </form>
             <button className="flex items-center gap-2 bg-[#304e58] text-white px-4 py-2.5 rounded-full text-sm font-bold hover:bg-[#314e58]">
               <Filter size={18} />
@@ -228,41 +297,7 @@ export const ProductListingPage: React.FC = () => {
           </div>
         </div>
 
-        <section className="mb-12 rounded-3xl border border-zinc-200 bg-white p-6 md:p-8 text-[#304e58] shadow-lg">
-          <div className="flex flex-col gap-6 md:flex-row md:items-center md:justify-between">
-            <div>
-              <h2 className="text-2xl font-bold">{t('product.needQuoteTitle')}</h2>
-              <p className="text-[#5B757E] mt-2 max-w-xl text-sm">
-                {t('product.needQuoteDesc')}
-              </p>
-            </div>
-            <div className="flex flex-col sm:flex-row gap-3">
-              <a
-                href="https://wa.me/912245678900?text=Hello%20Ramani%20Steel%20House%2C%20I%20need%20a%20quote%20for%20industrial%20products."
-                target="_blank"
-                rel="noreferrer"
-                className="rounded-full bg-[#304e58] px-5 py-2.5 text-sm font-semibold text-white hover:bg-[#314e58] transition-colors text-center"
-              >
-                {t('product.whatsapp')}
-              </a>
-              <a
-                href="mailto:ramanioffice@gmail.com?subject=Product%20Enquiry"
-                className="rounded-full border border-[#304e58]/30 px-5 py-2.5 text-sm font-semibold text-[#304e58] hover:bg-[#f5f5f5] transition-colors text-center"
-              >
-                {t('product.email')}
-              </a>
-              <button
-                type="button"
-                onClick={() => {
-                  openEnquiryForm();
-                }}
-                className="rounded-full bg-[#f5f5f5] px-5 py-2.5 text-sm font-semibold text-[#304e58] hover:bg-[#ededed] transition-colors"
-              >
-                {t('product.openForm')}
-              </button>
-            </div>
-          </div>
-        </section>
+
 
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-12">
           {/* Sidebar Filters */}
@@ -506,6 +541,16 @@ export const ProductListingPage: React.FC = () => {
                     onChange={updateField('quantity')}
                     className="w-full border border-zinc-300 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#304e58]/20 focus:border-[#304e58]"
                     placeholder="Enter quantity"
+                  />
+                </label>
+                <label className="block">
+                  <span className="block text-sm font-semibold text-[#304e58] mb-1">Thickness</span>
+                  <input
+                    type="text"
+                    value={enquiryData.thickness}
+                    onChange={updateField('thickness')}
+                    className="w-full border border-zinc-300 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#304e58]/20 focus:border-[#304e58]"
+                    placeholder="Enter thickness (e.g. 0.15 mm)"
                   />
                 </label>
               </div>

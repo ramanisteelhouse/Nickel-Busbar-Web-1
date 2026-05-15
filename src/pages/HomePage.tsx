@@ -123,6 +123,7 @@ export const HomePage: React.FC = () => {
     email: '',
     phone: '',
     requirement: '',
+    thickness: '',
     quantity: '',
   });
   const [isSubmitting, setIsSubmitting] = React.useState(false);
@@ -172,6 +173,7 @@ export const HomePage: React.FC = () => {
         body: JSON.stringify({
           productName: 'Nickel Strips',
           requirement: formState.requirement,
+          thickness: formState.thickness,
           fullName: formState.name,
           email: formState.email,
           phone: formState.phone,
@@ -185,7 +187,7 @@ export const HomePage: React.FC = () => {
       }
 
       setSubmitMessage('Thanks! Our engineering team will reach out within 1 business day.');
-      setFormState({ name: '', email: '', phone: '', requirement: '', quantity: '' });
+      setFormState({ name: '', email: '', phone: '', requirement: '', thickness: '', quantity: '' });
     } catch {
       setSubmitMessage('Unable to submit right now. Please call or WhatsApp us.');
     } finally {
@@ -553,6 +555,12 @@ export const HomePage: React.FC = () => {
                   required
                 />
                 <input
+                  value={formState.thickness}
+                  onChange={handleFormChange('thickness')}
+                  placeholder="Thickness"
+                  className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm"
+                />
+                <input
                   value={formState.quantity}
                   onChange={handleFormChange('quantity')}
                   placeholder="Quantity"
@@ -581,41 +589,7 @@ export const HomePage: React.FC = () => {
         </div>
       </section>
 
-      <footer className="bg-white border-t border-slate-200 pt-16 pb-10">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-10">
-            <div className="md:col-span-2 space-y-4">
-              <h3 className="text-2xl font-display font-bold text-[#304e58]">Ramani Nickel Strips</h3>
-              <p className="text-sm text-slate-600">Premium Nickel Strips Manufacturer serving lithium-ion battery producers worldwide.</p>
-              <p className="text-sm text-slate-600">52+ years of metallurgical excellence | Mumbai, India</p>
-            </div>
-            <div>
-              <p className="text-xs uppercase tracking-[0.3em] text-slate-400 mb-4">Quick Links</p>
-              <ul className="space-y-3 text-sm text-slate-600">
-                <li><Link to="/products?search=nickel">Nickel Strips</Link></li>
-                <li><Link to="/products?search=lithium">Lithium Battery Strips</Link></li>
-                <li><Link to="/products?enquiry=1">Request Quote</Link></li>
-                <li><Link to="/contact">Contact</Link></li>
-              </ul>
-            </div>
-            <div>
-              <p className="text-xs uppercase tracking-[0.3em] text-slate-400 mb-4">Contact</p>
-              <ul className="space-y-3 text-sm text-slate-600">
-                <li>sales@ramanisteel.com</li>
-                <li>+91 22 4567 8900</li>
-                <li>Exporting to 45+ countries</li>
-              </ul>
-            </div>
-          </div>
-          <div className="mt-10 border-t border-slate-200 pt-6 flex flex-col md:flex-row items-center justify-between gap-4 text-xs text-slate-400">
-            <p>� 2026 Ramani Steel House. All rights reserved.</p>
-            <div className="flex gap-6">
-              <Link to="/privacy" className="hover:text-[#304e58]">Privacy</Link>
-              <Link to="/terms" className="hover:text-[#304e58]">Terms</Link>
-            </div>
-          </div>
-        </div>
-      </footer>
+
     </div>
   );
 };
