@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>404 | Page Not Found</title>
+    <meta
+      name="description"
+      content="The requested page was not found. Visit our homepage or product catalog for nickel strip and busbar offerings."
+    />
+    <meta name="robots" content="noindex,follow,noarchive" />
+    <style>
+      body {
+        margin: 0;
+        font-family: Manrope, "Work Sans", sans-serif;
+        background: #f8fafc;
+        color: #304e58;
+        display: grid;
+        place-items: center;
+        min-height: 100vh;
+      }
+      .card {
+        width: min(92vw, 640px);
+        background: #ffffff;
+        border: 1px solid #d9e0e2;
+        border-radius: 20px;
+        padding: 2rem;
+        text-align: center;
+        box-shadow: 0 20px 45px rgba(48, 78, 88, 0.08);
+      }
+      h1 {
+        margin: 0;
+        font-size: clamp(1.8rem, 3vw, 2.4rem);
+      }
+      p {
+        color: #51656c;
+        margin-top: 0.9rem;
+      }
+      .actions {
+        margin-top: 1.5rem;
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 0.75rem;
+      }
+      a {
+        text-decoration: none;
+        border-radius: 9999px;
+        padding: 0.65rem 1rem;
+        font-weight: 700;
+        font-size: 0.9rem;
+      }
+      .primary {
+        background: #304e58;
+        color: #ffffff;
+      }
+      .secondary {
+        border: 1px solid rgba(49, 78, 88, 0.4);
+        color: #304e58;
+      }
+    </style>
+  </head>
+  <body>
+    <main class="card">
+      <h1>404 - Page not found</h1>
+      <p>The requested page does not exist. Continue from one of these links.</p>
+      <div class="actions">
+        <a class="primary" href="/">Go to Homepage</a>
+        <a class="secondary" href="/products">Browse Products</a>
+      </div>
+    </main>
+  </body>
+</html>

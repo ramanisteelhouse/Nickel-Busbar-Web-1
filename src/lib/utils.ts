@@ -85,3 +85,123 @@ export function getOrCreateSessionId() {
   setCookie(key, next, 1);
   return next;
 }
+
+// React Router and Express can choke on raw "%" in path params.
+// Double-encode percent so one decode pass still leaves a safe escape.
+export function encodePathSegment(value: string) {
+  return encodeURIComponent(value).replace(/%25/g, '%2525');
+}
+
+const RICH_TEXT_ALLOWED_TAGS = new Set([
+  'p',
+  'h1',
+  'h2',
+  'h3',
+  'h4',
+  'h5',
+  'h6',
+  'strong',
+  'em',
+  'b',
+  'i',
+  'u',
+  'ul',
+  'ol',
+  'li',
+  'blockquote',
+  'code',
+  'pre',
+  'br',
+  'hr',
+  'a',
+]);
+
+const RICH_TEXT_ALLOWED_ATTRS: Record<string, Set<string>> = {
+  a: new Set(['href', 'title', 'target', 'rel']),
+};
+
+const normalizeSmartQuotes = (value: string) =>
+  value
+    .replace(/[\u201C\u201D]/g, '"')
+    .replace(/[\u2018\u2019]/g, "'");
+
+const isSafeHref = (href: string) => {
+  const trimmed = href.trim();
+  if (!trimmed) return false;
+  if (trimmed.startsWith('/') || trimmed.startsWith('#')) return true;
+
+  try {
+    const parsed = new URL(trimmed, window.location.origin);
+    return ['http:', 'https:', 'mailto:', 'tel:'].includes(parsed.protocol);
+  } catch {
+    return false;
+  }
+};
+
+export function sanitizeRichHtml(input: string) {
+  const normalized = normalizeSmartQuotes(input || '').trim();
+  if (!normalized) return '';
+  if (typeof window === 'undefined') return normalized;
+
+  const parser = new DOMParser();
+  const parsed = parser.parseFromString(`<div>${normalized}</div>`, 'text/html');
+  const sourceRoot = parsed.body.firstElementChild;
+  if (!sourceRoot) return '';
+
+  const outputDoc = document.implementation.createHTMLDocument('');
+  const outputRoot = outputDoc.createElement('div');
+
+  const sanitizeNode = (node: Node, parent: HTMLElement) => {
+    if (node.nodeType === Node.TEXT_NODE) {
+      parent.appendChild(outputDoc.createTextNode(node.textContent || ''));
+      return;
+    }
+
+    if (node.nodeType !== Node.ELEMENT_NODE) {
+      return;
+    }
+
+    const element = node as Element;
+    const tag = element.tagName.toLowerCase();
+
+    if (!RICH_TEXT_ALLOWED_TAGS.has(tag)) {
+      Array.from(element.childNodes).forEach((child) => sanitizeNode(child, parent));
+      return;
+    }
+
+    const clean = outputDoc.createElement(tag);
+    const allowedAttrs = RICH_TEXT_ALLOWED_ATTRS[tag];
+
+    if (allowedAttrs) {
+      Array.from(element.attributes).forEach((attr) => {
+        const attrName = attr.name.toLowerCase();
+        const attrValue = normalizeSmartQuotes(attr.value || '').trim();
+        if (!allowedAttrs.has(attrName) || !attrValue) return;
+
+        if (tag === 'a' && attrName === 'href') {
+          if (!isSafeHref(attrValue)) return;
+          clean.setAttribute('href', attrValue);
+          return;
+        }
+
+        if (tag === 'a' && attrName === 'target') {
+          const target = attrValue === '_blank' ? '_blank' : '_self';
+          clean.setAttribute('target', target);
+          return;
+        }
+
+        clean.setAttribute(attrName, attrValue);
+      });
+    }
+
+    if (tag === 'a' && clean.getAttribute('target') === '_blank') {
+      clean.setAttribute('rel', 'noopener noreferrer');
+    }
+
+    Array.from(element.childNodes).forEach((child) => sanitizeNode(child, clean));
+    parent.appendChild(clean);
+  };
+
+  Array.from(sourceRoot.childNodes).forEach((child) => sanitizeNode(child, outputRoot));
+  return outputRoot.innerHTML;
+}

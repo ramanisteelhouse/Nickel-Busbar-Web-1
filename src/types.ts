@@ -59,3 +59,19 @@ export interface Ad {
   priority?: number | null;
   created_at?: string | null;
 }
+
+export interface BlogPost {
+  id: number;
+  title: string;
+  slug: string;
+  excerpt?: string | null;
+  content?: string | null;
+  cover_image_url?: string | null;
+  author_name?: string | null;
+  status?: string | null;
+  meta_title?: string | null;
+  meta_description?: string | null;
+  published_at?: string | null;
+  created_at?: string | null;
+  updated_at?: string | null;
+}

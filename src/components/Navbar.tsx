@@ -149,7 +149,7 @@ export const Navbar: React.FC<{ cartCount: number }> = ({ cartCount }) => {
             <Link to="/products" className="text-sm font-semibold text-[#304e58] hover:text-[#314e58] transition-colors">{t('nav.products')}</Link>
             <Link to="/categories" className="text-sm font-semibold text-[#304e58] hover:text-[#314e58] transition-colors">{t('nav.categories')}</Link>
             <Link to="/about" className="text-sm font-semibold text-[#304e58] hover:text-[#314e58] transition-colors">{t('nav.about')}</Link>
-            <Link to="/blog/nickel-strips-lithium-batteries" className="text-sm font-semibold text-[#304e58] hover:text-[#314e58] transition-colors">Blog</Link>
+            <Link to="/blog" className="text-sm font-semibold text-[#304e58] hover:text-[#314e58] transition-colors">Blog</Link>
             <Link to="/contact" className="text-sm font-semibold text-[#304e58] hover:text-[#314e58] transition-colors">Contact</Link>
           </div>
 
@@ -266,7 +266,7 @@ export const Navbar: React.FC<{ cartCount: number }> = ({ cartCount }) => {
             <Link to="/products" className="block text-lg font-semibold text-[#304e58]" onClick={() => setIsMenuOpen(false)}>{t('nav.products')}</Link>
             <Link to="/categories" className="block text-lg font-semibold text-[#304e58]" onClick={() => setIsMenuOpen(false)}>{t('nav.categories')}</Link>
             <Link to="/about" className="block text-lg font-semibold text-[#304e58]" onClick={() => setIsMenuOpen(false)}>{t('nav.about')}</Link>
-            <Link to="/blog/nickel-strips-lithium-batteries" className="block text-lg font-semibold text-[#304e58]" onClick={() => setIsMenuOpen(false)}>Blog</Link>
+            <Link to="/blog" className="block text-lg font-semibold text-[#304e58]" onClick={() => setIsMenuOpen(false)}>Blog</Link>
             <Link to="/contact" className="block text-lg font-semibold text-[#304e58]" onClick={() => setIsMenuOpen(false)}>Contact</Link>
             <button
               type="button"

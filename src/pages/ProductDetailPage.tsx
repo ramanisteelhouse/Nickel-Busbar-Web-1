@@ -12,18 +12,43 @@ export const ProductDetailPage: React.FC<{ onAddToCart: (p: Product) => void }> 
   const navigate = useNavigate();
   const [product, setProduct] = React.useState<Product | null>(null);
   const [loading, setLoading] = React.useState(true);
+  const [fetchError, setFetchError] = React.useState<'not-found' | 'server' | null>(null);
   const [showCartToast, setShowCartToast] = React.useState(false);
   const [isMobile, setIsMobile] = React.useState(false);
   const { t, formatPrice } = useLanguage();
   const siteUrl = 'https://www.nickelbusbar.com';
 
   React.useEffect(() => {
+    let isActive = true;
+    setLoading(true);
+    setFetchError(null);
+    setProduct(null);
+
     fetch(`/api/products/${slug}`)
-      .then(res => res.json())
-      .then(data => {
+      .then(async (res) => {
+        if (!res.ok) {
+          if (res.status === 404) {
+            throw new Error('NOT_FOUND');
+          }
+          throw new Error('REQUEST_FAILED');
+        }
+        const data = await res.json();
+        if (!isActive) return;
         setProduct(data);
+      })
+      .catch((error: unknown) => {
+        if (!isActive) return;
+        const message = error instanceof Error ? error.message : '';
+        setFetchError(message === 'NOT_FOUND' ? 'not-found' : 'server');
+      })
+      .finally(() => {
+        if (!isActive) return;
         setLoading(false);
       });
+
+    return () => {
+      isActive = false;
+    };
   }, [slug]);
 
   React.useEffect(() => {
@@ -51,7 +76,57 @@ export const ProductDetailPage: React.FC<{ onAddToCart: (p: Product) => void }> 
   }, [showCartToast]);
 
   if (loading) return <div className="pt-32 text-center">{t('productDetail.loading')}</div>;
-  if (!product) return <div className="pt-32 text-center">{t('productDetail.notFound')}</div>;
+
+  if (fetchError === 'server') {
+    const errorCanonical = `${siteUrl}/product/${slug || ''}`;
+    return (
+      <div className="pt-32 pb-20 max-w-4xl mx-auto px-4 text-center">
+        <Helmet>
+          <title>Product Unavailable</title>
+          <meta
+            name="description"
+            content="We are unable to load this product right now. Please try again shortly or browse other available products."
+          />
+          <meta name="robots" content="noindex,follow,noarchive" />
+          <link rel="canonical" href={errorCanonical} />
+        </Helmet>
+        <h1 className="text-3xl font-bold text-zinc-900">We could not load this product right now.</h1>
+        <p className="mt-3 text-zinc-500">Please refresh, or visit our product listing for available options.</p>
+        <Link
+          to="/products"
+          className="mt-6 inline-flex items-center gap-2 rounded-full bg-[#304e58] px-5 py-2.5 text-sm font-semibold text-white hover:bg-[#314e58]"
+        >
+          Browse Products
+        </Link>
+      </div>
+    );
+  }
+
+  if (fetchError === 'not-found' || !product) {
+    const missingCanonical = `${siteUrl}/product/${slug || ''}`;
+    return (
+      <div className="pt-32 pb-20 max-w-4xl mx-auto px-4 text-center">
+        <Helmet>
+          <title>404 | Product Not Found</title>
+          <meta
+            name="description"
+            content="The product page you requested is not available. Explore our full nickel strip catalog for available options."
+          />
+          <meta name="robots" content="noindex,follow,noarchive" />
+          <meta name="prerender-status-code" content="404" />
+          <link rel="canonical" href={missingCanonical} />
+        </Helmet>
+        <h1 className="text-3xl font-bold text-zinc-900">{t('productDetail.notFound')}</h1>
+        <p className="mt-3 text-zinc-500">The product may have moved, been renamed, or no longer exists.</p>
+        <Link
+          to="/products"
+          className="mt-6 inline-flex items-center gap-2 rounded-full bg-[#304e58] px-5 py-2.5 text-sm font-semibold text-white hover:bg-[#314e58]"
+        >
+          Browse Products
+        </Link>
+      </div>
+    );
+  }
 
   const canonicalUrl = `${siteUrl}/product/${product.slug}`;
   const pageTitle = `${product.name} | Nickel Strips Manufacturer`;

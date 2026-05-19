@@ -7,7 +7,21 @@ import { cn } from '../lib/utils';
 
 const dismissKeyForAd = (id: number) => `adbar_dismissed_${id}`;
 
-const isExternalUrl = (url: string) => /^https?:\/\//i.test(url);
+const resolveInternalPath = (url: string) => {
+  if (!url) return null;
+  if (url.startsWith('/')) return url;
+  if (typeof window === 'undefined') return null;
+
+  try {
+    const parsed = new URL(url, window.location.origin);
+    if (parsed.origin !== window.location.origin) {
+      return null;
+    }
+    return `${parsed.pathname}${parsed.search}${parsed.hash}`;
+  } catch {
+    return null;
+  }
+};
 
 export const AdBar: React.FC<{ className?: string }> = ({ className }) => {
   const [ads, setAds] = React.useState<Ad[]>([]);
@@ -65,6 +79,7 @@ export const AdBar: React.FC<{ className?: string }> = ({ className }) => {
 
   const ctaText = bannerAd?.cta_text ?? 'View Offers';
   const ctaUrl = bannerAd?.cta_url ?? '/products';
+  const internalCtaPath = resolveInternalPath(ctaUrl);
 
   const handleDismiss = () => {
     if (!bannerAd) return;
@@ -157,11 +172,12 @@ export const AdBar: React.FC<{ className?: string }> = ({ className }) => {
                 />
               ))}
             </div>
-            {isExternalUrl(ctaUrl) ? (
+            {!internalCtaPath ? (
               <a
                 href={ctaUrl}
                 target="_blank"
                 rel="noreferrer"
+                onClick={handleDismiss}
                 className="rounded-full bg-white text-[#304e58] px-4 py-1.5 text-xs font-bold hover:bg-white/90 transition-colors inline-flex items-center gap-2"
               >
                 {ctaText}
@@ -169,7 +185,8 @@ export const AdBar: React.FC<{ className?: string }> = ({ className }) => {
               </a>
             ) : (
               <Link
-                to={ctaUrl}
+                to={internalCtaPath}
+                onClick={handleDismiss}
                 className="rounded-full bg-white text-[#304e58] px-4 py-1.5 text-xs font-bold hover:bg-white/90 transition-colors inline-flex items-center gap-2"
               >
                 {ctaText}

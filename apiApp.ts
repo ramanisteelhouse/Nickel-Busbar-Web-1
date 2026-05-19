@@ -216,6 +216,20 @@ const normalizeAdRow = (row: Record<string, unknown>) => ({
   image_url: normalizeImageSource(row.image_url),
 });
 
+const normalizeBlogRow = (row: Record<string, unknown>) => ({
+  ...row,
+  id: toFiniteInteger(row.id, 0),
+  title: String(row.title || "").trim(),
+  slug: String(row.slug || "").trim(),
+  excerpt: row.excerpt == null ? null : String(row.excerpt),
+  content: row.content == null ? null : String(row.content),
+  cover_image_url: normalizeImageSource(row.cover_image_url),
+  author_name: row.author_name == null ? null : String(row.author_name),
+  status: row.status == null ? null : String(row.status),
+  meta_title: row.meta_title == null ? null : String(row.meta_title),
+  meta_description: row.meta_description == null ? null : String(row.meta_description),
+});
+
 const getExchangeRates = async (baseCurrency: string) => {
   const base = baseCurrency.toUpperCase();
   const cached = exchangeRateCache.get(base);
@@ -299,7 +313,7 @@ export function createApiApp() {
     secure: process.env.NODE_ENV === "production",
   };
 
-  app.use(express.json());
+  app.use(express.json({ limit: "1mb" }));
 
   app.get("/api/auth/google/config", (_req, res) => {
     const clientId = (process.env.GOOGLE_CLIENT_ID || process.env.VITE_GOOGLE_CLIENT_ID || "").trim();
@@ -820,6 +834,83 @@ export function createApiApp() {
     }
   });
 
+  // --- Blog Routes ---
+  app.get("/api/blog-posts", async (req, res) => {
+    const limit = Math.min(Math.max(Number(req.query.limit) || 6, 1), 50);
+
+    try {
+      const posts = await query(
+        `SELECT
+          id,
+          title,
+          slug,
+          COALESCE(NULLIF(excerpt, ''), LEFT(REGEXP_REPLACE(content, '\s+', ' ', 'g'), 180)) AS excerpt,
+          cover_image_url,
+          author_name,
+          status,
+          meta_title,
+          meta_description,
+          published_at,
+          created_at,
+          updated_at
+         FROM blog_posts
+         WHERE status = 'published'
+           AND (published_at IS NULL OR published_at <= now())
+         ORDER BY published_at DESC NULLS LAST, created_at DESC
+         LIMIT $1`,
+        [limit]
+      );
+      res.json(posts.map((post) => normalizeBlogRow(post as Record<string, unknown>)));
+    } catch (error) {
+      console.error("Failed to fetch blog posts", error);
+      res.status(500).json({ error: "Failed to fetch blog posts" });
+    }
+  });
+
+  app.get("/api/blog-posts/:slug", async (req, res) => {
+    const rawSlug = String(req.params.slug || "").trim();
+    const normalizedSlug = (() => {
+      if (!rawSlug) return rawSlug;
+      try {
+        return decodeURIComponent(rawSlug);
+      } catch {
+        return rawSlug;
+      }
+    })();
+
+    try {
+      const post = await queryOne(
+        `SELECT
+          id,
+          title,
+          slug,
+          excerpt,
+          content,
+          cover_image_url,
+          author_name,
+          status,
+          meta_title,
+          meta_description,
+          published_at,
+          created_at,
+          updated_at
+         FROM blog_posts
+         WHERE slug = $1
+           AND status = 'published'
+           AND (published_at IS NULL OR published_at <= now())
+         LIMIT 1`,
+        [normalizedSlug]
+      );
+      if (!post) {
+        return res.status(404).json({ error: "Blog post not found" });
+      }
+      res.json(normalizeBlogRow(post as Record<string, unknown>));
+    } catch (error) {
+      console.error("Failed to fetch blog post", error);
+      res.status(500).json({ error: "Failed to fetch blog post" });
+    }
+  });
+
   // --- Ads ---
   app.get("/api/ads/active", async (_req, res) => {
     try {
@@ -1001,6 +1092,42 @@ export function createApiApp() {
     } finally {
       client.release();
     }
+  });
+
+  app.use("/api", (_req, res) => {
+    res.status(404).json({ error: "API route not found." });
+  });
+
+  app.use((error: unknown, _req: express.Request, res: express.Response, next: express.NextFunction) => {
+    if (res.headersSent) {
+      return next(error);
+    }
+
+    const requestError = error as {
+      status?: number;
+      statusCode?: number;
+      type?: string;
+    };
+    const status = requestError.statusCode || requestError.status || 500;
+    const isMalformedParam = error instanceof URIError && /decode param|URI malformed/i.test(error.message);
+
+    if (isMalformedParam) {
+      return res.status(400).json({ error: "Invalid URL encoding in path segment." });
+    }
+
+    if (status === 400 || requestError.type === "entity.parse.failed") {
+      return res.status(400).json({ error: "Invalid JSON payload." });
+    }
+
+    if (status === 404) {
+      return res.status(404).json({ error: "API route not found." });
+    }
+
+    const safeStatus = status >= 400 && status < 600 ? status : 500;
+    if (safeStatus >= 500) {
+      console.error("Unhandled API error", error);
+    }
+    res.status(safeStatus).json({ error: safeStatus === 500 ? "Internal server error." : "Request failed." });
   });
 
   return app;

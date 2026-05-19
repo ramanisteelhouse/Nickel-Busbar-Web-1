@@ -20,7 +20,8 @@ import {
 } from 'lucide-react';
 import { motion } from 'motion/react';
 import { Helmet } from 'react-helmet-async';
-import type { Product, Category } from '../types';
+import type { Product, Category, BlogPost } from '../types';
+import { encodePathSegment } from '../lib/utils';
 
 const fallbackVariants = [
   {
@@ -75,11 +76,34 @@ const qualityPoints = [
   'Batch-wise conductivity and tensile testing',
 ];
 
-const blogArticles = [
+const productSpecifications = [
+  { label: 'Nickel Purity', value: '99.8%+' },
+  { label: 'Thickness Range', value: '0.10mm – 0.50mm' },
+  { label: 'Width Range', value: '2mm – 50mm' },
+  { label: 'Surface Finish', value: 'Bright, matte, nickel-plated' },
+  { label: 'Typical Use', value: 'Battery tabs, busbars, welding strips' },
+];
+
+const faqItems = [
+  {
+    question: 'What is nickel strip used for?',
+    answer: 'Nickel strip is used as a battery tab and connector in lithium-ion cells, EV packs, power tools, and energy storage systems because of its conductivity and weldability.',
+  },
+  {
+    question: 'How do I choose the right nickel strip thickness?',
+    answer: 'Choose thickness based on current rating, welding method, and cell design. Thin strips suit compact packs; thicker strip supports higher current and durability.',
+  },
+  {
+    question: 'Can you supply custom nickel strips for EV battery assembly?',
+    answer: 'Yes, we offer custom slitting, width, and surface preparation for nickel strips used in EV battery modules and high-performance battery systems.',
+  },
+];
+
+const fallbackBlogArticles = [
   {
     title: 'Why Nickel Strips are Essential in Lithium Batteries',
     excerpt: 'Read how we manufacture nickel strips used in lithium-ion batteries and deliver competitive pricing to battery manufacturers.',
-    link: 'https://nickelbusbar.com/blog/nickel-strips-lithium-batteries',
+    link: '/blog/nickel-strips-lithium-batteries',
   },
   {
     title: 'Difference Between Pure Nickel vs Nickel Plated Strips',
@@ -118,6 +142,7 @@ const reviewHighlights = [
 export const HomePage: React.FC = () => {
   const [dynamicProducts, setDynamicProducts] = React.useState<Product[]>([]);
   const [categories, setCategories] = React.useState<Category[]>([]);
+  const [blogPosts, setBlogPosts] = React.useState<BlogPost[]>([]);
   const [formState, setFormState] = React.useState({
     name: '',
     email: '',
@@ -144,6 +169,22 @@ export const HomePage: React.FC = () => {
       .then((data) => Array.isArray(data) && setCategories(data))
       .catch(() => {
         setCategories([]);
+      });
+  }, []);
+
+  React.useEffect(() => {
+    fetch('/api/blog-posts?limit=4')
+      .then((res) => {
+        if (!res.ok) {
+          throw new Error('Failed to load blog posts');
+        }
+        return res.json();
+      })
+      .then((data) => {
+        setBlogPosts(Array.isArray(data) ? data : []);
+      })
+      .catch(() => {
+        setBlogPosts([]);
       });
   }, []);
 
@@ -197,6 +238,13 @@ export const HomePage: React.FC = () => {
 
   const marqueeItems = categories.length ? categories : fallbackCategories;
   const marqueeLoop = [...marqueeItems, ...marqueeItems];
+  const blogArticles = blogPosts.length > 0
+    ? blogPosts.map((post) => ({
+        title: post.title,
+        excerpt: post.excerpt || 'Read the full article for detailed insights.',
+        link: `/blog/${encodePathSegment(post.slug)}`,
+      }))
+    : fallbackBlogArticles;
 
   return (
     <div className="pt-28">
@@ -206,13 +254,28 @@ export const HomePage: React.FC = () => {
           name="description"
           content="We are a nickel strips manufacturer for lithium-ion battery manufacturers, delivering high-purity strips at competitive prices with consistent quality and reliable supply."
         />
+        <meta property="og:type" content="website" />
+        <meta property="og:site_name" content="Ramani Steel House" />
+        <meta property="og:title" content="Nickel Strips Manufacturer | Lithium-Ion Battery Strips" />
+        <meta property="og:description" content="Premium nickel strips for lithium-ion batteries and EV packs, with export-ready quality and consistent delivery." />
+        <meta property="og:url" content="https://www.nickelbusbar.com/" />
+        <meta property="og:image" content="https://www.nickelbusbar.com/img/logo.png" />
+        <meta name="twitter:card" content="summary_large_image" />
+        <meta name="twitter:title" content="Nickel Strips Manufacturer | Lithium-Ion Battery Strips" />
+        <meta name="twitter:description" content="Premium nickel strips for lithium-ion batteries and EV packs, with export-ready quality and consistent delivery." />
+        <meta name="twitter:image" content="https://www.nickelbusbar.com/img/logo.png" />
         <script type="application/ld+json">
           {JSON.stringify({
             '@context': 'https://schema.org',
             '@type': 'Organization',
             name: 'Ramani Nickel Strips',
             url: 'https://www.nickelbusbar.com/',
-            sameAs: ['https://www.linkedin.com/'],
+            logo: 'https://www.nickelbusbar.com/img/logo.png',
+            sameAs: [
+              'https://www.linkedin.com/company/ramani-nickel-strips',
+              'https://www.facebook.com/ramani.steel.house',
+              'https://www.instagram.com/ramani.steel.house'
+            ],
           })}
         </script>
         <script type="application/ld+json">
@@ -222,6 +285,45 @@ export const HomePage: React.FC = () => {
             name: 'Nickel Strips for Lithium-Ion Batteries',
             description: 'High purity nickel strips for EV, electronics, and energy storage applications.',
             brand: 'Ramani Nickel Strips',
+            url: 'https://www.nickelbusbar.com/products?search=nickel',
+          })}
+        </script>
+        <script type="application/ld+json">
+          {JSON.stringify({
+            '@context': 'https://schema.org',
+            '@type': 'LocalBusiness',
+            name: 'Ramani Steel House',
+            image: 'https://www.nickelbusbar.com/img/logo.png',
+            telephone: '+91 8369724730',
+            email: 'ramanioffice@gmail.com',
+            address: {
+              '@type': 'PostalAddress',
+              addressLocality: 'Mumbai',
+              addressRegion: 'Maharashtra',
+              addressCountry: 'IN',
+            },
+            openingHoursSpecification: [
+              {
+                '@type': 'OpeningHoursSpecification',
+                dayOfWeek: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'],
+                opens: '09:00',
+                closes: '18:00',
+              }
+            ]
+          })}
+        </script>
+        <script type="application/ld+json">
+          {JSON.stringify({
+            '@context': 'https://schema.org',
+            '@type': 'FAQPage',
+            mainEntity: faqItems.map((item) => ({
+              '@type': 'Question',
+              name: item.question,
+              acceptedAnswer: {
+                '@type': 'Answer',
+                text: item.answer,
+              },
+            })),
           })}
         </script>
       </Helmet>
@@ -232,6 +334,8 @@ export const HomePage: React.FC = () => {
             src="https://images.unsplash.com/photo-1504917595217-d4dc5ebe6122?auto=format&fit=crop&w=2000&q=80"
             alt="Nickel strips manufacturing"
             className="h-full w-full object-cover opacity-40"
+            width={2000}
+            height={1000}
             referrerPolicy="no-referrer"
           />
           <div className="absolute inset-0 bg-gradient-to-r from-[#304e58] via-[#304e58]/90 to-transparent" />
@@ -328,14 +432,14 @@ export const HomePage: React.FC = () => {
             <Link to="/products?search=nickel" className="text-sm font-semibold text-[#304e58]">View all nickel strip products</Link>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            {showcaseItems.map((item) => (
+            {showcaseItems.map((item, index) => (
               <motion.div
-                key={item.title}
+                key={`${item.cta}-${index}`}
                 whileHover={{ y: -6 }}
                 className="group rounded-3xl border border-slate-200 bg-white overflow-hidden shadow-sm"
               >
                 <div className="h-48 overflow-hidden">
-                  <img src={item.image} alt={item.title} className="h-full w-full object-cover group-hover:scale-105 transition-transform duration-500" referrerPolicy="no-referrer" />
+                  <img src={item.image} alt={item.title} loading="lazy" width={640} height={360} className="h-full w-full object-cover group-hover:scale-105 transition-transform duration-500" referrerPolicy="no-referrer" />
                 </div>
                 <div className="p-6">
                   <h3 className="text-lg font-semibold text-[#304e58]">{item.title}</h3>
@@ -422,6 +526,9 @@ export const HomePage: React.FC = () => {
               <img
                 src="https://images.unsplash.com/photo-1581092160562-40aa08e78837?auto=format&fit=crop&w=1200&q=80"
                 alt="Quality inspection"
+                width={1200}
+                height={800}
+                loading="lazy"
                 className="h-full w-full object-cover"
                 referrerPolicy="no-referrer"
               />
@@ -450,14 +557,72 @@ export const HomePage: React.FC = () => {
 
       <section className="py-20 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-10">
+            <p className="text-xs font-semibold uppercase tracking-[0.3em] text-[#304e58]">Product Specification</p>
+            <h2 className="mt-3 text-3xl md:text-4xl font-display font-bold text-[#304e58]">Nickel Strip Technical Specifications</h2>
+            <p className="mt-2 text-slate-500">Detailed specifications for battery manufacturing, welding, and electrical connector applications.</p>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-6">
+            {productSpecifications.map((spec) => (
+              <div key={spec.label} className="rounded-3xl border border-slate-200 bg-slate-50 p-6">
+                <p className="text-sm font-semibold text-[#304e58]">{spec.label}</p>
+                <p className="mt-2 text-sm text-slate-600">{spec.value}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      <section className="py-20 bg-slate-50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-10">
+            <p className="text-xs font-semibold uppercase tracking-[0.3em] text-[#304e58]">Buyer Guidance</p>
+            <h2 className="mt-3 text-3xl md:text-4xl font-display font-bold text-[#304e58]">Choosing the Right Nickel Strip</h2>
+          </div>
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div className="rounded-3xl border border-slate-200 bg-white p-6">
+              <h3 className="text-lg font-semibold text-[#304e58]">Nickel vs Nickel-Plated</h3>
+              <p className="mt-3 text-sm text-slate-600">Pure nickel offers the best conductivity and weld strength for high-current battery tabs. Nickel-plated strip is more economical for lower current assemblies.</p>
+            </div>
+            <div className="rounded-3xl border border-slate-200 bg-white p-6">
+              <h3 className="text-lg font-semibold text-[#304e58]">Thickness vs Current Capacity</h3>
+              <p className="mt-3 text-sm text-slate-600">Thinner strips are ideal for compact 18650 and 21700 packs. Thicker strips support higher discharge currents and more demanding EV modules.</p>
+            </div>
+            <div className="rounded-3xl border border-slate-200 bg-white p-6">
+              <h3 className="text-lg font-semibold text-[#304e58]">Spot Welding Applications</h3>
+              <p className="mt-3 text-sm text-slate-600">Our strips are designed for spot welding, laser welding, and ultrasonic bonding used in battery pack assembly and busbar fabrication.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section className="py-20 bg-white">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-10">
+            <p className="text-xs font-semibold uppercase tracking-[0.3em] text-[#304e58]">FAQ</p>
+            <h2 className="mt-3 text-3xl md:text-4xl font-display font-bold text-[#304e58]">Frequently Asked Questions</h2>
+          </div>
+          <div className="space-y-4">
+            {faqItems.map((faq) => (
+              <details key={faq.question} className="rounded-3xl border border-slate-200 bg-slate-50 p-6">
+                <summary className="cursor-pointer text-lg font-semibold text-[#304e58]">{faq.question}</summary>
+                <p className="mt-4 text-sm text-slate-600">{faq.answer}</p>
+              </details>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      <section className="py-20 bg-white">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center max-w-3xl mx-auto">
             <p className="text-xs font-semibold uppercase tracking-[0.3em] text-[#314e58]">Reviews</p>
             <h2 className="mt-3 text-3xl md:text-4xl font-display font-bold text-[#304e58]">What Manufacturing Teams Say</h2>
             <p className="mt-3 text-slate-500">Verified feedback from lithium battery and EV supply partners.</p>
           </div>
           <div className="mt-10 grid grid-cols-1 md:grid-cols-2 gap-6">
-            {reviewHighlights.map((item) => (
-              <div key={item.name} className="rounded-3xl bg-white p-6 shadow-sm border border-[#314e58]/20">
+            {reviewHighlights.map((item, index) => (
+              <div key={`${item.name}-${index}`} className="rounded-3xl bg-white p-6 shadow-sm border border-[#314e58]/20">
                 <div className="flex items-center justify-between">
                   <MessageSquareQuote className="text-[#314e58]" size={20} />
                   <div className="flex items-center gap-1">
@@ -488,7 +653,12 @@ export const HomePage: React.FC = () => {
           <p className="mt-4 text-slate-600">
             As a trusted Nickel Strips Manufacturer, we supply high-purity nickel strips for lithium-ion batteries, EV battery packs,
             and industrial energy storage. Our precision slitting and strict QA make us a preferred nickel strips supplier and nickel strip exporter.
-            If you need pure nickel strips in India or lithium battery nickel strips for global assembly lines, our team delivers quality and scale.
+          </p>
+          <p className="mt-4 text-slate-600">
+            Our manufacturing process supports custom widths, accurate thickness tolerances, and batch reports that compliance-focused manufacturers expect.
+          </p>
+          <p className="mt-4 text-slate-600">
+            We support export documentation for international battery pack assembly, and our team works with OEMs, cell makers, and battery module builders.
           </p>
           <p className="mt-3 text-slate-600">
             Learn more: <a href="https://nickelbusbar.com/blog/nickel-strips-lithium-batteries" className="font-semibold text-[#304e58] underline">https://nickelbusbar.com/blog/nickel-strips-lithium-batteries</a>
@@ -507,12 +677,12 @@ export const HomePage: React.FC = () => {
             <Link to="/blog" className="text-sm font-semibold text-[#304e58]">Explore all articles</Link>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {blogArticles.map((article) => (
-              <a key={article.title} href={article.link} className="rounded-3xl border border-slate-200 bg-white p-6 hover:shadow-lg transition-shadow">
+            {blogArticles.map((article, index) => (
+              <Link key={`${article.link}-${index}`} to={article.link} className="rounded-3xl border border-slate-200 bg-white p-6 hover:shadow-lg transition-shadow">
                 <h3 className="text-lg font-semibold text-[#304e58]">{article.title}</h3>
                 <p className="mt-3 text-sm text-slate-500">{article.excerpt}</p>
                 <span className="mt-4 inline-flex items-center gap-2 text-sm font-semibold text-[#304e58]">Read more <ArrowRight size={14} /></span>
-              </a>
+              </Link>
             ))}
           </div>
         </div>

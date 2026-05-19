@@ -5,7 +5,22 @@ import { motion, AnimatePresence } from 'motion/react';
 import { Ad } from '../types';
 
 const dismissKeyForAd = (id: number) => `adpopup_dismissed_${id}`;
-const isExternalUrl = (url: string) => /^https?:\/\//i.test(url);
+
+const resolveInternalPath = (url: string) => {
+  if (!url) return null;
+  if (url.startsWith('/')) return url;
+  if (typeof window === 'undefined') return null;
+
+  try {
+    const parsed = new URL(url, window.location.origin);
+    if (parsed.origin !== window.location.origin) {
+      return null;
+    }
+    return `${parsed.pathname}${parsed.search}${parsed.hash}`;
+  } catch {
+    return null;
+  }
+};
 
 export const AdPopup: React.FC = () => {
   const [popupAd, setPopupAd] = React.useState<Ad | null>(null);
@@ -40,6 +55,7 @@ export const AdPopup: React.FC = () => {
 
   const ctaText = popupAd.cta_text ?? 'View Offers';
   const ctaUrl = popupAd.cta_url ?? '/products';
+  const internalCtaPath = resolveInternalPath(ctaUrl);
 
   const handleDismiss = () => {
     setDismissed(true);
@@ -93,18 +109,20 @@ export const AdPopup: React.FC = () => {
                   <p className="mt-3 text-sm text-slate-600">{popupAd.subtitle}</p>
                 ) : null}
                 <div className="mt-6 flex flex-col sm:flex-row gap-3">
-                  {isExternalUrl(ctaUrl) ? (
+                  {!internalCtaPath ? (
                     <a
                       href={ctaUrl}
                       target="_blank"
                       rel="noreferrer"
+                      onClick={handleDismiss}
                       className="rounded-full bg-[#304e58] px-5 py-2.5 text-xs font-semibold text-white hover:bg-[#314e58] transition-colors text-center"
                     >
                       {ctaText}
                     </a>
                   ) : (
                     <Link
-                      to={ctaUrl}
+                      to={internalCtaPath}
+                      onClick={handleDismiss}
                       className="rounded-full bg-[#304e58] px-5 py-2.5 text-xs font-semibold text-white hover:bg-[#314e58] transition-colors text-center"
                     >
                       {ctaText}
