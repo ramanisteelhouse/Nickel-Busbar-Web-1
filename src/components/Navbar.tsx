@@ -6,6 +6,7 @@ import { cn } from '../lib/utils';
 import { useLanguage } from '../i18n/LanguageProvider';
 import { languageMeta, LanguageCode } from '../i18n/languages';
 import { AdBar } from './AdBar';
+import type { Category } from '../types';
 
 export const Navbar: React.FC<{ cartCount: number }> = ({ cartCount }) => {
   const [isMenuOpen, setIsMenuOpen] = React.useState(false);
@@ -15,6 +16,7 @@ export const Navbar: React.FC<{ cartCount: number }> = ({ cartCount }) => {
   const [showSearchSuggestions, setShowSearchSuggestions] = React.useState(false);
   const [isLocaleOpen, setIsLocaleOpen] = React.useState(false);
   const [countrySearchInput, setCountrySearchInput] = React.useState('');
+  const [categoryLinks, setCategoryLinks] = React.useState<Category[]>([]);
   const location = useLocation();
   const navigate = useNavigate();
   const {
@@ -84,6 +86,19 @@ export const Navbar: React.FC<{ cartCount: number }> = ({ cartCount }) => {
     };
   }, [searchInput]);
 
+  React.useEffect(() => {
+    fetch('/api/categories')
+      .then((res) => res.json())
+      .then((data) => {
+        if (Array.isArray(data)) {
+          setCategoryLinks(data.slice(0, 5));
+        }
+      })
+      .catch(() => {
+        setCategoryLinks([]);
+      });
+  }, []);
+
   const submitSearch = (event: React.FormEvent) => {
     event.preventDefault();
     const value = searchInput.trim();
@@ -146,11 +161,35 @@ export const Navbar: React.FC<{ cartCount: number }> = ({ cartCount }) => {
           </Link>
 
           <div className="hidden md:flex items-center gap-8">
-            <Link to="/products" className="text-sm font-semibold text-[#304e58] hover:text-[#314e58] transition-colors">{t('nav.products')}</Link>
-            <Link to="/categories" className="text-sm font-semibold text-[#304e58] hover:text-[#314e58] transition-colors">{t('nav.categories')}</Link>
-            <Link to="/about" className="text-sm font-semibold text-[#304e58] hover:text-[#314e58] transition-colors">{t('nav.about')}</Link>
-            <Link to="/blog" className="text-sm font-semibold text-[#304e58] hover:text-[#314e58] transition-colors">Blog</Link>
-            <Link to="/contact" className="text-sm font-semibold text-[#304e58] hover:text-[#314e58] transition-colors">Contact</Link>
+            <Link to="/products" className={cn('text-sm font-semibold transition-colors', location.pathname === '/products' ? 'text-[#314e58]' : 'text-[#304e58] hover:text-[#314e58]')}>
+              {t('nav.products')}
+            </Link>
+            <Link to="/categories" className={cn('text-sm font-semibold transition-colors', location.pathname === '/categories' ? 'text-[#314e58]' : 'text-[#304e58] hover:text-[#314e58]')}>
+              {t('nav.categories')}
+            </Link>
+            <Link to="/about" className={cn('text-sm font-semibold transition-colors', location.pathname === '/about' ? 'text-[#314e58]' : 'text-[#304e58] hover:text-[#314e58]')}>
+              {t('nav.about')}
+            </Link>
+            <Link to="/calculator" className={cn('text-sm font-semibold transition-colors', location.pathname === '/calculator' ? 'text-[#314e58]' : 'text-[#304e58] hover:text-[#314e58]')}>
+              Calculator
+            </Link>
+            <Link to="/blog" className={cn('text-sm font-semibold transition-colors', location.pathname === '/blog' ? 'text-[#314e58]' : 'text-[#304e58] hover:text-[#314e58]')}>
+              Blog
+            </Link>
+            <Link to="/contact" className={cn('text-sm font-semibold transition-colors', location.pathname === '/contact' ? 'text-[#314e58]' : 'text-[#304e58] hover:text-[#314e58]')}>
+              Contact
+            </Link>
+          </div>
+          <div className="hidden xl:flex items-center gap-2">
+            {categoryLinks.map((category) => (
+              <Link
+                key={category.id}
+                to={`/products?category=${encodeURIComponent(category.slug)}`}
+                className="rounded-full border border-slate-200 bg-white/90 px-3 py-2 text-xs font-semibold text-[#304e58] hover:bg-[#304e58] hover:text-white transition-colors"
+              >
+                {category.name}
+              </Link>
+            ))}
           </div>
 
           <div className="hidden md:flex items-center gap-6">
@@ -266,8 +305,28 @@ export const Navbar: React.FC<{ cartCount: number }> = ({ cartCount }) => {
             <Link to="/products" className="block text-lg font-semibold text-[#304e58]" onClick={() => setIsMenuOpen(false)}>{t('nav.products')}</Link>
             <Link to="/categories" className="block text-lg font-semibold text-[#304e58]" onClick={() => setIsMenuOpen(false)}>{t('nav.categories')}</Link>
             <Link to="/about" className="block text-lg font-semibold text-[#304e58]" onClick={() => setIsMenuOpen(false)}>{t('nav.about')}</Link>
+            <Link to="/calculator" className="block text-lg font-semibold text-[#304e58]" onClick={() => setIsMenuOpen(false)}>Calculator</Link>
             <Link to="/blog" className="block text-lg font-semibold text-[#304e58]" onClick={() => setIsMenuOpen(false)}>Blog</Link>
             <Link to="/contact" className="block text-lg font-semibold text-[#304e58]" onClick={() => setIsMenuOpen(false)}>Contact</Link>
+            <div className="pt-4 border-t border-slate-100">
+              <p className="mb-3 text-xs font-semibold uppercase tracking-[0.3em] text-slate-400">Shop by category</p>
+              <div className="flex flex-wrap gap-2">
+                {categoryLinks.length > 0 ? (
+                  categoryLinks.map((category) => (
+                    <Link
+                      key={category.id}
+                      to={`/products?category=${encodeURIComponent(category.slug)}`}
+                      onClick={() => setIsMenuOpen(false)}
+                      className="rounded-full border border-slate-200 bg-slate-50 px-3 py-2 text-sm font-semibold text-[#304e58] hover:bg-[#304e58] hover:text-white transition-colors"
+                    >
+                      {category.name}
+                    </Link>
+                  ))
+                ) : (
+                  <span className="text-sm text-slate-500">Loading categories...</span>
+                )}
+              </div>
+            </div>
             <button
               type="button"
               onClick={() => {

@@ -19,6 +19,7 @@ import { AboutPage } from './pages/AboutPage';
 import { ContactPage } from './pages/ContactPage';
 import { BlogListingPage } from './pages/BlogListingPage';
 import { BlogPostPage } from './pages/BlogPostPage';
+import { CalculatorPage } from './pages/CalculatorPage';
 import { NotFoundPage } from './pages/NotFoundPage';
 import { Product, CartItem } from './types';
 
@@ -222,6 +223,7 @@ export default function App() {
               <Route path="/contact" element={<ContactPage />} />
               <Route path="/blog" element={<BlogListingPage />} />
               <Route path="/blog/:slug" element={<BlogPostPage />} />
+              <Route path="/calculator" element={<CalculatorPage />} />
               <Route path="*" element={<NotFoundPage />} />
             </Routes>
           </main>

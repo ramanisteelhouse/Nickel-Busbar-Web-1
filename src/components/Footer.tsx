@@ -14,7 +14,7 @@ export const Footer: React.FC = () => {
             <p className="text-sm text-slate-600">52+ years of metallurgical excellence | Mumbai, India</p>
             <p className="text-sm text-slate-600">Office address: Govandi Industrial Estate, Mumbai</p>
             <div className="flex items-center gap-3 pt-3">
-              <a href="https://www.linkedin.com/company/ramani-nickel-strips" target="_blank" rel="noopener noreferrer" className="text-sm text-slate-600 hover:text-[#304e58]">LinkedIn</a>
+              <a href="https://www.linkedin.com/company/ramani-steel-house/posts/?feedView=all" target="_blank" rel="noopener noreferrer" className="text-sm text-slate-600 hover:text-[#304e58]">LinkedIn</a>
               <a href="https://www.facebook.com/ramani.steel.house" target="_blank" rel="noopener noreferrer" className="text-sm text-slate-600 hover:text-[#304e58]">Facebook</a>
               <a href="https://www.instagram.com/ramani.steel.house" target="_blank" rel="noopener noreferrer" className="text-sm text-slate-600 hover:text-[#304e58]">Instagram</a>
             </div>

@@ -99,6 +99,8 @@ const faqItems = [
   },
 ];
 
+const heroVideoUrl = 'public/img/Hero-section.mp4';
+
 const fallbackBlogArticles = [
   {
     title: 'Why Nickel Strips are Essential in Lithium Batteries',
@@ -338,42 +340,82 @@ export const HomePage: React.FC = () => {
             height={1000}
             referrerPolicy="no-referrer"
           />
-          <div className="absolute inset-0 bg-gradient-to-r from-[#304e58] via-[#304e58]/90 to-transparent" />
+          <div className="absolute inset-0 bg-gradient-to-r from-[#304e58] via-[#304e58]/95 to-transparent" />
         </div>
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-24 lg:py-32">
-          <motion.div initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.8 }} className="max-w-2xl">
-            <p className="inline-flex items-center gap-2 rounded-full bg-white/10 px-4 py-2 text-xs font-semibold uppercase tracking-[0.2em] text-white/70">
-              52+ Years of Industrial Excellence
-            </p>
-            <h1 className="mt-6 text-4xl md:text-6xl font-display font-bold leading-tight">
-              Nickel Strips Manufacturer
-            </h1>
-            <p className="mt-4 text-xl text-white/80">
-              Premium Nickel Strips for Lithium-Ion Batteries | 52+ Years of Excellence
-            </p>
-            <p className="mt-4 text-base text-white/70">
-              High conductivity. Precision engineered. Trusted by global manufacturers.
-            </p>
-            <div className="mt-8 flex flex-col sm:flex-row gap-4">
-              <Link
-                to="/products?enquiry=1"
-                className="inline-flex items-center justify-center gap-2 rounded-full bg-white px-6 py-3 text-sm font-semibold text-[#304e58] shadow-lg shadow-[#314e58]/20 hover:bg-white/90"
-              >
-                Request a Quote
-                <ArrowRight size={16} />
-              </Link>
-              <Link
-                to="/products?search=nickel"
-                className="inline-flex items-center justify-center gap-2 rounded-full border border-white/40 px-6 py-3 text-sm font-semibold text-white hover:bg-white/10"
-              >
-                Explore Products
-              </Link>
-            </div>
-            <div className="mt-10 grid grid-cols-2 gap-4 text-xs text-white/70">
-              <div className="flex items-center gap-2"><ShieldCheck size={16} /> ISO certified operations</div>
-              <div className="flex items-center gap-2"><Globe size={16} /> Global exporter</div>
-            </div>
-          </motion.div>
+          <div className="grid gap-12 lg:grid-cols-[1.5fr_1fr] items-start">
+            <motion.div initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.8 }} className="max-w-2xl">
+              <p className="inline-flex items-center gap-2 rounded-full bg-white/10 px-4 py-2 text-xs font-semibold uppercase tracking-[0.2em] text-white/70">
+                52+ Years of Industrial Excellence
+              </p>
+              <h1 className="mt-6 text-4xl md:text-6xl font-display font-bold leading-tight">
+                Nickel Strips Manufacturer
+              </h1>
+              <p className="mt-4 text-xl text-white/85">
+                Premium nickel strips, busbars and battery connectors for lithium-ion manufacturing.
+              </p>
+              <p className="mt-4 text-base text-white/75">
+                High conductivity, superior weldability, and custom production for 18650 / 21700 / 32650 battery packs.
+              </p>
+              <div className="mt-8 flex flex-col sm:flex-row gap-4">
+                <Link
+                  to="/products?enquiry=1"
+                  className="inline-flex items-center justify-center gap-2 rounded-full bg-white px-6 py-3 text-sm font-semibold text-[#304e58] shadow-lg shadow-[#314e58]/20 hover:bg-white/90"
+                >
+                  Request a Quote
+                  <ArrowRight size={16} />
+                </Link>
+                <Link
+                  to="/products?search=nickel"
+                  className="inline-flex items-center justify-center gap-2 rounded-full border border-white/40 px-6 py-3 text-sm font-semibold text-white hover:bg-white/10"
+                >
+                  Explore Products
+                </Link>
+              </div>
+
+              <div className="mt-10 flex flex-wrap gap-3">
+                {(categories.length > 0 ? categories.slice(0, 4) : fallbackCategories.slice(0, 4)).map((category) => (
+                  <Link
+                    key={category.id}
+                    to={`/products?category=${encodeURIComponent(category.slug)}`}
+                    className="rounded-full border border-white/30 bg-white/10 px-4 py-2 text-xs font-semibold uppercase tracking-[0.2em] text-white transition-colors hover:bg-white/20"
+                  >
+                    {category.name}
+                  </Link>
+                ))}
+              </div>
+            </motion.div>
+
+            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.9, delay: 0.1 }} className="rounded-[2rem] border border-white/10 bg-white/10 p-4 shadow-2xl shadow-slate-950/20 backdrop-blur-xl">
+              <div className="relative overflow-hidden rounded-[1.8rem] border border-white/10 bg-slate-950">
+                <video
+                  src={heroVideoUrl}
+                  autoPlay
+                  muted
+                  loop
+                  playsInline
+                  className="h-72 w-full object-cover"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-slate-950/90 via-transparent to-transparent" />
+                <div className="absolute bottom-4 left-4 right-4 rounded-3xl bg-slate-950/80 p-4 text-white backdrop-blur-sm">
+                  <p className="text-xs uppercase tracking-[0.3em] text-slate-300">Factory Tour</p>
+                  <h2 className="mt-2 text-lg font-semibold text-white">Battery pack strip production</h2>
+                  <p className="mt-2 text-sm text-slate-300">Real-time manufacturing visuals for nickel strip and connector fabrication.</p>
+                </div>
+              </div>
+              <div className="mt-5 grid gap-3 sm:grid-cols-2">
+                {[
+                  { label: 'Cell Compatibility', value: '18650, 21700, 32650' },
+                  { label: 'Material Options', value: 'Pure nickel, nickel-plated steel' },
+                ].map((item) => (
+                  <div key={item.label} className="rounded-3xl border border-white/10 bg-white/5 p-4">
+                    <p className="text-xs uppercase tracking-[0.3em] text-slate-400">{item.label}</p>
+                    <p className="mt-2 text-sm font-semibold text-white">{item.value}</p>
+                  </div>
+                ))}
+              </div>
+            </motion.div>
+          </div>
         </div>
       </section>
 
