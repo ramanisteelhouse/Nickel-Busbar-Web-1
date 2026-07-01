@@ -2,7 +2,7 @@ import React from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
 import type { BlogPost } from '../types';
-import { encodePathSegment, sanitizeRichHtml } from '../lib/utils';
+import { encodePathSegment, sanitizeRichHtml, resolveImageSrc } from '../lib/utils';
 
 const formatDate = (value: string | null | undefined) => {
   if (!value) return '';
@@ -107,7 +107,7 @@ export const BlogPostPage: React.FC = () => {
         <meta property="og:title" content={title} />
         <meta property="og:description" content={description} />
         <meta property="og:url" content={canonical} />
-        {post.cover_image_url ? <meta property="og:image" content={post.cover_image_url} /> : null}
+        {post.cover_image_url ? <meta property="og:image" content={resolveImageSrc(post.cover_image_url)} /> : null}
       </Helmet>
 
       <article className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -119,7 +119,7 @@ export const BlogPostPage: React.FC = () => {
         </p>
         {post.cover_image_url ? (
           <img
-            src={post.cover_image_url}
+            src={resolveImageSrc(post.cover_image_url)}
             alt={post.title}
             className="mt-8 w-full rounded-2xl border border-slate-200 object-cover"
             referrerPolicy="no-referrer"

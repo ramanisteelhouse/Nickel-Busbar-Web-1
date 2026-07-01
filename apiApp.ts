@@ -195,7 +195,11 @@ const normalizeImageSource = (value: unknown) => {
     return "/img/icon-logo.jpg";
   }
 
-  return cleaned;
+  if (/^https?:\/\//i.test(cleaned) || cleaned.startsWith("/")) {
+    return cleaned;
+  }
+
+  return `/${encodeURI(cleaned)}`;
 };
 
 const normalizeProductRow = (row: Record<string, unknown>) => ({
@@ -441,6 +445,18 @@ export function createApiApp() {
     } catch (error) {
       console.error("Failed to fetch IP localization", error);
       res.json(fallback);
+    }
+  });
+
+  app.get("/api/localization/countries", async (_req, res) => {
+    try {
+      const countries = await fetchJson<unknown[]>(
+        "https://restcountries.com/v3.1/all?fields=cca2,name,currencies",
+      );
+      res.json(countries);
+    } catch (error) {
+      console.error("Failed to fetch countries", error);
+      res.status(502).json({ error: "Failed to fetch countries" });
     }
   });
 

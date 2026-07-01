@@ -4,7 +4,7 @@ import { Filter, Search, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Helmet } from 'react-helmet-async';
 import { Product, Category } from '../types';
-import { cn, getProductUnitLabel, getStrikePrice } from '../lib/utils';
+import { cn, getProductUnitLabel, getStrikePrice, resolveImageSrc } from '../lib/utils';
 import { useLanguage } from '../i18n/LanguageProvider';
 
 type EnquiryFormData = {
@@ -372,7 +372,7 @@ export const ProductListingPage: React.FC = () => {
                   >
                     <Link to={`/product/${product.slug}`} className="block relative aspect-square overflow-hidden bg-zinc-100">
                       <img
-                        src={product.image}
+                        src={resolveImageSrc(product.image)}
                         alt={product.name}
                         className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
                         referrerPolicy="no-referrer"

@@ -4,7 +4,7 @@ import { ShoppingCart, Shield, Truck, RotateCcw, ChevronRight, X } from 'lucide-
 import { motion } from 'motion/react';
 import { Helmet } from 'react-helmet-async';
 import { Product } from '../types';
-import { getProductUnitLabel, getStrikePrice } from '../lib/utils';
+import { getProductUnitLabel, getStrikePrice, resolveImageSrc } from '../lib/utils';
 import { useLanguage } from '../i18n/LanguageProvider';
 
 export const ProductDetailPage: React.FC<{ onAddToCart: (p: Product) => void }> = ({ onAddToCart }) => {
@@ -131,7 +131,7 @@ export const ProductDetailPage: React.FC<{ onAddToCart: (p: Product) => void }> 
   const canonicalUrl = `${siteUrl}/product/${product.slug}`;
   const pageTitle = `${product.name} | Nickel Strips Manufacturer`;
   const pageDescription = `${product.name} by Ramani Steel House. ${product.description || 'Industrial-grade nickel strip for lithium-ion battery and precision applications.'}`.slice(0, 160);
-  const imageUrl = product.image?.startsWith('http') ? product.image : `${siteUrl}${product.image || '/img/logo.png'}`;
+  const imageUrl = resolveImageSrc(product.image || '/img/logo.png');
 
   return (
     <div className="pt-28 pb-24 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -186,7 +186,7 @@ export const ProductDetailPage: React.FC<{ onAddToCart: (p: Product) => void }> 
         >
           <div className="aspect-square rounded-3xl overflow-hidden bg-zinc-100 border border-zinc-200">
             <img
-              src={product.image}
+              src={resolveImageSrc(product.image)}
               alt={product.name}
               className="w-full h-full object-cover"
               referrerPolicy="no-referrer"

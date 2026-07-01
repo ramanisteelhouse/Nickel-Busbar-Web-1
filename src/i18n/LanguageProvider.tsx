@@ -274,7 +274,7 @@ export const LanguageProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   React.useEffect(() => {
     let isActive = true;
 
-    fetch('https://restcountries.com/v3.1/all?fields=cca2,name,currencies')
+    fetch('/api/localization/countries')
       .then((res) => res.json())
       .then((data) => {
         if (!isActive || !Array.isArray(data)) return;

@@ -41,6 +41,16 @@ export function getProductUnitLabel(unit?: string | null) {
   return `/${normalizeProductUnit(unit)}`;
 }
 
+export function resolveImageSrc(src?: string | null) {
+  const trimmed = src?.trim() || '';
+  if (!trimmed) return '';
+  try {
+    return new URL(trimmed, window.location.origin).href;
+  } catch {
+    return trimmed;
+  }
+}
+
 export function setCookie(name: string, value: string, days = 365) {
   const expires = new Date(Date.now() + days * 86400000).toUTCString();
   document.cookie = `${encodeURIComponent(name)}=${encodeURIComponent(value)}; expires=${expires}; path=/; SameSite=Lax`;

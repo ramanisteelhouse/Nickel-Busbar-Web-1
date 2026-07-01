@@ -4,7 +4,7 @@ import { Trash2, Plus, Minus, ArrowRight, ShoppingBag, Shield } from 'lucide-rea
 import { motion } from 'motion/react';
 import { CartItem } from '../types';
 import { useLanguage } from '../i18n/LanguageProvider';
-import { getProductUnitLabel, normalizeProductUnit } from '../lib/utils';
+import { getProductUnitLabel, normalizeProductUnit, resolveImageSrc } from '../lib/utils';
 
 interface CartPageProps {
   cart: CartItem[];
@@ -46,7 +46,7 @@ export const CartPage: React.FC<CartPageProps> = ({ cart, updateQuantity, remove
               className="flex gap-6 p-6 bg-white rounded-3xl border border-zinc-100 shadow-sm"
             >
               <div className="w-24 h-24 bg-zinc-100 rounded-2xl overflow-hidden flex-shrink-0">
-                <img src={item.image} alt={item.name} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+                <img src={resolveImageSrc(item.image)} alt={item.name} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
               </div>
               <div className="flex-1 flex flex-col justify-between">
                 <div className="flex justify-between items-start">
