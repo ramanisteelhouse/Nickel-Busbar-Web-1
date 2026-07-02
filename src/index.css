@@ -2,19 +2,16 @@
 
 @theme {
   --font-sans: "Manrope", "Work Sans", sans-serif;
+
+  /* Brand palette — single source of truth for the site's teal identity. */
+  --color-brand: #304e58;
+  --color-brand-dark: #223a41;
+  --color-brand-light: #3e6471;
+  --color-brand-surface: #f6f8f9;
 }
 
 @layer base {
   :root {
-    --steel-950: #304e58;
-    --steel-900: #314e58;
-    --steel-800: #3b606a;
-    --steel-200: #d9e0e2;
-    --steel-100: #f2f4f5;
-    --electric-600: #304e58;
-    --electric-400: #314e58;
-    --electric-200: #dce3e5;
-    --brand-0: #ffffff;
     --adbar-height: 0px;
   }
 }
@@ -22,7 +19,7 @@
 @layer base {
   body {
     @apply antialiased;
-    color: #304e58;
+    color: var(--color-brand);
     background-color: #ffffff;
   }
 }

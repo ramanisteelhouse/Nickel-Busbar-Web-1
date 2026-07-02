@@ -119,6 +119,35 @@ const sendEnquiryNotifications = async (payload: EnquiryNotificationPayload) => 
   });
 };
 
+const sendWelcomeEmail = async (user: { name?: string | null; email: string }) => {
+  if (!emailTransporter) return;
+
+  const fromAddress = SMTP_FROM || SMTP_USER || "ramanioffice@gmail.com";
+  const displayName = user.name?.trim() || "there";
+
+  try {
+    await emailTransporter.sendMail({
+      from: fromAddress,
+      to: user.email,
+      subject: "Welcome to Ramani Steel House - Thank you for signing up!",
+      text: [
+        `Hi ${displayName},`,
+        "",
+        "Thank you for creating an account with Ramani Steel House, a nickel strip manufacturer serving lithium-ion battery and energy storage customers across India and international markets.",
+        "",
+        "You can now browse our nickel strip, nickel alloy and stainless steel catalog, save items to your cart, and request quotes directly from your account.",
+        "",
+        "If you have any questions, reach us anytime at ramanioffice@gmail.com or +91 8369724730.",
+        "",
+        "Best regards,",
+        "Ramani Steel House Team",
+      ].join("\n"),
+    });
+  } catch (error) {
+    console.error("Failed to send welcome email", error);
+  }
+};
+
 const readCookie = (cookieHeader: string | undefined, name: string) => {
   if (!cookieHeader) return "";
   const parts = cookieHeader.split(";").map((part) => part.trim());
@@ -525,6 +554,7 @@ export function createApiApp() {
       if (!user) return res.status(500).json({ error: "Failed to create user" });
       const token = jwt.sign({ id: user.id, email: user.email, role: user.role }, JWT_SECRET);
       res.cookie("auth_token", token, authCookieOptions);
+      void sendWelcomeEmail(user);
       res.json({ token, user });
     } catch (e) {
       res.status(400).json({ error: "Email already exists" });
@@ -558,6 +588,7 @@ export function createApiApp() {
       }>("SELECT id, name, email, role FROM users WHERE email = $1", [profile.email]);
 
       let user = existing;
+      const isNewUser = !existing;
       if (!existing) {
         const hashedPassword = await bcrypt.hash(randomUUID(), 10);
         user = await queryOne(
@@ -584,6 +615,9 @@ export function createApiApp() {
 
       const token = jwt.sign({ id: user.id, email: user.email, role: user.role }, JWT_SECRET);
       res.cookie("auth_token", token, authCookieOptions);
+      if (isNewUser) {
+        void sendWelcomeEmail(user);
+      }
       res.json({ token, user });
     } catch (error) {
       console.error("Google sign-in failed", error);
@@ -1014,7 +1048,7 @@ Answer customer questions professionally and concisely. Use the "Relevant catalo
 
   app.post("/api/ai/chat", async (req, res) => {
     const message = typeof req.body?.message === "string" ? req.body.message.trim() : "";
-    const rawHistory = Array.isArray(req.body?.history) ? req.body.history : [];
+    const rawHistory: unknown[] = Array.isArray(req.body?.history) ? req.body.history : [];
 
     if (!message) {
       return res.status(400).json({ error: "Message is required" });
@@ -1034,7 +1068,7 @@ Answer customer questions professionally and concisely. Use the "Relevant catalo
       const productContext = await buildProductContext(message);
       const ai = new GoogleGenAI({ apiKey: GEMINI_API_KEY });
       const response = await ai.models.generateContent({
-        model: "gemini-1.5-flash",
+        model: "gemini-2.5-flash",
         contents: [...history, { role: "user", parts: [{ text: message }] }],
         config: {
           systemInstruction: CHATBOT_SYSTEM_INSTRUCTION + productContext,

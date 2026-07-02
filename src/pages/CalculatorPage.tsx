@@ -1,6 +1,6 @@
 import React from 'react';
 import { Helmet } from 'react-helmet-async';
-import { ArrowRight, Copy, Download, RefreshCcw, Moon, Sun, Plus, Trash2, MessageCircle } from 'lucide-react';
+import { ArrowRight, Copy, Download, RefreshCcw, Plus, Trash2, MessageCircle } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { encodePathSegment } from '../lib/utils';
 import type { BlogPost } from '../types';
@@ -78,6 +78,9 @@ const calculateWeightGrams = (thickness: number, width: number, length: number, 
   return t * w * l * density * quantity;
 };
 
+const inputClass = 'w-full rounded-full border border-slate-200 bg-slate-50 px-5 py-3 text-sm text-brand outline-none transition focus:border-brand focus:ring-2 focus:ring-brand/20';
+const selectClass = 'w-full rounded-full border border-slate-200 bg-white px-5 py-3 text-sm text-brand outline-none transition focus:border-brand focus:ring-2 focus:ring-brand/20';
+
 export const CalculatorPage: React.FC = () => {
   const [mode, setMode] = React.useState<'simple' | 'batch'>('simple');
   const [unit, setUnit] = React.useState<'mm' | 'inch'>('mm');
@@ -89,7 +92,6 @@ export const CalculatorPage: React.FC = () => {
   const [length, setLength] = React.useState('100');
   const [quantity, setQuantity] = React.useState('10');
   const [customDensity, setCustomDensity] = React.useState('');
-  const [isDarkMode, setIsDarkMode] = React.useState(false);
   const [copyMessage, setCopyMessage] = React.useState('');
   const [recentCalculations, setRecentCalculations] = React.useState<SavedCalculation[]>([]);
   const [blogPosts, setBlogPosts] = React.useState<BlogPost[]>([]);
@@ -233,7 +235,7 @@ export const CalculatorPage: React.FC = () => {
   };
 
   return (
-    <div className={isDarkMode ? 'bg-slate-950 text-slate-100' : 'bg-slate-50 text-slate-950'}>
+    <div className="bg-[#f6f8f9] text-brand">
       <Helmet>
         <title>Nickel Alloy Weight Calculator | Nickel Strip Weight Tool</title>
         <meta
@@ -270,77 +272,77 @@ export const CalculatorPage: React.FC = () => {
         </script>
       </Helmet>
 
-      <section className={`pt-28 pb-16 ${isDarkMode ? 'bg-slate-900' : 'bg-white'}`}>
+      <section className="pt-24 sm:pt-28 pb-12 sm:pb-16 bg-white">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className={`rounded-[40px] border border-slate-200 bg-white/90 p-8 shadow-2xl shadow-slate-200/30 backdrop-blur-xl ${isDarkMode ? 'bg-slate-900/90 border-slate-700 shadow-slate-950/20' : ''}`}>
-            <div className="grid gap-10 lg:grid-cols-[1.1fr_0.9fr] items-center">
+          <div className="rounded-3xl border border-slate-200 bg-white p-5 sm:p-8 shadow-xl shadow-slate-200/40">
+            <div className="grid gap-8 sm:gap-10 lg:grid-cols-[1.1fr_0.9fr] items-center">
               <div>
-                <p className="text-xs font-semibold uppercase tracking-[0.3em] text-[#304e58]">Calculator Tool</p>
-                <h1 className="mt-3 text-4xl md:text-5xl font-display font-bold tracking-tight text-[#0b1e2d] dark:text-white">Nickel Alloy Weight Calculator</h1>
-                <p className="mt-5 max-w-2xl text-base leading-8 text-slate-600 dark:text-slate-300">
+                <p className="text-xs font-semibold uppercase tracking-[0.3em] text-brand">Calculator Tool</p>
+                <h1 className="mt-3 text-3xl sm:text-4xl md:text-5xl font-display font-bold tracking-tight text-brand">Nickel Alloy Weight Calculator</h1>
+                <p className="mt-5 max-w-2xl text-base leading-8 text-slate-600">
                   Instantly calculate weight for nickel strips, sheets, busbars, foil, wire and coil in mm or inches. Built for battery pack engineers, EV manufacturers and industrial metal buyers.
                 </p>
                 <div className="mt-8 flex flex-wrap gap-3">
                   <button
                     type="button"
-                    onClick={() => setIsDarkMode((prev) => !prev)}
-                    className="inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-[#5b72ff] to-[#8a5cff] px-5 py-3 text-sm font-semibold text-white shadow-lg shadow-[#5b72ff]/20 transition hover:scale-[1.01]"
-                  >
-                    {isDarkMode ? <Sun size={16} /> : <Moon size={16} />}
-                    {isDarkMode ? 'Light mode' : 'Dark mode'}
-                  </button>
-                  <button
-                    type="button"
                     onClick={exportPdf}
-                    className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-[#304e58] shadow-sm transition hover:border-[#314e58] hover:text-[#314e58]"
+                    className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-brand shadow-sm transition hover:border-brand hover:text-brand-dark"
                   >
                     <Download size={16} /> Export to PDF
                   </button>
+                  <a
+                    href="https://wa.me/918369724730"
+                    target="_blank"
+                    rel="noreferrer"
+                    className="inline-flex items-center gap-2 rounded-full border border-[#22C55E] bg-white px-5 py-3 text-sm font-semibold text-[#22C55E] shadow-sm transition hover:bg-[#ecfdf5]"
+                  >
+                    <MessageCircle size={16} /> WhatsApp Manufacturer
+                  </a>
                 </div>
               </div>
-              <div className="rounded-[32px] bg-gradient-to-br from-[#f4f7ff] to-[#e4e9ff] p-8 shadow-xl shadow-[#304e5880] dark:from-slate-900 dark:to-slate-800 dark:shadow-slate-950/40">
+              <div className="rounded-3xl bg-gradient-to-br from-brand-surface to-white p-6 sm:p-8 shadow-inner border border-slate-200">
                 <div className="flex items-center justify-between gap-4">
                   <div>
-                    <p className="text-xs uppercase tracking-[0.3em] text-slate-500 dark:text-slate-400">Live Preview</p>
-                    <p className="mt-2 text-2xl font-semibold text-slate-900 dark:text-white">{formatValue(activeWeightKg)} kg</p>
+                    <p className="text-xs uppercase tracking-[0.3em] text-slate-500">Live Preview</p>
+                    <p className="mt-2 text-2xl font-semibold text-brand">{formatValue(activeWeightKg)} kg</p>
                   </div>
-                  <div className="rounded-3xl bg-white/80 px-4 py-3 text-xs font-semibold uppercase tracking-[0.3em] text-[#304e58] shadow-sm dark:bg-slate-900/90">
+                  <div className="rounded-full bg-white px-4 py-2 text-xs font-semibold uppercase tracking-[0.3em] text-brand shadow-sm">
                     {mode === 'simple' ? 'Simple' : 'Batch'} Mode
                   </div>
                 </div>
                 <div className="mt-8 grid gap-4">
-                  <div className="rounded-3xl border border-slate-200 bg-white/80 p-5 shadow-sm dark:border-slate-700 dark:bg-slate-950/80">
-                    <p className="text-xs uppercase tracking-[0.3em] text-slate-500 dark:text-slate-400">Total weight</p>
-                    <div className="mt-3 flex flex-wrap gap-4">
-                      <div className="rounded-3xl bg-slate-100 p-4 text-sm font-semibold text-slate-900 dark:bg-slate-800 dark:text-slate-100">
+                  <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+                    <p className="text-xs uppercase tracking-[0.3em] text-slate-500">Total weight</p>
+                    <div className="mt-3 flex flex-wrap gap-3">
+                      <div className="rounded-full bg-slate-100 px-4 py-2 text-sm font-semibold text-brand">
                         {formatValue(activeWeightG)} g
                       </div>
-                      <div className="rounded-3xl bg-slate-100 p-4 text-sm font-semibold text-slate-900 dark:bg-slate-800 dark:text-slate-100">
+                      <div className="rounded-full bg-slate-100 px-4 py-2 text-sm font-semibold text-brand">
                         {formatValue(activeWeightKg)} kg
                       </div>
-                      <div className="rounded-3xl bg-slate-100 p-4 text-sm font-semibold text-slate-900 dark:bg-slate-800 dark:text-slate-100">
+                      <div className="rounded-full bg-slate-100 px-4 py-2 text-sm font-semibold text-brand">
                         {formatValue(activeWeightTons)} t
                       </div>
                     </div>
                   </div>
-                  <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                  <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                     <button
                       type="button"
                       onClick={copyResults}
-                      className="inline-flex items-center justify-center gap-2 rounded-full bg-[#5b72ff] px-5 py-3 text-sm font-semibold text-white shadow-lg shadow-[#5b72ff]/20 transition hover:opacity-90"
+                      className="inline-flex items-center justify-center gap-2 rounded-full bg-brand px-5 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-brand-dark"
                     >
                       <Copy size={16} /> Copy Result
                     </button>
                     <button
                       type="button"
                       onClick={saveCalculation}
-                      className="inline-flex items-center justify-center gap-2 rounded-full border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-[#304e58] shadow-sm transition hover:border-[#314e58] hover:text-[#314e58]"
+                      className="inline-flex items-center justify-center gap-2 rounded-full border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-brand shadow-sm transition hover:border-brand hover:text-brand-dark"
                     >
                       <Plus size={16} /> Save Calculation
                     </button>
                   </div>
                   {copyMessage ? (
-                    <p className="text-sm text-[#304e58]">{copyMessage}</p>
+                    <p className="text-sm text-brand">{copyMessage}</p>
                   ) : null}
                 </div>
               </div>
@@ -349,39 +351,39 @@ export const CalculatorPage: React.FC = () => {
         </div>
       </section>
 
-      <section className="pb-20">
+      <section className="pb-16 sm:pb-20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid gap-8 lg:grid-cols-[1.2fr_0.8fr]">
-            <div className={isDarkMode ? 'rounded-[40px] border border-slate-700 bg-slate-950/80 p-8 shadow-2xl shadow-slate-950/40' : 'rounded-[40px] border border-slate-200 bg-white p-8 shadow-2xl shadow-slate-200/50'}>
+          <div className="grid gap-6 lg:gap-8 lg:grid-cols-[1.2fr_0.8fr]">
+            <div className="rounded-3xl border border-slate-200 bg-white p-5 sm:p-8 shadow-xl shadow-slate-200/40">
               <div className="flex flex-wrap items-center gap-3">
-                <div className="rounded-full bg-[#eef2ff] px-4 py-2 text-sm font-semibold text-[#304e58] dark:bg-slate-800 dark:text-slate-100">Mode</div>
-                <div className="inline-flex rounded-full border border-slate-200 bg-slate-50 p-1 dark:border-slate-700 dark:bg-slate-900">
+                <div className="rounded-full bg-brand/10 px-4 py-2 text-sm font-semibold text-brand">Mode</div>
+                <div className="inline-flex rounded-full border border-slate-200 bg-slate-50 p-1">
                   <button
                     type="button"
                     onClick={() => setMode('simple')}
-                    className={`rounded-full px-4 py-2 text-sm font-semibold transition ${mode === 'simple' ? 'bg-gradient-to-r from-[#5b72ff] to-[#8a5cff] text-white shadow-lg shadow-[#5b72ff]/20' : 'text-slate-500 hover:text-slate-700 dark:text-slate-300 dark:hover:text-white'}`}
+                    className={`rounded-full px-4 py-2 text-sm font-semibold transition ${mode === 'simple' ? 'bg-brand text-white shadow-sm' : 'text-slate-500 hover:text-brand'}`}
                   >
                     Simple
                   </button>
                   <button
                     type="button"
                     onClick={() => setMode('batch')}
-                    className={`rounded-full px-4 py-2 text-sm font-semibold transition ${mode === 'batch' ? 'bg-gradient-to-r from-[#5b72ff] to-[#8a5cff] text-white shadow-lg shadow-[#5b72ff]/20' : 'text-slate-500 hover:text-slate-700 dark:text-slate-300 dark:hover:text-white'}`}
+                    className={`rounded-full px-4 py-2 text-sm font-semibold transition ${mode === 'batch' ? 'bg-brand text-white shadow-sm' : 'text-slate-500 hover:text-brand'}`}
                   >
                     Batch
                   </button>
                 </div>
-                <div className="ml-auto flex items-center gap-2 rounded-full bg-slate-100 px-4 py-2 text-sm text-slate-600 dark:bg-slate-800 dark:text-slate-300">
+                <div className="ml-auto flex items-center gap-2 rounded-full bg-slate-100 px-4 py-2 text-sm text-slate-600">
                   <span>Unit</span>
                   <button
                     type="button"
                     onClick={() => setUnit('mm')}
-                    className={`rounded-full px-3 py-2 transition ${unit === 'mm' ? 'bg-[#5b72ff] text-white' : 'bg-white text-slate-600 dark:bg-slate-900 dark:text-slate-300'}`}
+                    className={`rounded-full px-3 py-2 transition ${unit === 'mm' ? 'bg-brand text-white' : 'bg-white text-slate-600'}`}
                   >mm</button>
                   <button
                     type="button"
                     onClick={() => setUnit('inch')}
-                    className={`rounded-full px-3 py-2 transition ${unit === 'inch' ? 'bg-[#5b72ff] text-white' : 'bg-white text-slate-600 dark:bg-slate-900 dark:text-slate-300'}`}
+                    className={`rounded-full px-3 py-2 transition ${unit === 'inch' ? 'bg-brand text-white' : 'bg-white text-slate-600'}`}
                   >inch</button>
                 </div>
               </div>
@@ -389,45 +391,45 @@ export const CalculatorPage: React.FC = () => {
               <div className="mt-8 space-y-6">
                 <div className="grid gap-4 lg:grid-cols-[0.9fr_1.1fr]">
                   <div className="space-y-3">
-                    <label className="block text-sm font-semibold text-slate-700 dark:text-slate-200">Material selection</label>
+                    <label className="block text-sm font-semibold text-slate-700">Material selection</label>
                     <input
                       type="search"
                       value={materialSearch}
                       onChange={(event) => setMaterialSearch(event.target.value)}
                       placeholder="Search materials"
-                      className="w-full rounded-full border border-slate-200 bg-slate-50 px-5 py-3 text-sm text-slate-700 outline-none transition focus:border-[#5b72ff] focus:ring-2 focus:ring-[#5b72ff]/20 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
+                      className={inputClass}
                     />
                     <select
                       value={selectedMaterial}
                       onChange={(event) => setSelectedMaterial(event.target.value)}
-                      className="w-full rounded-full border border-slate-200 bg-white px-5 py-3 text-sm text-slate-700 outline-none transition focus:border-[#5b72ff] focus:ring-2 focus:ring-[#5b72ff]/20 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
+                      className={selectClass}
                     >
                       {filteredMaterials.map((material) => (
                         <option key={material.name} value={material.name}>{material.name}</option>
                       ))}
                     </select>
-                    <p className="text-sm text-slate-500 dark:text-slate-400">{materialOptions.find((option) => option.name === selectedMaterial)?.description}</p>
+                    <p className="text-sm text-slate-500">{materialOptions.find((option) => option.name === selectedMaterial)?.description}</p>
                   </div>
                   <div className="space-y-3">
-                    <label className="block text-sm font-semibold text-slate-700 dark:text-slate-200">Custom density (g/cm³)</label>
+                    <label className="block text-sm font-semibold text-slate-700">Custom density (g/cm³)</label>
                     <input
                       type="text"
                       value={customDensity}
                       onChange={(event) => setCustomDensity(event.target.value)}
                       placeholder={String(selectedDensity)}
-                      className="w-full rounded-full border border-slate-200 bg-slate-50 px-5 py-3 text-sm text-slate-700 outline-none transition focus:border-[#5b72ff] focus:ring-2 focus:ring-[#5b72ff]/20 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
+                      className={inputClass}
                     />
-                    <p className="text-sm text-slate-500 dark:text-slate-400">Leave blank to use material density automatically.</p>
+                    <p className="text-sm text-slate-500">Leave blank to use material density automatically.</p>
                   </div>
                 </div>
 
                 <div className="grid gap-4 lg:grid-cols-[1fr_1fr]">
                   <div className="space-y-3">
-                    <label className="block text-sm font-semibold text-slate-700 dark:text-slate-200">Shape / product type</label>
+                    <label className="block text-sm font-semibold text-slate-700">Shape / product type</label>
                     <select
                       value={shape}
                       onChange={(event) => setShape(event.target.value)}
-                      className="w-full rounded-full border border-slate-200 bg-white px-5 py-3 text-sm text-slate-700 outline-none transition focus:border-[#5b72ff] focus:ring-2 focus:ring-[#5b72ff]/20 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
+                      className={selectClass}
                     >
                       {shapeOptions.map((option) => (
                         <option key={option} value={option}>{option}</option>
@@ -436,75 +438,75 @@ export const CalculatorPage: React.FC = () => {
                   </div>
                   <div className="grid gap-4 sm:grid-cols-2">
                     <div className="space-y-3">
-                      <label className="block text-sm font-semibold text-slate-700 dark:text-slate-200">Thickness</label>
+                      <label className="block text-sm font-semibold text-slate-700">Thickness</label>
                       <input
                         type="text"
                         value={thickness}
                         onChange={(event) => setThickness(event.target.value)}
                         placeholder="0.15"
-                        className="w-full rounded-full border border-slate-200 bg-slate-50 px-5 py-3 text-sm text-slate-700 outline-none transition focus:border-[#5b72ff] focus:ring-2 focus:ring-[#5b72ff]/20 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
+                        className={inputClass}
                       />
                     </div>
                     <div className="space-y-3">
-                      <label className="block text-sm font-semibold text-slate-700 dark:text-slate-200">Quantity</label>
+                      <label className="block text-sm font-semibold text-slate-700">Quantity</label>
                       <input
                         type="text"
                         value={quantity}
                         onChange={(event) => setQuantity(event.target.value)}
                         placeholder="10"
-                        className="w-full rounded-full border border-slate-200 bg-slate-50 px-5 py-3 text-sm text-slate-700 outline-none transition focus:border-[#5b72ff] focus:ring-2 focus:ring-[#5b72ff]/20 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
+                        className={inputClass}
                       />
                     </div>
                   </div>
                 </div>
 
                 {mode === 'simple' ? (
-                  <div className="grid gap-4 lg:grid-cols-3">
+                  <div className="grid gap-4 sm:grid-cols-2">
                     <div className="space-y-3">
-                      <label className="block text-sm font-semibold text-slate-700 dark:text-slate-200">Width</label>
+                      <label className="block text-sm font-semibold text-slate-700">Width</label>
                       <input
                         type="text"
                         value={width}
                         onChange={(event) => setWidth(event.target.value)}
                         placeholder="8"
-                        className="w-full rounded-full border border-slate-200 bg-slate-50 px-5 py-3 text-sm text-slate-700 outline-none transition focus:border-[#5b72ff] focus:ring-2 focus:ring-[#5b72ff]/20 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
+                        className={inputClass}
                       />
                     </div>
                     <div className="space-y-3">
-                      <label className="block text-sm font-semibold text-slate-700 dark:text-slate-200">Length</label>
+                      <label className="block text-sm font-semibold text-slate-700">Length</label>
                       <input
                         type="text"
                         value={length}
                         onChange={(event) => setLength(event.target.value)}
                         placeholder="100"
-                        className="w-full rounded-full border border-slate-200 bg-slate-50 px-5 py-3 text-sm text-slate-700 outline-none transition focus:border-[#5b72ff] focus:ring-2 focus:ring-[#5b72ff]/20 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
+                        className={inputClass}
                       />
                     </div>
                   </div>
                 ) : (
                   <div className="space-y-4">
                     {rows.map((row, index) => (
-                      <div key={row.id} className="rounded-[28px] border border-slate-200 bg-slate-50 p-5 shadow-sm dark:border-slate-700 dark:bg-slate-900">
-                        <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+                      <div key={row.id} className="rounded-2xl border border-slate-200 bg-slate-50 p-5 shadow-sm">
+                        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                           <div>
-                            <p className="text-sm font-semibold text-slate-700 dark:text-slate-200">Row {index + 1}</p>
-                            <p className="text-sm text-slate-500 dark:text-slate-400">Use separate rows for different strip dimensions.</p>
+                            <p className="text-sm font-semibold text-slate-700">Row {index + 1}</p>
+                            <p className="text-sm text-slate-500">Use separate rows for different strip dimensions.</p>
                           </div>
                           <button
                             type="button"
                             onClick={() => removeRow(row.id)}
-                            className="inline-flex items-center gap-2 rounded-full bg-white px-4 py-2 text-sm font-semibold text-[#c21f1f] shadow-sm transition hover:bg-slate-100 dark:bg-slate-950 dark:text-[#fca5a5]"
+                            className="inline-flex items-center gap-2 rounded-full bg-white px-4 py-2 text-sm font-semibold text-[#c21f1f] shadow-sm transition hover:bg-slate-100 self-start sm:self-auto"
                           >
                             <Trash2 size={16} /> Remove
                           </button>
                         </div>
-                        <div className="mt-5 grid gap-4 lg:grid-cols-4">
+                        <div className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
                           <div>
-                            <label className="block text-sm font-semibold text-slate-700 dark:text-slate-200">Material</label>
+                            <label className="block text-sm font-semibold text-slate-700">Material</label>
                             <select
                               value={row.material}
                               onChange={(event) => updateRow(row.id, 'material', event.target.value)}
-                              className="w-full rounded-full border border-slate-200 bg-white px-4 py-3 text-sm text-slate-700 outline-none transition focus:border-[#5b72ff] focus:ring-2 focus:ring-[#5b72ff]/20 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100"
+                              className={selectClass}
                             >
                               {materialOptions.map((material) => (
                                 <option key={material.name} value={material.name}>{material.name}</option>
@@ -513,43 +515,43 @@ export const CalculatorPage: React.FC = () => {
                             </select>
                           </div>
                           <div>
-                            <label className="block text-sm font-semibold text-slate-700 dark:text-slate-200">Thickness</label>
+                            <label className="block text-sm font-semibold text-slate-700">Thickness</label>
                             <input
                               type="text"
                               value={row.thickness}
                               onChange={(event) => updateRow(row.id, 'thickness', event.target.value)}
                               placeholder="0.15"
-                              className="w-full rounded-full border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700 outline-none transition focus:border-[#5b72ff] focus:ring-2 focus:ring-[#5b72ff]/20 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100"
+                              className={inputClass}
                             />
                           </div>
                           <div>
-                            <label className="block text-sm font-semibold text-slate-700 dark:text-slate-200">Width</label>
+                            <label className="block text-sm font-semibold text-slate-700">Width</label>
                             <input
                               type="text"
                               value={row.width}
                               onChange={(event) => updateRow(row.id, 'width', event.target.value)}
                               placeholder="8"
-                              className="w-full rounded-full border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700 outline-none transition focus:border-[#5b72ff] focus:ring-2 focus:ring-[#5b72ff]/20 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100"
+                              className={inputClass}
                             />
                           </div>
                           <div>
-                            <label className="block text-sm font-semibold text-slate-700 dark:text-slate-200">Length</label>
+                            <label className="block text-sm font-semibold text-slate-700">Length</label>
                             <input
                               type="text"
                               value={row.length}
                               onChange={(event) => updateRow(row.id, 'length', event.target.value)}
                               placeholder="120"
-                              className="w-full rounded-full border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700 outline-none transition focus:border-[#5b72ff] focus:ring-2 focus:ring-[#5b72ff]/20 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100"
+                              className={inputClass}
                             />
                           </div>
                           <div>
-                            <label className="block text-sm font-semibold text-slate-700 dark:text-slate-200">Qty</label>
+                            <label className="block text-sm font-semibold text-slate-700">Qty</label>
                             <input
                               type="text"
                               value={row.quantity}
                               onChange={(event) => updateRow(row.id, 'quantity', event.target.value)}
                               placeholder="10"
-                              className="w-full rounded-full border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700 outline-none transition focus:border-[#5b72ff] focus:ring-2 focus:ring-[#5b72ff]/20 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100"
+                              className={inputClass}
                             />
                           </div>
                         </div>
@@ -558,7 +560,7 @@ export const CalculatorPage: React.FC = () => {
                     <button
                       type="button"
                       onClick={addBatchRow}
-                      className="inline-flex items-center gap-2 rounded-full border border-dashed border-[#5b72ff] bg-white px-5 py-3 text-sm font-semibold text-[#304e58] shadow-sm transition hover:bg-[#eff3ff] dark:bg-slate-900 dark:text-slate-100"
+                      className="inline-flex items-center gap-2 rounded-full border border-dashed border-brand bg-white px-5 py-3 text-sm font-semibold text-brand shadow-sm transition hover:bg-brand-surface"
                     >
                       <Plus size={16} /> Add row
                     </button>
@@ -566,17 +568,17 @@ export const CalculatorPage: React.FC = () => {
                 )}
 
                 <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-                  <div className="rounded-[28px] border border-slate-200 bg-slate-50 p-5 shadow-sm dark:border-slate-700 dark:bg-slate-900">
-                    <p className="text-xs uppercase tracking-[0.3em] text-slate-500 dark:text-slate-400">Current density</p>
-                    <p className="mt-2 text-xl font-semibold text-slate-900 dark:text-white">{selectedDensity ? `${selectedDensity} g/cm³` : 'Enter density'}</p>
+                  <div className="rounded-2xl border border-slate-200 bg-slate-50 p-5 shadow-sm">
+                    <p className="text-xs uppercase tracking-[0.3em] text-slate-500">Current density</p>
+                    <p className="mt-2 text-xl font-semibold text-brand">{selectedDensity ? `${selectedDensity} g/cm³` : 'Enter density'}</p>
                   </div>
-                  <div className="rounded-[28px] border border-slate-200 bg-slate-50 p-5 shadow-sm dark:border-slate-700 dark:bg-slate-900">
-                    <p className="text-xs uppercase tracking-[0.3em] text-slate-500 dark:text-slate-400">Calculated volume</p>
-                    <p className="mt-2 text-xl font-semibold text-slate-900 dark:text-white">{formatValue(mode === 'simple' ? dimensionToCm(parseNumber(thickness), unit) * dimensionToCm(parseNumber(width), unit) * dimensionToCm(parseNumber(length), unit) : rows.reduce((sum, row) => sum + (dimensionToCm(parseNumber(row.thickness), unit) * dimensionToCm(parseNumber(row.width), unit) * dimensionToCm(parseNumber(row.length), unit) * parseNumber(row.quantity)), 0))} cm³</p>
+                  <div className="rounded-2xl border border-slate-200 bg-slate-50 p-5 shadow-sm">
+                    <p className="text-xs uppercase tracking-[0.3em] text-slate-500">Calculated volume</p>
+                    <p className="mt-2 text-xl font-semibold text-brand">{formatValue(mode === 'simple' ? dimensionToCm(parseNumber(thickness), unit) * dimensionToCm(parseNumber(width), unit) * dimensionToCm(parseNumber(length), unit) : rows.reduce((sum, row) => sum + (dimensionToCm(parseNumber(row.thickness), unit) * dimensionToCm(parseNumber(row.width), unit) * dimensionToCm(parseNumber(row.length), unit) * parseNumber(row.quantity)), 0))} cm³</p>
                   </div>
-                  <div className="rounded-[28px] border border-slate-200 bg-slate-50 p-5 shadow-sm dark:border-slate-700 dark:bg-slate-900">
-                    <p className="text-xs uppercase tracking-[0.3em] text-slate-500 dark:text-slate-400">Output</p>
-                    <p className="mt-2 text-xl font-semibold text-slate-900 dark:text-white">{formatValue(activeWeightG)} g</p>
+                  <div className="rounded-2xl border border-slate-200 bg-slate-50 p-5 shadow-sm">
+                    <p className="text-xs uppercase tracking-[0.3em] text-slate-500">Output</p>
+                    <p className="mt-2 text-xl font-semibold text-brand">{formatValue(activeWeightG)} g</p>
                   </div>
                 </div>
 
@@ -584,13 +586,13 @@ export const CalculatorPage: React.FC = () => {
                   <button
                     type="button"
                     onClick={resetCalculator}
-                    className="rounded-full border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-[#304e58] shadow-sm transition hover:bg-slate-100 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
+                    className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-brand shadow-sm transition hover:bg-slate-100"
                   >
                     <RefreshCcw size={16} /> Reset
                   </button>
                   <Link
                     to="/contact"
-                    className="inline-flex items-center gap-2 rounded-full bg-[#5b72ff] px-5 py-3 text-sm font-semibold text-white shadow-lg shadow-[#5b72ff]/20 transition hover:opacity-95"
+                    className="inline-flex items-center gap-2 rounded-full bg-brand px-5 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-brand-dark"
                   >
                     Request Quote
                     <ArrowRight size={16} />
@@ -607,50 +609,50 @@ export const CalculatorPage: React.FC = () => {
               </div>
             </div>
 
-            <aside className={isDarkMode ? 'rounded-[40px] border border-slate-700 bg-slate-950/80 p-8 shadow-2xl shadow-slate-950/40' : 'rounded-[40px] border border-slate-200 bg-white p-8 shadow-2xl shadow-slate-200/50'}>
+            <aside className="rounded-3xl border border-slate-200 bg-white p-5 sm:p-8 shadow-xl shadow-slate-200/40">
               <div className="space-y-6">
-                <div className="rounded-[32px] bg-gradient-to-br from-[#eef3ff] to-[#e3e8ff] p-6 shadow-sm dark:from-slate-800 dark:to-slate-900">
-                  <p className="text-xs uppercase tracking-[0.3em] text-[#304e58]">Quick tips</p>
-                  <ul className="mt-4 space-y-3 text-sm text-slate-700 dark:text-slate-300">
+                <div className="rounded-2xl bg-gradient-to-br from-brand-surface to-white p-6 border border-slate-200">
+                  <p className="text-xs uppercase tracking-[0.3em] text-brand">Quick tips</p>
+                  <ul className="mt-4 space-y-3 text-sm text-slate-700">
                     <li>Use mm for strip, sheet and foil work. Switch to inches for export drawings.</li>
                     <li>Custom density helps with nickel-plated, alloy or mixed material calculations.</li>
                     <li>Save repeated builds to recent results for fast quoting.</li>
                     <li>Use batch mode to compare multiple strip dimensions in a single estimate.</li>
                   </ul>
                 </div>
-                <div className="rounded-[32px] border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-700 dark:bg-slate-900">
-                  <p className="text-xs uppercase tracking-[0.3em] text-slate-500 dark:text-slate-400">Recent calculations</p>
+                <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+                  <p className="text-xs uppercase tracking-[0.3em] text-slate-500">Recent calculations</p>
                   {recentCalculations.length === 0 ? (
-                    <p className="mt-4 text-sm text-slate-500 dark:text-slate-400">No saved calculations yet. Save your first result to show recent estimates here.</p>
+                    <p className="mt-4 text-sm text-slate-500">No saved calculations yet. Save your first result to show recent estimates here.</p>
                   ) : (
                     <div className="mt-4 space-y-3">
                       {recentCalculations.map((item) => (
-                        <div key={item.id} className="rounded-3xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-950">
+                        <div key={item.id} className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
                           <div className="flex items-center justify-between gap-3">
-                            <p className="text-sm font-semibold text-slate-900 dark:text-white">{item.label}</p>
-                            <span className="rounded-full bg-[#5b72ff]/10 px-3 py-1 text-xs font-semibold text-[#304e58]">{item.totalKg} kg</span>
+                            <p className="text-sm font-semibold text-brand">{item.label}</p>
+                            <span className="rounded-full bg-brand/10 px-3 py-1 text-xs font-semibold text-brand">{item.totalKg} kg</span>
                           </div>
-                          <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">{new Date(item.createdAt).toLocaleString()}</p>
+                          <p className="mt-2 text-xs text-slate-500">{new Date(item.createdAt).toLocaleString()}</p>
                         </div>
                       ))}
                     </div>
                   )}
                 </div>
-                <div className={isDarkMode ? 'rounded-[32px] border border-slate-700 bg-slate-950 p-6' : 'rounded-[32px] border border-slate-200 bg-white p-6'}>
-                  <p className="text-xs uppercase tracking-[0.3em] text-[#304e58]">Dynamic insights</p>
-                  <p className="mt-3 text-sm text-slate-700 dark:text-slate-300">Latest nickel strip and battery assembly articles load automatically from the site blog database.</p>
+                <div className="rounded-2xl border border-slate-200 bg-white p-6">
+                  <p className="text-xs uppercase tracking-[0.3em] text-brand">Dynamic insights</p>
+                  <p className="mt-3 text-sm text-slate-700">Latest nickel strip and battery assembly articles load automatically from the site blog database.</p>
                   <div className="mt-5 space-y-3">
                     {blogPosts.length === 0 ? (
-                      <p className="text-sm text-slate-500 dark:text-slate-400">Loading blog posts…</p>
+                      <p className="text-sm text-slate-500">Loading blog posts…</p>
                     ) : (
                       blogPosts.map((post) => (
                         <Link
                           key={post.id}
                           to={`/blog/${encodePathSegment(post.slug)}`}
-                          className="block rounded-3xl border border-slate-200 bg-slate-50 px-4 py-4 text-sm text-slate-700 transition hover:border-[#5b72ff] hover:bg-[#f2f5ff] dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
+                          className="block rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4 text-sm text-brand transition hover:border-brand hover:bg-brand-surface"
                         >
                           <p className="font-semibold">{post.title}</p>
-                          <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">{post.excerpt}</p>
+                          <p className="mt-1 text-xs text-slate-500">{post.excerpt}</p>
                         </Link>
                       ))
                     )}
@@ -662,34 +664,34 @@ export const CalculatorPage: React.FC = () => {
         </div>
       </section>
 
-      <section className="pb-20 bg-white text-slate-950 dark:bg-slate-950 dark:text-slate-100">
+      <section className="pb-16 sm:pb-20 bg-white text-brand">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="rounded-[40px] border border-slate-200 bg-slate-50 p-10 shadow-2xl shadow-slate-200/50 dark:border-slate-700 dark:bg-slate-900">
-            <div className="grid gap-10 lg:grid-cols-2">
+          <div className="rounded-3xl border border-slate-200 bg-[#f6f8f9] p-6 sm:p-10 shadow-xl shadow-slate-200/40">
+            <div className="grid gap-8 lg:grid-cols-2">
               <div>
-                <p className="text-xs font-semibold uppercase tracking-[0.3em] text-[#304e58]">How to use</p>
-                <h2 className="mt-3 text-3xl font-display font-bold text-[#304e58]">What is Nickel Strip Weight Calculator?</h2>
-                <p className="mt-4 text-base leading-8 text-slate-600 dark:text-slate-300">
+                <p className="text-xs font-semibold uppercase tracking-[0.3em] text-brand">How to use</p>
+                <h2 className="mt-3 text-2xl sm:text-3xl font-display font-bold text-brand">What is Nickel Strip Weight Calculator?</h2>
+                <p className="mt-4 text-base leading-8 text-slate-600">
                   This calculator helps manufacturing teams estimate the weight of nickel strips, sheets, busbars and coils based on thickness, width, length, density and quantity.
                 </p>
-                <div className="mt-6 space-y-4 text-sm text-slate-600 dark:text-slate-300">
+                <div className="mt-6 space-y-4 text-sm text-slate-600">
                   <p><strong>Weight formula:</strong> Weight = Thickness × Width × Length × Density × Quantity.</p>
                   <p><strong>Unit conversion:</strong> If using mm, convert dimensions to cm by dividing by 10. If using inches, multiply by 2.54.</p>
                   <p><strong>Density:</strong> Nickel 200 and Nickel 201 use 8.89 g/cm³. Nickel Plated Steel uses 7.85 g/cm³, and custom density can be entered for special alloys.</p>
                 </div>
               </div>
               <div className="grid gap-4">
-                <div className="rounded-[28px] bg-white p-6 shadow-sm dark:bg-slate-950 dark:border dark:border-slate-700">
-                  <h3 className="text-lg font-semibold text-[#304e58]">Nickel strip applications</h3>
-                  <ul className="mt-4 list-disc space-y-2 pl-5 text-sm text-slate-600 dark:text-slate-300">
+                <div className="rounded-2xl bg-white p-6 shadow-sm">
+                  <h3 className="text-lg font-semibold text-brand">Nickel strip applications</h3>
+                  <ul className="mt-4 list-disc space-y-2 pl-5 text-sm text-slate-600">
                     <li>Battery tab and connector fabrication for lithium-ion cells.</li>
                     <li>EV battery module busbars and high-current connectors.</li>
                     <li>Industrial plating, foil manufacturing and welded assemblies.</li>
                   </ul>
                 </div>
-                <div className="rounded-[28px] bg-white p-6 shadow-sm dark:bg-slate-950 dark:border dark:border-slate-700">
-                  <h3 className="text-lg font-semibold text-[#304e58]">Battery pack applications</h3>
-                  <ul className="mt-4 list-disc space-y-2 pl-5 text-sm text-slate-600 dark:text-slate-300">
+                <div className="rounded-2xl bg-white p-6 shadow-sm">
+                  <h3 className="text-lg font-semibold text-brand">Battery pack applications</h3>
+                  <ul className="mt-4 list-disc space-y-2 pl-5 text-sm text-slate-600">
                     <li>18650 and 21700 cell seams, tabs and interconnects.</li>
                     <li>EV and ESS busbar networks where precise weight matters.</li>
                     <li>Custom stack and module designs used in manufacturing quotes.</li>
@@ -701,25 +703,25 @@ export const CalculatorPage: React.FC = () => {
         </div>
       </section>
 
-      <section className="pb-24 bg-slate-50 text-slate-950 dark:bg-slate-950 dark:text-slate-100">
+      <section className="pb-20 sm:pb-24 bg-[#f6f8f9] text-brand">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="rounded-[40px] border border-slate-200 bg-white p-10 shadow-2xl shadow-slate-200/50 dark:border-slate-700 dark:bg-slate-900">
-            <div className="grid gap-10 lg:grid-cols-2">
+          <div className="rounded-3xl border border-slate-200 bg-white p-6 sm:p-10 shadow-xl shadow-slate-200/40">
+            <div className="grid gap-8 lg:grid-cols-2">
               <div>
-                <p className="text-xs font-semibold uppercase tracking-[0.3em] text-[#304e58]">FAQ</p>
-                <h2 className="mt-3 text-3xl font-display font-bold text-[#304e58]">Common Nickel Strip Weight Questions</h2>
-                <div className="mt-8 space-y-4 text-sm text-slate-600 dark:text-slate-300">
+                <p className="text-xs font-semibold uppercase tracking-[0.3em] text-brand">FAQ</p>
+                <h2 className="mt-3 text-2xl sm:text-3xl font-display font-bold text-brand">Common Nickel Strip Weight Questions</h2>
+                <div className="mt-8 space-y-4 text-sm text-slate-600">
                   {faqItems.map((faq) => (
-                    <details key={faq.question} className="rounded-3xl border border-slate-200 bg-slate-50 p-5 dark:border-slate-700 dark:bg-slate-950">
-                      <summary className="cursor-pointer font-semibold text-slate-900 dark:text-white">{faq.question}</summary>
+                    <details key={faq.question} className="rounded-2xl border border-slate-200 bg-slate-50 p-5">
+                      <summary className="cursor-pointer font-semibold text-brand">{faq.question}</summary>
                       <p className="mt-3">{faq.answer}</p>
                     </details>
                   ))}
                 </div>
               </div>
-              <div className="rounded-[32px] border border-slate-200 bg-slate-50 p-8 shadow-sm dark:border-slate-700 dark:bg-slate-900">
-                <p className="text-xs uppercase tracking-[0.3em] text-[#304e58]">Calculator highlights</p>
-                <ul className="mt-6 space-y-3 text-sm text-slate-600 dark:text-slate-300">
+              <div className="rounded-2xl border border-slate-200 bg-slate-50 p-6 sm:p-8 shadow-sm">
+                <p className="text-xs uppercase tracking-[0.3em] text-brand">Calculator highlights</p>
+                <ul className="mt-6 space-y-3 text-sm text-slate-600">
                   <li>Live calculation updates while typing for instant quoting.</li>
                   <li>Batch row support for multiple products and dimensions.</li>
                   <li>Export estimates to PDF and save recent calculations locally.</li>
@@ -728,13 +730,13 @@ export const CalculatorPage: React.FC = () => {
                 <div className="mt-8 space-y-4">
                   <Link
                     to="/products?search=nickel"
-                    className="inline-flex w-full items-center justify-center rounded-full bg-[#5b72ff] px-6 py-4 text-sm font-semibold text-white shadow-lg shadow-[#5b72ff]/20 transition hover:opacity-95"
+                    className="inline-flex w-full items-center justify-center rounded-full bg-brand px-6 py-4 text-sm font-semibold text-white shadow-sm transition hover:bg-brand-dark"
                   >
                     Browse Nickel Products
                   </Link>
                   <Link
                     to="/contact"
-                    className="inline-flex w-full items-center justify-center rounded-full border border-[#304e58] bg-white px-6 py-4 text-sm font-semibold text-[#304e58] shadow-sm transition hover:bg-slate-100 dark:bg-slate-950 dark:text-slate-100"
+                    className="inline-flex w-full items-center justify-center rounded-full border border-brand bg-white px-6 py-4 text-sm font-semibold text-brand shadow-sm transition hover:bg-slate-100"
                   >
                     Contact Manufacturer
                   </Link>
