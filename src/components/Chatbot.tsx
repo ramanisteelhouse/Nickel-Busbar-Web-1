@@ -32,7 +32,7 @@ export const Chatbot: React.FC = () => {
       const res = await fetch('/api/ai/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message: userMsg })
+        body: JSON.stringify({ message: userMsg, history: messages })
       });
       const data = await res.json();
       setMessages(prev => [...prev, { role: 'bot', text: data.text || t('chatbot.error') }]);

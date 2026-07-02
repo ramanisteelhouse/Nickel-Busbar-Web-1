@@ -954,21 +954,95 @@ export function createApiApp() {
   });
 
   // --- AI Chatbot ---
+  const CHATBOT_SYSTEM_INSTRUCTION = `You are the AI assistant for Ramani Steel House (nickelbusbar.com), an India-based manufacturer of nickel strips used in lithium-ion battery cells and packs.
+
+Key facts about the company:
+- Established in 1974, a 100% family-owned partnership firm with a long-term, customer-first approach.
+- Manufactures nickel strips for lithium-ion batteries and energy storage packs, and supplies related stainless steel and nickel alloy materials.
+- Serves customers PAN India and exports to international markets including Japan, Korea, China, Taiwan, Thailand, UAE, Netherlands, Germany, Belgium, France, UK, Finland, Italy, USA, Canada, New Zealand, and Australia.
+- Contact: email ramanioffice@gmail.com, phone +91 8369724730.
+
+Answer customer questions professionally and concisely. Use the "Relevant catalog items" section below (if present) to ground answers in real products, specs, and pricing rather than guessing. If nothing relevant is listed or the customer needs a custom size/grade/quantity, say we can also manufacture to custom specifications and invite them to submit a product enquiry on the website or contact us directly. Do not invent product data, certifications, or prices that are not provided to you.`;
+
+  const buildProductContext = async (message: string) => {
+    const trimmed = String(message || "").trim();
+    try {
+      let products: Record<string, unknown>[] = [];
+      if (trimmed) {
+        const pattern = `%${trimmed}%`;
+        products = await query(
+          `SELECT p.name, p.astm_value, p.uns_value, p.dimensions, p.price, p.stock, c.name AS category_name
+           FROM products p
+           JOIN categories c ON c.id = p.category_id
+           WHERE p.name ILIKE $1 OR p.description ILIKE $1 OR p.astm_value ILIKE $1 OR p.uns_value ILIKE $1 OR c.name ILIKE $1
+           LIMIT 5`,
+          [pattern]
+        );
+      }
+      if (products.length === 0) {
+        products = await query(
+          `SELECT p.name, p.astm_value, p.uns_value, p.dimensions, p.price, p.stock, c.name AS category_name
+           FROM products p
+           JOIN categories c ON c.id = p.category_id
+           WHERE p.is_featured = true
+           ORDER BY p.id
+           LIMIT 5`
+        );
+      }
+
+      if (products.length === 0) return "";
+
+      const lines = products.map((p) => {
+        const parts = [
+          `- ${String(p.name || "Unnamed product")}`,
+          p.category_name ? `Category: ${p.category_name}` : null,
+          p.astm_value ? `ASTM: ${p.astm_value}` : null,
+          p.uns_value ? `UNS: ${p.uns_value}` : null,
+          p.dimensions ? `Dimensions: ${p.dimensions}` : null,
+          p.price != null ? `Price: ${p.price}` : null,
+          p.stock != null ? `Stock: ${p.stock}` : null,
+        ].filter(Boolean);
+        return parts.join(" | ");
+      });
+
+      return `\n\nRelevant catalog items:\n${lines.join("\n")}`;
+    } catch (error) {
+      console.error("Failed to build product context for chatbot", error);
+      return "";
+    }
+  };
+
   app.post("/api/ai/chat", async (req, res) => {
-    const { message, history } = req.body;
+    const message = typeof req.body?.message === "string" ? req.body.message.trim() : "";
+    const rawHistory = Array.isArray(req.body?.history) ? req.body.history : [];
+
+    if (!message) {
+      return res.status(400).json({ error: "Message is required" });
+    }
     if (!GEMINI_API_KEY) return res.status(500).json({ error: "AI Key not configured" });
 
+    const history = rawHistory
+      .filter((entry: unknown): entry is { role: unknown; text: unknown } => !!entry && typeof entry === "object")
+      .slice(-10)
+      .map((entry: { role: unknown; text: unknown }) => ({
+        role: entry.role === "user" ? "user" : "model",
+        parts: [{ text: String(entry.text ?? "").slice(0, 2000) }],
+      }))
+      .filter((entry) => entry.parts[0].text.trim().length > 0);
+
     try {
+      const productContext = await buildProductContext(message);
       const ai = new GoogleGenAI({ apiKey: GEMINI_API_KEY });
-      const model = ai.models.generateContent({
-        model: "gemini-1.5-flash", // Using a standard model
-        contents: [
-          { role: "user", parts: [{ text: `You are an expert industrial product assistant for Ramani Steel House. We sell Stainless Steel, Titanium Alloys, Valves, and Fasteners. Answer the user's question professionally. User says: ${message}` }] }
-        ],
+      const response = await ai.models.generateContent({
+        model: "gemini-1.5-flash",
+        contents: [...history, { role: "user", parts: [{ text: message }] }],
+        config: {
+          systemInstruction: CHATBOT_SYSTEM_INSTRUCTION + productContext,
+        },
       });
-      const response = await model;
       res.json({ text: response.text });
     } catch (e) {
+      console.error("Chatbot AI error", e);
       res.status(500).json({ error: "AI error" });
     }
   });

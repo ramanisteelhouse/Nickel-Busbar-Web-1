@@ -99,7 +99,7 @@ const faqItems = [
   },
 ];
 
-const heroVideoUrl = 'public/img/Hero-section.mp4';
+const heroVideoUrl = 'https://fzrnezhbfyrpvudlsqny.supabase.co/storage/v1/object/sign/video/Hero-section.mp4?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV84ODdiMWJmNC1hOWFhLTQ2N2QtYTAwYy0zYTRkZTVjOTFlNWIiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJ2aWRlby9IZXJvLXNlY3Rpb24ubXA0Iiwic2NvcGUiOiJkb3dubG9hZCIsImlhdCI6MTc4Mjk4Njk4OSwiZXhwIjozMDQ0NDI2OTg5fQ.cETIAf4A-l7iN7w3yBDVk5gAG6sM44Wui_VBav5-AVY';
 
 const fallbackBlogArticles = [
   {
