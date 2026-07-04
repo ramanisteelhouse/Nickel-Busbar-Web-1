@@ -1104,14 +1104,13 @@ Answer customer questions professionally and concisely. Use the "Relevant catalo
       return res.status(400).json({ error: "Full name, email, and phone are required." });
     }
 
-    try {
-      const userId = getSessionUserId(req);
-      await query(
+    const insertEnquiry = (productIdValue: unknown) =>
+      query(
         `INSERT INTO product_enquiries
           (product_id, product_name, requirement, thickness, full_name, email, phone, company, location, quantity, message, user_id)
           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)`,
         [
-          productId ?? null,
+          productIdValue ?? null,
           productName ?? null,
           requirement ?? null,
           thickness ?? null,
@@ -1122,10 +1121,24 @@ Answer customer questions professionally and concisely. Use the "Relevant catalo
           location ?? null,
           quantity ?? null,
           message ?? null,
-          userId ?? null,
+          getSessionUserId(req) ?? null,
         ]
       );
-      void sendEnquiryNotifications({
+
+    try {
+      try {
+        await insertEnquiry(productId);
+      } catch (insertError) {
+        const pgError = insertError as { code?: string };
+        if (pgError?.code === "23503" && productId != null) {
+          // Referenced product no longer exists (e.g. deleted/edited mid-session); retry without the stale link.
+          await insertEnquiry(null);
+        } else {
+          throw insertError;
+        }
+      }
+
+      sendEnquiryNotifications({
         productId,
         productName,
         requirement,
@@ -1137,9 +1150,20 @@ Answer customer questions professionally and concisely. Use the "Relevant catalo
         location,
         quantity,
         message,
+      }).catch((notifyError) => {
+        console.error("Failed to send enquiry notification", notifyError);
       });
+
       res.sendStatus(201);
     } catch (e) {
+      const pgError = e as { code?: string };
+      if (pgError?.code === "42P01") {
+        console.error(
+          "product_enquiries table is missing. Run supabase/setup.sql against your Supabase database to create it.",
+          e
+        );
+        return res.status(503).json({ error: "Enquiries are temporarily unavailable. Please try again shortly." });
+      }
       console.error("Failed to submit enquiry", e);
       res.status(500).json({ error: "Failed to submit enquiry" });
     }
