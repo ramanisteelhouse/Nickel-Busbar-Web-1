@@ -223,7 +223,13 @@ export const ProductListingPage: React.FC = () => {
         body: JSON.stringify(payload),
       });
       if (!response.ok) {
-        throw new Error('Failed to submit');
+        const data = await response.json().catch(() => null);
+        const detail = data?.devDetail;
+        const detailText = detail
+          ? ` [${[detail.code, detail.message].filter(Boolean).join(': ')}]`
+          : '';
+        setSubmitMessage(`${t('enquiry.submitError')}${detailText}`);
+        return;
       }
       setSubmitMessage(t('enquiry.submitSuccess'));
       setEnquiryData(initialEnquiryData);

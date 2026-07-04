@@ -337,6 +337,17 @@ const getSessionUserId = (req: express.Request) => {
   }
 };
 
+const ensureProductEnquiriesSchema = async () => {
+  try {
+    await query(`ALTER TABLE public.product_enquiries ADD COLUMN IF NOT EXISTS thickness text`);
+    await query(
+      `ALTER TABLE public.product_enquiries ADD COLUMN IF NOT EXISTS user_id bigint REFERENCES public.users(id) ON DELETE SET NULL`
+    );
+  } catch (error) {
+    console.error("Failed to ensure product_enquiries schema is up to date", error);
+  }
+};
+
 export function createApiApp() {
   const app = express();
   const authCookieOptions = {
@@ -345,6 +356,8 @@ export function createApiApp() {
     maxAge: 7 * 24 * 60 * 60 * 1000,
     secure: process.env.NODE_ENV === "production",
   };
+
+  void ensureProductEnquiriesSchema();
 
   app.use(express.json({ limit: "1mb" }));
 
@@ -1104,7 +1117,9 @@ Answer customer questions professionally and concisely. Use the "Relevant catalo
       return res.status(400).json({ error: "Full name, email, and phone are required." });
     }
 
-    const insertEnquiry = (productIdValue: unknown) =>
+    const initialUserId = getSessionUserId(req);
+
+    const insertEnquiry = (productIdValue: unknown, userIdValue: unknown) =>
       query(
         `INSERT INTO product_enquiries
           (product_id, product_name, requirement, thickness, full_name, email, phone, company, location, quantity, message, user_id)
@@ -1121,18 +1136,20 @@ Answer customer questions professionally and concisely. Use the "Relevant catalo
           location ?? null,
           quantity ?? null,
           message ?? null,
-          getSessionUserId(req) ?? null,
+          userIdValue ?? null,
         ]
       );
 
     try {
       try {
-        await insertEnquiry(productId);
+        await insertEnquiry(productId, initialUserId);
       } catch (insertError) {
-        const pgError = insertError as { code?: string };
-        if (pgError?.code === "23503" && productId != null) {
-          // Referenced product no longer exists (e.g. deleted/edited mid-session); retry without the stale link.
-          await insertEnquiry(null);
+        const pgError = insertError as { code?: string; constraint?: string };
+        const failedOnProduct = pgError?.code === "23503" && pgError.constraint?.includes("product_id") && productId != null;
+        const failedOnUser = pgError?.code === "23503" && pgError.constraint?.includes("user_id") && initialUserId != null;
+        if (failedOnProduct || failedOnUser) {
+          // A referenced product or session user no longer exists (deleted/stale login); retry without the stale link.
+          await insertEnquiry(failedOnProduct ? null : productId, failedOnUser ? null : initialUserId);
         } else {
           throw insertError;
         }
@@ -1156,16 +1173,24 @@ Answer customer questions professionally and concisely. Use the "Relevant catalo
 
       res.sendStatus(201);
     } catch (e) {
-      const pgError = e as { code?: string };
+      const isDev = process.env.NODE_ENV !== "production";
+      const pgError = e as { code?: string; message?: string; detail?: string; constraint?: string };
+      const devDetail = isDev
+        ? { code: pgError?.code, message: pgError?.message, detail: pgError?.detail, constraint: pgError?.constraint }
+        : undefined;
+
       if (pgError?.code === "42P01") {
         console.error(
           "product_enquiries table is missing. Run supabase/setup.sql against your Supabase database to create it.",
           e
         );
-        return res.status(503).json({ error: "Enquiries are temporarily unavailable. Please try again shortly." });
+        return res.status(503).json({
+          error: "Enquiries are temporarily unavailable. Please try again shortly.",
+          ...(devDetail ? { devDetail } : {}),
+        });
       }
       console.error("Failed to submit enquiry", e);
-      res.status(500).json({ error: "Failed to submit enquiry" });
+      res.status(500).json({ error: "Failed to submit enquiry", ...(devDetail ? { devDetail } : {}) });
     }
   });
 
