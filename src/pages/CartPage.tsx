@@ -1,5 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
+import { Helmet } from 'react-helmet-async';
 import { Trash2, Plus, Minus, ArrowRight, ShoppingBag, Shield } from 'lucide-react';
 import { motion } from 'motion/react';
 import { CartItem } from '../types';
@@ -21,6 +22,10 @@ export const CartPage: React.FC<CartPageProps> = ({ cart, updateQuantity, remove
   if (cart.length === 0) {
     return (
       <div className="pt-40 pb-24 max-w-7xl mx-auto px-4 text-center">
+        <Helmet>
+          <title>Your Cart | Ramani Steel House</title>
+          <meta name="robots" content="noindex,follow" />
+        </Helmet>
         <div className="w-20 h-20 bg-zinc-100 rounded-full flex items-center justify-center mx-auto mb-6 text-zinc-400">
           <ShoppingBag size={32} />
         </div>
@@ -35,6 +40,10 @@ export const CartPage: React.FC<CartPageProps> = ({ cart, updateQuantity, remove
 
   return (
     <div className="pt-32 pb-24 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <Helmet>
+        <title>Your Cart | Ramani Steel House</title>
+        <meta name="robots" content="noindex,follow" />
+      </Helmet>
       <h1 className="text-4xl font-bold text-zinc-900 tracking-tight mb-12">{t('cart.title')}</h1>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-12">
@@ -46,7 +55,16 @@ export const CartPage: React.FC<CartPageProps> = ({ cart, updateQuantity, remove
               className="flex gap-6 p-6 bg-white rounded-3xl border border-zinc-100 shadow-sm"
             >
               <div className="w-24 h-24 bg-zinc-100 rounded-2xl overflow-hidden flex-shrink-0">
-                <img src={resolveImageSrc(item.image)} alt={item.name} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+                <img
+                  src={resolveImageSrc(item.image)}
+                  alt={item.name}
+                  width={96}
+                  height={96}
+                  loading="lazy"
+                  decoding="async"
+                  className="w-full h-full object-cover"
+                  referrerPolicy="no-referrer"
+                />
               </div>
               <div className="flex-1 flex flex-col justify-between">
                 <div className="flex justify-between items-start">

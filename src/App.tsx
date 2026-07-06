@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, Suspense } from 'react';
 import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
 import { Navbar } from './components/Navbar';
 import { Chatbot } from './components/Chatbot';
@@ -9,19 +9,26 @@ import { AdPopup } from './components/AdPopup';
 import { GoogleOneTap } from './components/GoogleOneTap';
 import { Footer } from './components/Footer';
 import { BackNavButton } from './components/BackNavButton';
-import { HomePage } from './pages/HomePage';
-import { ProductListingPage } from './pages/ProductListingPage';
-import { ProductDetailPage } from './pages/ProductDetailPage';
-import { CartPage } from './pages/CartPage';
-import { CheckoutPage } from './pages/CheckoutPage';
-import { LoginPage } from './pages/LoginPage';
-import { AboutPage } from './pages/AboutPage';
-import { ContactPage } from './pages/ContactPage';
-import { BlogListingPage } from './pages/BlogListingPage';
-import { BlogPostPage } from './pages/BlogPostPage';
-import { CalculatorPage } from './pages/CalculatorPage';
-import { NotFoundPage } from './pages/NotFoundPage';
 import { Product, CartItem } from './types';
+
+const HomePage = React.lazy(() => import('./pages/HomePage').then((m) => ({ default: m.HomePage })));
+const ProductListingPage = React.lazy(() => import('./pages/ProductListingPage').then((m) => ({ default: m.ProductListingPage })));
+const ProductDetailPage = React.lazy(() => import('./pages/ProductDetailPage').then((m) => ({ default: m.ProductDetailPage })));
+const CartPage = React.lazy(() => import('./pages/CartPage').then((m) => ({ default: m.CartPage })));
+const CheckoutPage = React.lazy(() => import('./pages/CheckoutPage').then((m) => ({ default: m.CheckoutPage })));
+const LoginPage = React.lazy(() => import('./pages/LoginPage').then((m) => ({ default: m.LoginPage })));
+const AboutPage = React.lazy(() => import('./pages/AboutPage').then((m) => ({ default: m.AboutPage })));
+const ContactPage = React.lazy(() => import('./pages/ContactPage').then((m) => ({ default: m.ContactPage })));
+const BlogListingPage = React.lazy(() => import('./pages/BlogListingPage').then((m) => ({ default: m.BlogListingPage })));
+const BlogPostPage = React.lazy(() => import('./pages/BlogPostPage').then((m) => ({ default: m.BlogPostPage })));
+const CalculatorPage = React.lazy(() => import('./pages/CalculatorPage').then((m) => ({ default: m.CalculatorPage })));
+const NotFoundPage = React.lazy(() => import('./pages/NotFoundPage').then((m) => ({ default: m.NotFoundPage })));
+
+const RouteLoadingFallback: React.FC = () => (
+  <div className="flex min-h-[60vh] items-center justify-center">
+    <div className="h-10 w-10 animate-spin rounded-full border-4 border-brand/20 border-t-brand" />
+  </div>
+);
 
 function ScrollToTop() {
   const { pathname } = useLocation();
@@ -37,6 +44,8 @@ function ScrollToTop() {
         userAgent: navigator.userAgent,
         geo: { timestamp: new Date().toISOString() }
       })
+    }).catch(() => {
+      // Ignore analytics logging failures.
     });
   }, [pathname]);
   return null;
@@ -211,21 +220,23 @@ export default function App() {
 
           <main style={{ paddingTop: 'var(--adbar-height, 0px)' }}>
             <BackNavButton />
-            <Routes>
-              <Route path="/" element={<HomePage />} />
-              <Route path="/products" element={<ProductListingPage />} />
-              <Route path="/product/:slug" element={<ProductDetailPage onAddToCart={addToCart} />} />
-              <Route path="/categories" element={<ProductListingPage />} />
-              <Route path="/cart" element={<CartPage cart={cart} updateQuantity={updateQuantity} removeItem={removeItem} />} />
-              <Route path="/checkout" element={<CheckoutPage cart={cart} />} />
-              <Route path="/login" element={<LoginPage />} />
-              <Route path="/about" element={<AboutPage />} />
-              <Route path="/contact" element={<ContactPage />} />
-              <Route path="/blog" element={<BlogListingPage />} />
-              <Route path="/blog/:slug" element={<BlogPostPage />} />
-              <Route path="/calculator" element={<CalculatorPage />} />
-              <Route path="*" element={<NotFoundPage />} />
-            </Routes>
+            <Suspense fallback={<RouteLoadingFallback />}>
+              <Routes>
+                <Route path="/" element={<HomePage />} />
+                <Route path="/products" element={<ProductListingPage />} />
+                <Route path="/product/:slug" element={<ProductDetailPage onAddToCart={addToCart} />} />
+                <Route path="/categories" element={<ProductListingPage />} />
+                <Route path="/cart" element={<CartPage cart={cart} updateQuantity={updateQuantity} removeItem={removeItem} />} />
+                <Route path="/checkout" element={<CheckoutPage cart={cart} />} />
+                <Route path="/login" element={<LoginPage />} />
+                <Route path="/about" element={<AboutPage />} />
+                <Route path="/contact" element={<ContactPage />} />
+                <Route path="/blog" element={<BlogListingPage />} />
+                <Route path="/blog/:slug" element={<BlogPostPage />} />
+                <Route path="/calculator" element={<CalculatorPage />} />
+                <Route path="*" element={<NotFoundPage />} />
+              </Routes>
+            </Suspense>
           </main>
 
           <Footer />

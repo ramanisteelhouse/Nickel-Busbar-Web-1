@@ -1,5 +1,6 @@
 import React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { Helmet } from 'react-helmet-async';
 import { Mail, Lock, ArrowRight, UserPlus } from 'lucide-react';
 import { motion } from 'motion/react';
 import { useLanguage } from '../i18n/LanguageProvider';
@@ -151,6 +152,10 @@ export const LoginPage: React.FC = () => {
 
   return (
     <div className="pt-32 pb-24 min-h-screen flex items-center justify-center px-4 bg-zinc-50">
+      <Helmet>
+        <title>Login | Ramani Steel House</title>
+        <meta name="robots" content="noindex,follow" />
+      </Helmet>
       <motion.div
         initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}

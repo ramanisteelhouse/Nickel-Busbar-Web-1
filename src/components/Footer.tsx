@@ -25,6 +25,9 @@ export const Footer: React.FC = () => {
               <li><Link to="/">Home</Link></li>
               <li><Link to="/products?search=nickel">Nickel Strips</Link></li>
               <li><Link to="/products">Products</Link></li>
+              <li><Link to="/about">About Us</Link></li>
+              <li><Link to="/calculator">Weight Calculator</Link></li>
+              <li><Link to="/blog">Blog</Link></li>
               <li><Link to="/contact">Contact</Link></li>
             </ul>
           </div>

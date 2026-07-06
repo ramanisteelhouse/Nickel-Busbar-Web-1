@@ -96,6 +96,9 @@ export const AdPopup: React.FC = () => {
                   <img
                     src={resolveImageSrc(popupAd.image_url)}
                     alt={popupAd.title}
+                    width={480}
+                    height={220}
+                    decoding="async"
                     className="h-full w-full object-cover"
                     referrerPolicy="no-referrer"
                   />

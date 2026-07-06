@@ -55,8 +55,8 @@ export const AboutPage: React.FC = () => {
             Trusted Nickel Strip Manufacturer Since 1974
           </h1>
           <p className="mt-5 max-w-2xl text-sm md:text-base text-white/90 leading-relaxed">
-            We manufacture high-quality nickel strips, nickel alloys and stainless steel materials with reliable delivery,
-            competitive pricing, and technical support. Our core focus is nickel strips for lithium-ion battery applications.
+            We manufacture high-quality nickel strips with reliable delivery, competitive pricing, and technical support,
+            supplying PAN India and exporting to 17+ countries. Our core focus is nickel strips for lithium-ion battery applications.
           </p>
 
           <div className="mt-10 grid grid-cols-2 gap-4 sm:grid-cols-4 sm:gap-6">

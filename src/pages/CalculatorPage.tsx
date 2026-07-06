@@ -242,6 +242,16 @@ export const CalculatorPage: React.FC = () => {
           name="description"
           content="Calculate nickel strip and alloy weight instantly with a premium calculator built for battery, EV, and industrial manufacturing applications."
         />
+        <link rel="canonical" href="https://www.nickelbusbar.com/calculator" />
+        <meta property="og:type" content="website" />
+        <meta property="og:title" content="Nickel Alloy Weight Calculator | Nickel Strip Weight Tool" />
+        <meta property="og:description" content="Calculate nickel strip and alloy weight instantly with a premium calculator built for battery, EV, and industrial manufacturing applications." />
+        <meta property="og:url" content="https://www.nickelbusbar.com/calculator" />
+        <meta property="og:image" content="https://www.nickelbusbar.com/img/logo.png" />
+        <meta name="twitter:card" content="summary_large_image" />
+        <meta name="twitter:title" content="Nickel Alloy Weight Calculator | Nickel Strip Weight Tool" />
+        <meta name="twitter:description" content="Calculate nickel strip and alloy weight instantly with a premium calculator built for battery, EV, and industrial manufacturing applications." />
+        <meta name="twitter:image" content="https://www.nickelbusbar.com/img/logo.png" />
         <script type="application/ld+json">
           {JSON.stringify({
             '@context': 'https://schema.org',

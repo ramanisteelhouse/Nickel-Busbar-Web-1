@@ -14,6 +14,7 @@
     { "src": "/login/?", "dest": "/index.html" },
     { "src": "/about/?", "dest": "/index.html" },
     { "src": "/contact/?", "dest": "/index.html" },
+    { "src": "/calculator/?", "dest": "/index.html" },
     { "src": "/blog/?", "dest": "/index.html" },
     { "src": "/blog/[^/]+/?", "dest": "/index.html" },
     { "src": "/blog/nickel-strips-lithium-batteries/?", "dest": "/index.html" },

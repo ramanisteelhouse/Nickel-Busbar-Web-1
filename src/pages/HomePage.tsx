@@ -21,7 +21,9 @@ import {
 import { motion } from 'motion/react';
 import { Helmet } from 'react-helmet-async';
 import type { Product, Category, BlogPost } from '../types';
-import { encodePathSegment } from '../lib/utils';
+import { encodePathSegment, resolveImageSrc } from '../lib/utils';
+
+const fallbackShowcaseImage = '/img/icon-logo.jpg';
 
 const fallbackVariants = [
   {
@@ -195,7 +197,7 @@ export const HomePage: React.FC = () => {
         title: product.name,
         spec: product.dimensions || 'Custom thickness x width',
         note: product.category_name || 'Nickel strip engineered for battery tabs.',
-        image: product.image,
+        image: product.image ? resolveImageSrc(product.image) : fallbackShowcaseImage,
         cta: `/product/${product.slug}`,
       }))
     : fallbackVariants;
@@ -238,7 +240,7 @@ export const HomePage: React.FC = () => {
     }
   };
 
-  const marqueeItems = categories.length ? categories : fallbackCategories;
+  const marqueeItems = (categories.length ? categories : fallbackCategories).filter((category) => category.slug);
   const marqueeLoop = [...marqueeItems, ...marqueeItems];
   const blogArticles = blogPosts.length > 0
     ? blogPosts.map((post) => ({
@@ -251,15 +253,16 @@ export const HomePage: React.FC = () => {
   return (
     <div className="pt-28">
       <Helmet>
-        <title>Nickel Strips Manufacturer | Lithium-Ion Battery Strips</title>
+        <title>Nickel Strips Manufacturer in Mumbai, India | PAN India Supply &amp; Global Export</title>
         <meta
           name="description"
-          content="We are a nickel strips manufacturer for lithium-ion battery manufacturers, delivering high-purity strips at competitive prices with consistent quality and reliable supply."
+          content="Nickel strips manufacturer based in Mumbai, India, supplying lithium-ion battery and energy storage customers PAN India and exporting to 17+ countries worldwide. High-purity strips, competitive pricing, reliable supply."
         />
+        <link rel="canonical" href="https://www.nickelbusbar.com/" />
         <meta property="og:type" content="website" />
         <meta property="og:site_name" content="Ramani Steel House" />
-        <meta property="og:title" content="Nickel Strips Manufacturer | Lithium-Ion Battery Strips" />
-        <meta property="og:description" content="Premium nickel strips for lithium-ion batteries and EV packs, with export-ready quality and consistent delivery." />
+        <meta property="og:title" content="Nickel Strips Manufacturer in Mumbai, India | PAN India Supply & Global Export" />
+        <meta property="og:description" content="Premium nickel strips for lithium-ion batteries and EV packs, manufactured in Mumbai and exported worldwide, with export-ready quality and consistent delivery." />
         <meta property="og:url" content="https://www.nickelbusbar.com/" />
         <meta property="og:image" content="https://www.nickelbusbar.com/img/logo.png" />
         <meta name="twitter:card" content="summary_large_image" />
@@ -374,7 +377,7 @@ export const HomePage: React.FC = () => {
               </div>
 
               <div className="mt-10 flex flex-wrap gap-3">
-                {(categories.length > 0 ? categories.slice(0, 4) : fallbackCategories.slice(0, 4)).map((category) => (
+                {(categories.length > 0 ? categories.slice(0, 4) : fallbackCategories.slice(0, 4)).filter((category) => category.slug).map((category) => (
                   <Link
                     key={category.id}
                     to={`/products?category=${encodeURIComponent(category.slug)}`}
@@ -425,7 +428,7 @@ export const HomePage: React.FC = () => {
             {[
               { label: '52+ Years Experience', value: 'Since 1974' },
               { label: 'ISO Certified', value: 'Quality assured' },
-              { label: 'Global Exporter', value: '45+ countries' },
+              { label: 'Global Exporter', value: '17+ countries' },
               { label: 'High Purity Nickel', value: '99.8%+' },
             ].map((item) => (
               <div key={item.label} className="space-y-1">
@@ -453,7 +456,7 @@ export const HomePage: React.FC = () => {
             {marqueeLoop.map((item, index) => (
               <Link
                 key={`${item.slug}-${index}`}
-                to={`/products?category=${item.slug}`}
+                to={`/products?category=${encodeURIComponent(item.slug)}`}
                 className="inline-flex items-center gap-2 rounded-full border border-[#314e58]/20 bg-[#ffffff] px-4 py-2 text-sm font-semibold text-[#304e58] hover:bg-[#304e58] hover:text-white transition-colors"
               >
                 {item.name}

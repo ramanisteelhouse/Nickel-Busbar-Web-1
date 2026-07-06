@@ -1,5 +1,5 @@
 import React from 'react';
-import { Link, useNavigate, useSearchParams } from 'react-router-dom';
+import { Link, useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import { Filter, Search, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Helmet } from 'react-helmet-async';
@@ -32,6 +32,8 @@ const initialEnquiryData: EnquiryFormData = {
 };
 
 export const ProductListingPage: React.FC = () => {
+  const location = useLocation();
+  const isCategoriesRoute = location.pathname === '/categories';
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const [products, setProducts] = React.useState<Product[]>([]);
@@ -246,12 +248,23 @@ export const ProductListingPage: React.FC = () => {
   return (
     <>
       <Helmet>
-        <title>Products | Nickel Strips, Battery Tabs & Industrial Alloys</title>
+        {isCategoriesRoute ? (
+          <title>Nickel Strip Categories | Pure Nickel, Nickel Plated & Battery Tabs</title>
+        ) : (
+          <title>Nickel Strip Products | Pure Nickel &amp; Nickel Plated Strips - Ramani Steel House</title>
+        )}
         <meta
           name="description"
-          content="Explore nickel strips, battery tabs, and industrial alloy products from Ramani Steel House. Request technical quotes for bulk and custom requirements."
+          content={
+            isCategoriesRoute
+              ? 'Browse nickel strip categories from Ramani Steel House: pure nickel, nickel-plated strips, battery tabs, busbars and custom coils. Manufactured in Mumbai, supplied PAN India and exported worldwide.'
+              : 'Shop nickel strips, nickel-plated strips, and battery tabs manufactured in Mumbai, India. PAN India supply and export to 17+ countries. Request bulk and custom quotes.'
+          }
         />
-        <link rel="canonical" href="https://www.nickelbusbar.com/products" />
+        <link
+          rel="canonical"
+          href={isCategoriesRoute ? 'https://www.nickelbusbar.com/categories' : 'https://www.nickelbusbar.com/products'}
+        />
       </Helmet>
       <div className="pt-28 pb-24 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-12 gap-6">
@@ -380,6 +393,10 @@ export const ProductListingPage: React.FC = () => {
                       <img
                         src={resolveImageSrc(product.image)}
                         alt={product.name}
+                        width={600}
+                        height={600}
+                        loading="lazy"
+                        decoding="async"
                         className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
                         referrerPolicy="no-referrer"
                       />

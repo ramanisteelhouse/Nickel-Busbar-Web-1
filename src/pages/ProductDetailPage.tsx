@@ -188,6 +188,10 @@ export const ProductDetailPage: React.FC<{ onAddToCart: (p: Product) => void }> 
             <img
               src={resolveImageSrc(product.image)}
               alt={product.name}
+              width={800}
+              height={800}
+              loading="eager"
+              decoding="async"
               className="w-full h-full object-cover"
               referrerPolicy="no-referrer"
             />

@@ -10,7 +10,7 @@ export const ContactPage: React.FC = () => {
           name="description"
           content="Contact Ramani Steel House for nickel strips and industrial material requirements. Request quotes for lithium-ion battery manufacturing applications."
         />
-        <link rel="canonical" href="https://nickelbusbar.com/contact" />
+        <link rel="canonical" href="https://www.nickelbusbar.com/contact" />
       </Helmet>
 
       <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">

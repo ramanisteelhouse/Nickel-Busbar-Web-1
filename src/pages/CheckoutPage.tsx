@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { Helmet } from 'react-helmet-async';
 import { ArrowLeft, MessageCircle, Shield } from 'lucide-react';
 import { CartItem, Country } from '../types';
 import { useLanguage } from '../i18n/LanguageProvider';
@@ -205,6 +206,10 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({ cart }) => {
   if (cart.length === 0) {
     return (
       <div className="pt-40 pb-24 max-w-7xl mx-auto px-4 text-center">
+        <Helmet>
+          <title>Checkout | Ramani Steel House</title>
+          <meta name="robots" content="noindex,follow" />
+        </Helmet>
         <h1 className="text-3xl font-bold text-zinc-900 mb-4">{t('checkout.emptyTitle')}</h1>
         <p className="text-zinc-500 mb-8">{t('checkout.emptyDesc')}</p>
         <Link to="/products" className="bg-[#304e58] text-white px-8 py-4 rounded-full font-bold hover:bg-[#314e58] transition-all">
@@ -216,6 +221,10 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({ cart }) => {
 
   return (
     <div className="pt-32 pb-24 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <Helmet>
+        <title>Checkout | Ramani Steel House</title>
+        <meta name="robots" content="noindex,follow" />
+      </Helmet>
       <div className="flex items-center gap-4 mb-10">
         <Link to="/cart" className="inline-flex items-center gap-2 text-sm font-semibold text-[#304e58] hover:text-[#314e58]">
           <ArrowLeft size={16} />

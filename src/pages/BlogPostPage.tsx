@@ -121,7 +121,11 @@ export const BlogPostPage: React.FC = () => {
           <img
             src={resolveImageSrc(post.cover_image_url)}
             alt={post.title}
-            className="mt-8 w-full rounded-2xl border border-slate-200 object-cover"
+            width={1000}
+            height={1000}
+            loading="eager"
+            decoding="async"
+            className="mt-8 w-full max-w-[1000px] aspect-square mx-auto rounded-2xl border border-slate-200 object-cover"
             referrerPolicy="no-referrer"
           />
         ) : null}

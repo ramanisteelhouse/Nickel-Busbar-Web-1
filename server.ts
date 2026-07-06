@@ -12,6 +12,7 @@ const knownStaticRoutes = new Set([
   "/login",
   "/about",
   "/contact",
+  "/calculator",
   "/blog",
   "/blog/nickel-strips-lithium-batteries",
 ]);

@@ -21,10 +21,6 @@ export type TranslationKey =
   | 'language.locationVerified'
   | 'language.invalidPostal'
   | 'common.save'
-  | 'home.heroBadge'
-  | 'home.heroTitle1'
-  | 'home.heroTitle2'
-  | 'home.heroSubtitle'
   | 'home.exploreProducts'
   | 'home.ourStory'
   | 'home.featuredTitle'
@@ -33,13 +29,9 @@ export type TranslationKey =
   | 'home.trustQualityTitle'
   | 'home.trustQualityDesc'
   | 'home.trustGlobalTitle'
-  | 'home.trustGlobalDesc'
-  | 'home.trustLegacyTitle'
-  | 'home.trustLegacyDesc'
   | 'home.trustCustomTitle'
   | 'home.trustCustomDesc'
   | 'home.footerTagline'
-  | 'home.footerAbout'
   | 'footer.quickLinks'
   | 'footer.contactUs'
   | 'footer.contactLink'
@@ -188,10 +180,6 @@ const enTranslations: Record<TranslationKey, string> = {
     'language.locationVerified': 'Location verified.',
     'language.invalidPostal': 'Invalid postal code for {{country}}.',
     'common.save': 'Save',
-    'home.heroBadge': '51 Years of Excellence',
-    'home.heroTitle1': 'Precision Engineered',
-    'home.heroTitle2': 'Industrial Solutions.',
-    'home.heroSubtitle': 'Global suppliers of high-grade Stainless Steel, Titanium, and Nickel Alloys. Certified quality, competitive pricing, and worldwide delivery.',
     'home.exploreProducts': 'Explore Products',
     'home.ourStory': 'Our Story',
     'home.featuredTitle': 'Featured Inventory',
@@ -200,13 +188,9 @@ const enTranslations: Record<TranslationKey, string> = {
     'home.trustQualityTitle': 'Certified Quality',
     'home.trustQualityDesc': 'ISO 9001:2015 certified processes ensuring every product meets international ASTM/ASME standards.',
     'home.trustGlobalTitle': 'Global Export',
-    'home.trustGlobalDesc': 'Exporting to over 45 countries including USA, Germany, UAE, and Singapore with full logistics support.',
-    'home.trustLegacyTitle': '51 Years Legacy',
-    'home.trustLegacyDesc': 'Established in 1975, we bring half a century of technical expertise to the industrial metal industry.',
     'home.trustCustomTitle': 'Custom Fabrication',
     'home.trustCustomDesc': 'In-house machining and cutting facilities to provide components exactly to your project specifications.',
     'home.footerTagline': 'RAMANI STEEL HOUSE',
-    'home.footerAbout': 'The leading B2B marketplace for industrial metals and precision components. Connecting manufacturers with high-quality raw materials since 1975.',
     'footer.quickLinks': 'Quick Links',
     'footer.contactUs': 'Contact Us',
     'footer.contactLink': 'Contact',
@@ -355,10 +339,6 @@ const zhTranslations: Record<TranslationKey, string> = {
     'language.locationVerified': '??????',
     'language.invalidPostal': '{{country}} ???????',
     'common.save': '??',
-    'home.heroBadge': '51???',
-    'home.heroTitle1': '????',
-    'home.heroTitle2': '???????',
-    'home.heroSubtitle': '??????????????????????????????????????',
     'home.exploreProducts': '????',
     'home.ourStory': '?????',
     'home.featuredTitle': '????',
@@ -367,13 +347,9 @@ const zhTranslations: Record<TranslationKey, string> = {
     'home.trustQualityTitle': '????',
     'home.trustQualityDesc': '?? ISO 9001:2015 ????,???????? ASTM/ASME ???',
     'home.trustGlobalTitle': '????',
-    'home.trustGlobalDesc': '?????????????????45+??,?????????',
-    'home.trustLegacyTitle': '51???',
-    'home.trustLegacyDesc': '??1975?,??????????????',
     'home.trustCustomTitle': '????',
     'home.trustCustomDesc': '??????????,??????????',
     'home.footerTagline': 'Ramani Steel House',
-    'home.footerAbout': '????????????B2B????1975???????????????',
     'footer.quickLinks': '????',
     'footer.contactUs': '????',
     'footer.contactLink': '??',
