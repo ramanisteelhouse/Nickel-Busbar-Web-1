@@ -333,18 +333,7 @@ export const HomePage: React.FC = () => {
         </script>
       </Helmet>
 
-      <section className="relative overflow-hidden bg-[#304e58] text-white">
-        <div className="absolute inset-0">
-          <img
-            src="https://images.unsplash.com/photo-1504917595217-d4dc5ebe6122?auto=format&fit=crop&w=2000&q=80"
-            alt="Nickel strips manufacturing"
-            className="h-full w-full object-cover opacity-40"
-            width={2000}
-            height={1000}
-            referrerPolicy="no-referrer"
-          />
-          <div className="absolute inset-0 bg-gradient-to-r from-[#304e58] via-[#304e58]/95 to-transparent" />
-        </div>
+      <section className="relative overflow-hidden bg-gradient-to-br from-brand to-brand-light text-white">
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-24 lg:py-32">
           <div className="grid gap-12 lg:grid-cols-[1.5fr_1fr] items-start">
             <motion.div initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.8 }} className="max-w-2xl">
@@ -363,7 +352,7 @@ export const HomePage: React.FC = () => {
               <div className="mt-8 flex flex-col sm:flex-row gap-4">
                 <Link
                   to="/products?enquiry=1"
-                  className="inline-flex items-center justify-center gap-2 rounded-full bg-white px-6 py-3 text-sm font-semibold text-[#304e58] shadow-lg shadow-[#314e58]/20 hover:bg-white/90"
+                  className="inline-flex items-center justify-center gap-2 rounded-full bg-white px-6 py-3 text-sm font-semibold text-brand shadow-lg shadow-brand-dark/20 hover:bg-white/90"
                 >
                   Request a Quote
                   <ArrowRight size={16} />
@@ -432,7 +421,7 @@ export const HomePage: React.FC = () => {
               { label: 'High Purity Nickel', value: '99.8%+' },
             ].map((item) => (
               <div key={item.label} className="space-y-1">
-                <p className="text-sm font-semibold text-[#304e58]">{item.label}</p>
+                <p className="text-sm font-semibold text-brand">{item.label}</p>
                 <p className="text-xs text-slate-500">{item.value}</p>
               </div>
             ))}
@@ -440,15 +429,15 @@ export const HomePage: React.FC = () => {
         </div>
       </section>
 
-      <section className="py-16 bg-white">
+      <section className="py-16 bg-slate-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-6 mb-8">
             <div>
-              <p className="text-xs font-semibold uppercase tracking-[0.3em] text-[#304e58]">Categories</p>
-              <h2 className="mt-3 text-3xl md:text-4xl font-display font-bold text-[#304e58]">Browse by Category</h2>
+              <p className="text-xs font-semibold uppercase tracking-[0.3em] text-brand">Categories</p>
+              <h2 className="mt-3 text-3xl md:text-4xl font-display font-bold text-brand">Browse by Category</h2>
               <p className="mt-2 text-slate-500">Scroll through the most requested nickel strip and battery components.</p>
             </div>
-            <Link to="/categories" className="text-sm font-semibold text-[#304e58]">View all categories</Link>
+            <Link to="/categories" className="text-sm font-semibold text-brand">View all categories</Link>
           </div>
         </div>
         <div className="overflow-hidden border-y border-slate-200 bg-white py-4">
@@ -457,7 +446,7 @@ export const HomePage: React.FC = () => {
               <Link
                 key={`${item.slug}-${index}`}
                 to={`/products?category=${encodeURIComponent(item.slug)}`}
-                className="inline-flex items-center gap-2 rounded-full border border-[#314e58]/20 bg-[#ffffff] px-4 py-2 text-sm font-semibold text-[#304e58] hover:bg-[#304e58] hover:text-white transition-colors"
+                className="inline-flex items-center gap-2 rounded-full border border-brand-dark/20 bg-[#ffffff] px-4 py-2 text-sm font-semibold text-brand hover:bg-brand hover:text-white transition-colors"
               >
                 {item.name}
               </Link>
@@ -466,15 +455,15 @@ export const HomePage: React.FC = () => {
         </div>
       </section>
 
-      <section className="py-20 bg-[#ffffff]">
+      <section className="py-20 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-6 mb-12">
             <div>
-              <p className="text-xs font-semibold uppercase tracking-[0.3em] text-[#304e58]">Products</p>
-              <h2 className="mt-3 text-3xl md:text-4xl font-display font-bold text-[#304e58]">Nickel Strip Variants</h2>
+              <p className="text-xs font-semibold uppercase tracking-[0.3em] text-brand">Products</p>
+              <h2 className="mt-3 text-3xl md:text-4xl font-display font-bold text-brand">Nickel Strip Variants</h2>
               <p className="mt-2 text-slate-500">Engineered to match your cell design, welding process, and performance targets.</p>
             </div>
-            <Link to="/products?search=nickel" className="text-sm font-semibold text-[#304e58]">View all nickel strip products</Link>
+            <Link to="/products?search=nickel" className="text-sm font-semibold text-brand">View all nickel strip products</Link>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             {showcaseItems.map((item, index) => (
@@ -487,12 +476,12 @@ export const HomePage: React.FC = () => {
                   <img src={item.image} alt={item.title} loading="lazy" width={640} height={360} className="h-full w-full object-cover group-hover:scale-105 transition-transform duration-500" referrerPolicy="no-referrer" />
                 </div>
                 <div className="p-6">
-                  <h3 className="text-lg font-semibold text-[#304e58]">{item.title}</h3>
+                  <h3 className="text-lg font-semibold text-brand">{item.title}</h3>
                   <p className="mt-2 text-sm text-slate-500">{item.spec}</p>
                   <p className="mt-3 text-sm text-slate-600">{item.note}</p>
                   <Link
                     to={item.cta}
-                    className="mt-5 inline-flex items-center gap-2 text-sm font-semibold text-[#304e58]"
+                    className="mt-5 inline-flex items-center gap-2 text-sm font-semibold text-brand"
                   >
                     Get Quote
                     <ArrowRight size={14} />
@@ -504,21 +493,21 @@ export const HomePage: React.FC = () => {
         </div>
       </section>
 
-      <section className="py-20 bg-white">
+      <section className="py-20 bg-slate-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-1 lg:grid-cols-[1.1fr_1fr] gap-12 items-center">
             <div>
-              <p className="text-xs font-semibold uppercase tracking-[0.3em] text-[#304e58]">Applications</p>
-              <h2 className="mt-3 text-3xl md:text-4xl font-display font-bold text-[#304e58]">Where Our Nickel Strips Power Innovation</h2>
+              <p className="text-xs font-semibold uppercase tracking-[0.3em] text-brand">Applications</p>
+              <h2 className="mt-3 text-3xl md:text-4xl font-display font-bold text-brand">Where Our Nickel Strips Power Innovation</h2>
               <p className="mt-4 text-slate-500">High-performance battery manufacturers rely on consistent conductivity and tight tolerances.</p>
               <div className="mt-8 grid grid-cols-1 sm:grid-cols-2 gap-6">
                 {applications.map((app) => (
                   <div key={app.title} className="flex items-start gap-3">
-                    <div className="h-10 w-10 rounded-xl bg-[#304e58]/10 text-[#304e58] flex items-center justify-center">
+                    <div className="h-10 w-10 rounded-xl bg-brand/10 text-brand flex items-center justify-center">
                       <app.icon size={18} />
                     </div>
                     <div>
-                      <p className="text-sm font-semibold text-[#304e58]">{app.title}</p>
+                      <p className="text-sm font-semibold text-brand">{app.title}</p>
                       <p className="text-xs text-slate-500">Optimized for high-current and precise weldability.</p>
                     </div>
                   </div>
@@ -529,8 +518,8 @@ export const HomePage: React.FC = () => {
               <div className="grid grid-cols-2 gap-6">
                 {industries.map((industry) => (
                   <div key={industry.title} className="rounded-2xl bg-white p-4 shadow-sm">
-                    <industry.icon size={20} className="text-[#304e58]" />
-                    <p className="mt-3 text-sm font-semibold text-[#304e58]">{industry.title}</p>
+                    <industry.icon size={20} className="text-brand" />
+                    <p className="mt-3 text-sm font-semibold text-brand">{industry.title}</p>
                   </div>
                 ))}
               </div>
@@ -539,15 +528,15 @@ export const HomePage: React.FC = () => {
         </div>
       </section>
 
-      <section className="py-20 bg-[#304e58] text-white">
+      <section className="py-20 bg-brand text-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-6 mb-12">
             <div>
-              <p className="text-xs font-semibold uppercase tracking-[0.3em] text-[#314e58]">Why Choose Us</p>
+              <p className="text-xs font-semibold uppercase tracking-[0.3em] text-brand-dark">Why Choose Us</p>
               <h2 className="mt-3 text-3xl md:text-4xl font-display font-bold">Trusted Manufacturing Partner</h2>
               <p className="mt-2 text-white/70">Built on legacy, engineered for modern battery production.</p>
             </div>
-            <Link to="/products?enquiry=1" className="inline-flex items-center gap-2 rounded-full bg-white text-[#304e58] px-6 py-3 text-sm font-semibold hover:bg-slate-100">
+            <Link to="/products?enquiry=1" className="inline-flex items-center gap-2 rounded-full bg-white text-brand px-6 py-3 text-sm font-semibold hover:bg-slate-100">
               Speak to an Engineer
               <ArrowRight size={14} />
             </Link>
@@ -555,7 +544,7 @@ export const HomePage: React.FC = () => {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {whyChooseUs.map((item) => (
               <div key={item.title} className="rounded-2xl border border-white/10 bg-white/5 p-6">
-                <item.icon size={20} className="text-[#314e58]" />
+                <item.icon size={20} className="text-brand-dark" />
                 <h3 className="mt-4 text-lg font-semibold">{item.title}</h3>
                 <p className="mt-2 text-sm text-white/70">{item.detail}</p>
               </div>
@@ -579,41 +568,23 @@ export const HomePage: React.FC = () => {
               />
             </div>
             <div>
-              <p className="text-xs font-semibold uppercase tracking-[0.3em] text-[#304e58]">Quality & Certifications</p>
-              <h2 className="mt-3 text-3xl md:text-4xl font-display font-bold text-[#304e58]">Precision You Can Audit</h2>
+              <p className="text-xs font-semibold uppercase tracking-[0.3em] text-brand">Quality & Certifications</p>
+              <h2 className="mt-3 text-3xl md:text-4xl font-display font-bold text-brand">Precision You Can Audit</h2>
               <p className="mt-3 text-slate-500">Every shipment includes material test certificates, traceability, and compliance documentation.</p>
               <div className="mt-6 space-y-3">
                 {qualityPoints.map((point) => (
                   <div key={point} className="flex items-start gap-3 text-sm text-slate-600">
-                    <BadgeCheck size={18} className="text-[#304e58] mt-0.5" />
+                    <BadgeCheck size={18} className="text-brand mt-0.5" />
                     <span>{point}</span>
                   </div>
                 ))}
               </div>
               <div className="mt-8 flex items-center gap-4">
-                <div className="rounded-xl bg-[#304e58]/10 px-4 py-3 text-sm font-semibold text-[#304e58]">ISO 9001</div>
-                <div className="rounded-xl bg-[#304e58]/10 px-4 py-3 text-sm font-semibold text-[#304e58]">RoHS</div>
-                <div className="rounded-xl bg-[#304e58]/10 px-4 py-3 text-sm font-semibold text-[#304e58]">REACH</div>
+                <div className="rounded-xl bg-brand/10 px-4 py-3 text-sm font-semibold text-brand">ISO 9001</div>
+                <div className="rounded-xl bg-brand/10 px-4 py-3 text-sm font-semibold text-brand">RoHS</div>
+                <div className="rounded-xl bg-brand/10 px-4 py-3 text-sm font-semibold text-brand">REACH</div>
               </div>
             </div>
-          </div>
-        </div>
-      </section>
-
-      <section className="py-20 bg-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-10">
-            <p className="text-xs font-semibold uppercase tracking-[0.3em] text-[#304e58]">Product Specification</p>
-            <h2 className="mt-3 text-3xl md:text-4xl font-display font-bold text-[#304e58]">Nickel Strip Technical Specifications</h2>
-            <p className="mt-2 text-slate-500">Detailed specifications for battery manufacturing, welding, and electrical connector applications.</p>
-          </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-6">
-            {productSpecifications.map((spec) => (
-              <div key={spec.label} className="rounded-3xl border border-slate-200 bg-slate-50 p-6">
-                <p className="text-sm font-semibold text-[#304e58]">{spec.label}</p>
-                <p className="mt-2 text-sm text-slate-600">{spec.value}</p>
-              </div>
-            ))}
           </div>
         </div>
       </section>
@@ -621,22 +592,17 @@ export const HomePage: React.FC = () => {
       <section className="py-20 bg-slate-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-10">
-            <p className="text-xs font-semibold uppercase tracking-[0.3em] text-[#304e58]">Buyer Guidance</p>
-            <h2 className="mt-3 text-3xl md:text-4xl font-display font-bold text-[#304e58]">Choosing the Right Nickel Strip</h2>
+            <p className="text-xs font-semibold uppercase tracking-[0.3em] text-brand">Product Specification</p>
+            <h2 className="mt-3 text-3xl md:text-4xl font-display font-bold text-brand">Nickel Strip Technical Specifications</h2>
+            <p className="mt-2 text-slate-500">Detailed specifications for battery manufacturing, welding, and electrical connector applications.</p>
           </div>
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <div className="rounded-3xl border border-slate-200 bg-white p-6">
-              <h3 className="text-lg font-semibold text-[#304e58]">Nickel vs Nickel-Plated</h3>
-              <p className="mt-3 text-sm text-slate-600">Pure nickel offers the best conductivity and weld strength for high-current battery tabs. Nickel-plated strip is more economical for lower current assemblies.</p>
-            </div>
-            <div className="rounded-3xl border border-slate-200 bg-white p-6">
-              <h3 className="text-lg font-semibold text-[#304e58]">Thickness vs Current Capacity</h3>
-              <p className="mt-3 text-sm text-slate-600">Thinner strips are ideal for compact 18650 and 21700 packs. Thicker strips support higher discharge currents and more demanding EV modules.</p>
-            </div>
-            <div className="rounded-3xl border border-slate-200 bg-white p-6">
-              <h3 className="text-lg font-semibold text-[#304e58]">Spot Welding Applications</h3>
-              <p className="mt-3 text-sm text-slate-600">Our strips are designed for spot welding, laser welding, and ultrasonic bonding used in battery pack assembly and busbar fabrication.</p>
-            </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-6">
+            {productSpecifications.map((spec) => (
+              <div key={spec.label} className="rounded-3xl border border-slate-200 bg-slate-50 p-6">
+                <p className="text-sm font-semibold text-brand">{spec.label}</p>
+                <p className="mt-2 text-sm text-slate-600">{spec.value}</p>
+              </div>
+            ))}
           </div>
         </div>
       </section>
@@ -644,13 +610,36 @@ export const HomePage: React.FC = () => {
       <section className="py-20 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-10">
-            <p className="text-xs font-semibold uppercase tracking-[0.3em] text-[#304e58]">FAQ</p>
-            <h2 className="mt-3 text-3xl md:text-4xl font-display font-bold text-[#304e58]">Frequently Asked Questions</h2>
+            <p className="text-xs font-semibold uppercase tracking-[0.3em] text-brand">Buyer Guidance</p>
+            <h2 className="mt-3 text-3xl md:text-4xl font-display font-bold text-brand">Choosing the Right Nickel Strip</h2>
+          </div>
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div className="rounded-3xl border border-slate-200 bg-white p-6">
+              <h3 className="text-lg font-semibold text-brand">Nickel vs Nickel-Plated</h3>
+              <p className="mt-3 text-sm text-slate-600">Pure nickel offers the best conductivity and weld strength for high-current battery tabs. Nickel-plated strip is more economical for lower current assemblies.</p>
+            </div>
+            <div className="rounded-3xl border border-slate-200 bg-white p-6">
+              <h3 className="text-lg font-semibold text-brand">Thickness vs Current Capacity</h3>
+              <p className="mt-3 text-sm text-slate-600">Thinner strips are ideal for compact 18650 and 21700 packs. Thicker strips support higher discharge currents and more demanding EV modules.</p>
+            </div>
+            <div className="rounded-3xl border border-slate-200 bg-white p-6">
+              <h3 className="text-lg font-semibold text-brand">Spot Welding Applications</h3>
+              <p className="mt-3 text-sm text-slate-600">Our strips are designed for spot welding, laser welding, and ultrasonic bonding used in battery pack assembly and busbar fabrication.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section className="py-20 bg-slate-50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-10">
+            <p className="text-xs font-semibold uppercase tracking-[0.3em] text-brand">FAQ</p>
+            <h2 className="mt-3 text-3xl md:text-4xl font-display font-bold text-brand">Frequently Asked Questions</h2>
           </div>
           <div className="space-y-4">
             {faqItems.map((faq) => (
               <details key={faq.question} className="rounded-3xl border border-slate-200 bg-slate-50 p-6">
-                <summary className="cursor-pointer text-lg font-semibold text-[#304e58]">{faq.question}</summary>
+                <summary className="cursor-pointer text-lg font-semibold text-brand">{faq.question}</summary>
                 <p className="mt-4 text-sm text-slate-600">{faq.answer}</p>
               </details>
             ))}
@@ -661,15 +650,15 @@ export const HomePage: React.FC = () => {
       <section className="py-20 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center max-w-3xl mx-auto">
-            <p className="text-xs font-semibold uppercase tracking-[0.3em] text-[#314e58]">Reviews</p>
-            <h2 className="mt-3 text-3xl md:text-4xl font-display font-bold text-[#304e58]">What Manufacturing Teams Say</h2>
+            <p className="text-xs font-semibold uppercase tracking-[0.3em] text-brand-dark">Reviews</p>
+            <h2 className="mt-3 text-3xl md:text-4xl font-display font-bold text-brand">What Manufacturing Teams Say</h2>
             <p className="mt-3 text-slate-500">Verified feedback from lithium battery and EV supply partners.</p>
           </div>
           <div className="mt-10 grid grid-cols-1 md:grid-cols-2 gap-6">
             {reviewHighlights.map((item, index) => (
-              <div key={`${item.name}-${index}`} className="rounded-3xl bg-white p-6 shadow-sm border border-[#314e58]/20">
+              <div key={`${item.name}-${index}`} className="rounded-3xl bg-white p-6 shadow-sm border border-brand-dark/20">
                 <div className="flex items-center justify-between">
-                  <MessageSquareQuote className="text-[#314e58]" size={20} />
+                  <MessageSquareQuote className="text-brand-dark" size={20} />
                   <div className="flex items-center gap-1">
                     {Array.from({ length: 5 }).map((_, index) => {
                       const filled = index < item.rating;
@@ -677,7 +666,7 @@ export const HomePage: React.FC = () => {
                         <Star
                           key={`${item.name}-${index}`}
                           size={14}
-                          className={filled ? 'text-[#304e58]' : 'text-slate-300'}
+                          className={filled ? 'text-brand' : 'text-slate-300'}
                           fill={filled ? '#304e58' : 'none'}
                         />
                       );
@@ -685,65 +674,72 @@ export const HomePage: React.FC = () => {
                   </div>
                 </div>
                 <p className="mt-4 text-slate-600">"{item.quote}"</p>
-                <p className="mt-4 text-sm font-semibold text-[#304e58]">{item.name}</p>
+                <p className="mt-4 text-sm font-semibold text-brand">{item.name}</p>
               </div>
             ))}
           </div>
         </div>
       </section>
 
-      <section className="py-16 bg-white">
+      <section className="py-16 bg-slate-50">
         <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
-          <h2 className="text-2xl md:text-3xl font-display font-bold text-[#304e58]">Nickel Strips Manufacturer for Global Lithium Battery Supply</h2>
-          <p className="mt-4 text-slate-600">
-            As a trusted Nickel Strips Manufacturer, we supply high-purity nickel strips for lithium-ion batteries, EV battery packs,
-            and industrial energy storage. Our precision slitting and strict QA make us a preferred nickel strips supplier and nickel strip exporter.
-          </p>
-          <p className="mt-4 text-slate-600">
-            Our manufacturing process supports custom widths, accurate thickness tolerances, and batch reports that compliance-focused manufacturers expect.
-          </p>
-          <p className="mt-4 text-slate-600">
-            We support export documentation for international battery pack assembly, and our team works with OEMs, cell makers, and battery module builders.
-          </p>
-          <p className="mt-3 text-slate-600">
-            Learn more: <a href="https://nickelbusbar.com/blog/nickel-strips-lithium-batteries" className="font-semibold text-[#304e58] underline">https://nickelbusbar.com/blog/nickel-strips-lithium-batteries</a>
-          </p>
+          <div className="rounded-3xl border border-slate-200 bg-white p-8 md:p-10 shadow-sm">
+            <p className="text-xs font-semibold uppercase tracking-[0.3em] text-brand">Global Supply</p>
+            <h2 className="mt-3 text-2xl md:text-3xl font-display font-bold text-brand">Nickel Strips Manufacturer for Global Lithium Battery Supply</h2>
+            <p className="mt-4 text-slate-600">
+              As a trusted Nickel Strips Manufacturer, we supply high-purity nickel strips for lithium-ion batteries, EV battery packs,
+              and industrial energy storage. Our precision slitting and strict QA make us a preferred nickel strips supplier and nickel strip exporter.
+            </p>
+            <p className="mt-4 text-slate-600">
+              Our manufacturing process supports custom widths, accurate thickness tolerances, and batch reports that compliance-focused manufacturers expect.
+            </p>
+            <p className="mt-4 text-slate-600">
+              We support export documentation for international battery pack assembly, and our team works with OEMs, cell makers, and battery module builders.
+            </p>
+            <Link
+              to="/blog/nickel-strips-lithium-batteries"
+              className="mt-5 inline-flex items-center gap-2 text-sm font-semibold text-brand hover:text-brand-dark"
+            >
+              Read more: Why Nickel Strips are Essential in Lithium Batteries
+              <ArrowRight size={14} />
+            </Link>
+          </div>
         </div>
       </section>
 
-      <section className="py-20 bg-[#ffffff]">
+      <section className="py-20 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-6 mb-10">
             <div>
-              <p className="text-xs font-semibold uppercase tracking-[0.3em] text-[#304e58]">Knowledge Hub</p>
-              <h2 className="mt-3 text-3xl md:text-4xl font-display font-bold text-[#304e58]">Insights for Battery Engineers</h2>
+              <p className="text-xs font-semibold uppercase tracking-[0.3em] text-brand">Knowledge Hub</p>
+              <h2 className="mt-3 text-3xl md:text-4xl font-display font-bold text-brand">Insights for Battery Engineers</h2>
               <p className="mt-2 text-slate-500">Guides and research to optimize nickel strip selection.</p>
             </div>
-            <Link to="/blog" className="text-sm font-semibold text-[#304e58]">Explore all articles</Link>
+            <Link to="/blog" className="text-sm font-semibold text-brand">Explore all articles</Link>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {blogArticles.map((article, index) => (
               <Link key={`${article.link}-${index}`} to={article.link} className="rounded-3xl border border-slate-200 bg-white p-6 hover:shadow-lg transition-shadow">
-                <h3 className="text-lg font-semibold text-[#304e58]">{article.title}</h3>
+                <h3 className="text-lg font-semibold text-brand">{article.title}</h3>
                 <p className="mt-3 text-sm text-slate-500">{article.excerpt}</p>
-                <span className="mt-4 inline-flex items-center gap-2 text-sm font-semibold text-[#304e58]">Read more <ArrowRight size={14} /></span>
+                <span className="mt-4 inline-flex items-center gap-2 text-sm font-semibold text-brand">Read more <ArrowRight size={14} /></span>
               </Link>
             ))}
           </div>
         </div>
       </section>
 
-      <section className="py-20 bg-[#304e58]">
+      <section className="py-20 bg-brand">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="rounded-[32px] bg-gradient-to-br from-white via-[#ffffff] to-[#f5f5f5] p-10 md:p-12">
             <div className="grid grid-cols-1 lg:grid-cols-[1fr_1.2fr] gap-10 items-center">
               <div>
-                <p className="text-xs font-semibold uppercase tracking-[0.3em] text-[#304e58]">Need Custom Nickel Strips?</p>
-                <h2 className="mt-3 text-3xl md:text-4xl font-display font-bold text-[#304e58]">Get a Fast Engineering Quote</h2>
+                <p className="text-xs font-semibold uppercase tracking-[0.3em] text-brand">Need Custom Nickel Strips?</p>
+                <h2 className="mt-3 text-3xl md:text-4xl font-display font-bold text-brand">Get a Fast Engineering Quote</h2>
                 <p className="mt-3 text-slate-600">Share your requirements and receive a specification-based quotation within 24 hours.</p>
                 <div className="mt-6 space-y-3 text-sm text-slate-600">
-                  <div className="flex items-center gap-2"><ClipboardCheck size={16} className="text-[#304e58]" /> Supplier documentation + material test certificates</div>
-                  <div className="flex items-center gap-2"><Globe size={16} className="text-[#304e58]" /> Global shipping support</div>
+                  <div className="flex items-center gap-2"><ClipboardCheck size={16} className="text-brand" /> Supplier documentation + material test certificates</div>
+                  <div className="flex items-center gap-2"><Globe size={16} className="text-brand" /> Global shipping support</div>
                 </div>
               </div>
               <form onSubmit={handleSubmit} className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -789,12 +785,12 @@ export const HomePage: React.FC = () => {
                   required
                 />
                 {submitMessage && (
-                  <p className="sm:col-span-2 text-sm text-[#304e58]">{submitMessage}</p>
+                  <p className="sm:col-span-2 text-sm text-brand">{submitMessage}</p>
                 )}
                 <button
                   type="submit"
                   disabled={isSubmitting}
-                  className="sm:col-span-2 rounded-xl bg-[#304e58] py-3 text-sm font-semibold text-white hover:bg-[#314e58] disabled:opacity-70"
+                  className="sm:col-span-2 rounded-xl bg-brand py-3 text-sm font-semibold text-white hover:bg-brand-dark disabled:opacity-70"
                 >
                   {isSubmitting ? 'Submitting...' : 'Request a Quote'}
                 </button>
