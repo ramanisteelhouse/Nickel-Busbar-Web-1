@@ -559,7 +559,7 @@ export const HomePage: React.FC = () => {
           <div className="grid grid-cols-1 lg:grid-cols-[1fr_1.1fr] gap-12 items-center">
             <div className="rounded-3xl overflow-hidden border border-slate-200">
               <img
-                src="https://images.unsplash.com/photo-1581092160562-40aa08e78837?auto=format&fit=crop&w=1200&q=80"
+                src="/public/img/iso-9001.jpg"
                 alt="Quality inspection"
                 width={1200}
                 height={800}
