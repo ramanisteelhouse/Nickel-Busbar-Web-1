@@ -1,4 +1,6 @@
 import express from "express";
+import helmet from "helmet";
+import rateLimit from "express-rate-limit";
 import jwt from "jsonwebtoken";
 import bcrypt from "bcryptjs";
 import { randomUUID } from "crypto";
@@ -10,7 +12,15 @@ import twilio from "twilio";
 
 dotenv.config();
 
-const JWT_SECRET = process.env.JWT_SECRET || "industrial-secret-2026";
+const JWT_SECRET: string = (() => {
+  const secret = process.env.JWT_SECRET;
+  if (!secret) {
+    throw new Error(
+      "Missing JWT_SECRET environment variable. Set a long, random secret (never a hardcoded default) before starting the server."
+    );
+  }
+  return secret;
+})();
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 const SMTP_HOST = process.env.SMTP_HOST;
 const SMTP_PORT = Number(process.env.SMTP_PORT || 587);
@@ -357,9 +367,42 @@ export function createApiApp() {
     secure: process.env.NODE_ENV === "production",
   };
 
+  // Trust the first proxy hop (Vercel's edge network / any reverse proxy) so
+  // req.ip reflects the real client IP for rate limiting instead of the proxy's.
+  app.set("trust proxy", 1);
+
   void ensureProductEnquiriesSchema();
 
+  // CSP is left disabled here since it would need to allow Google Fonts, Unsplash,
+  // Supabase storage, and Google Identity — safer to leave that to a follow-up pass
+  // than ship an untested policy that silently breaks the page.
+  app.use(helmet({ contentSecurityPolicy: false, crossOriginEmbedderPolicy: false }));
+
   app.use(express.json({ limit: "1mb" }));
+
+  const authLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000,
+    limit: 10,
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: { error: "Too many attempts. Please try again in a few minutes." },
+  });
+
+  const enquiryLimiter = rateLimit({
+    windowMs: 60 * 60 * 1000,
+    limit: 20,
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: { error: "Too many requests. Please try again later." },
+  });
+
+  const chatLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000,
+    limit: 30,
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: { error: "Too many messages. Please slow down and try again shortly." },
+  });
 
   app.get("/api/auth/google/config", (_req, res) => {
     const clientId = (process.env.GOOGLE_CLIENT_ID || process.env.VITE_GOOGLE_CLIENT_ID || "").trim();
@@ -556,8 +599,19 @@ export function createApiApp() {
   });
 
   // --- Auth Routes ---
-  app.post("/api/auth/register", async (req, res) => {
-    const { name, email, password } = req.body;
+  app.post("/api/auth/register", authLimiter, async (req, res) => {
+    const { name, email, password } = req.body ?? {};
+
+    if (typeof name !== "string" || !name.trim()) {
+      return res.status(400).json({ error: "Full name is required." });
+    }
+    if (typeof email !== "string" || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
+      return res.status(400).json({ error: "A valid email address is required." });
+    }
+    if (typeof password !== "string" || password.length < 8) {
+      return res.status(400).json({ error: "Password must be at least 8 characters." });
+    }
+
     try {
       const hashedPassword = await bcrypt.hash(password, 10);
       const user = await queryOne<{ id: number; name: string; email: string; role: string }>(
@@ -574,7 +628,7 @@ export function createApiApp() {
     }
   });
 
-  app.post("/api/auth/login", async (req, res) => {
+  app.post("/api/auth/login", authLimiter, async (req, res) => {
     const { email, password } = req.body;
     const user = await queryOne<any>("SELECT * FROM users WHERE email = $1", [email]);
     if (!user || !(await bcrypt.compare(password, user.password))) {
@@ -585,7 +639,7 @@ export function createApiApp() {
     res.json({ token, user: { id: user.id, name: user.name, email: user.email, role: user.role } });
   });
 
-  app.post("/api/auth/google", async (req, res) => {
+  app.post("/api/auth/google", authLimiter, async (req, res) => {
     const { credential } = req.body ?? {};
     if (!credential || typeof credential !== "string") {
       return res.status(400).json({ error: "Google credential is required." });
@@ -1059,7 +1113,7 @@ Answer customer questions professionally and concisely. Use the "Relevant catalo
     }
   };
 
-  app.post("/api/ai/chat", async (req, res) => {
+  app.post("/api/ai/chat", chatLimiter, async (req, res) => {
     const message = typeof req.body?.message === "string" ? req.body.message.trim() : "";
     const rawHistory: unknown[] = Array.isArray(req.body?.history) ? req.body.history : [];
 
@@ -1111,7 +1165,7 @@ Answer customer questions professionally and concisely. Use the "Relevant catalo
   });
 
   // --- Product Enquiries ---
-  app.post("/api/enquiries", async (req, res) => {
+  app.post("/api/enquiries", enquiryLimiter, async (req, res) => {
     const { productId, productName, requirement, thickness, fullName, email, phone, company, location, quantity, message } = req.body;
     if (!fullName || !email || !phone) {
       return res.status(400).json({ error: "Full name, email, and phone are required." });
@@ -1195,7 +1249,7 @@ Answer customer questions professionally and concisely. Use the "Relevant catalo
   });
 
   // --- Quote Requests (Cart/RFQ) ---
-  app.post("/api/quotes", async (req, res) => {
+  app.post("/api/quotes", enquiryLimiter, async (req, res) => {
     const { customer = {}, items = [], summary = {}, shipping_option, meta = {} } = req.body ?? {};
 
     if (!Array.isArray(items) || items.length === 0) {

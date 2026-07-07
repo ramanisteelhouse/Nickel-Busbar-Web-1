@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { X } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Ad } from '../types';
-import { resolveImageSrc } from '../lib/utils';
+import { buildImageAlt, resolveImageSrc } from '../lib/utils';
 
 const dismissKeyForAd = (id: number) => `adpopup_dismissed_${id}`;
 
@@ -95,7 +95,7 @@ export const AdPopup: React.FC = () => {
                 {popupAd.image_url ? (
                   <img
                     src={resolveImageSrc(popupAd.image_url)}
-                    alt={popupAd.title}
+                    alt={buildImageAlt(popupAd.title, 'promotion')}
                     width={480}
                     height={220}
                     decoding="async"

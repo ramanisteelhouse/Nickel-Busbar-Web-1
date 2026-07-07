@@ -4,7 +4,7 @@ import { ShoppingCart, Shield, Truck, RotateCcw, ChevronRight, X } from 'lucide-
 import { motion } from 'motion/react';
 import { Helmet } from 'react-helmet-async';
 import { Product } from '../types';
-import { getProductUnitLabel, getStrikePrice, resolveImageSrc } from '../lib/utils';
+import { buildImageAlt, getProductUnitLabel, getStrikePrice, resolveImageSrc } from '../lib/utils';
 import { useLanguage } from '../i18n/LanguageProvider';
 
 export const ProductDetailPage: React.FC<{ onAddToCart: (p: Product) => void }> = ({ onAddToCart }) => {
@@ -187,7 +187,7 @@ export const ProductDetailPage: React.FC<{ onAddToCart: (p: Product) => void }> 
           <div className="aspect-square rounded-3xl overflow-hidden bg-zinc-100 border border-zinc-200">
             <img
               src={resolveImageSrc(product.image)}
-              alt={product.name}
+              alt={buildImageAlt(product.name)}
               width={800}
               height={800}
               loading="eager"

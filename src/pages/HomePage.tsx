@@ -22,7 +22,7 @@ import {
 import { motion } from 'motion/react';
 import { Helmet } from 'react-helmet-async';
 import type { Product, Category, BlogPost } from '../types';
-import { encodePathSegment, resolveImageSrc } from '../lib/utils';
+import { buildImageAlt, encodePathSegment, resolveImageSrc } from '../lib/utils';
 
 const fallbackShowcaseImage = '/img/icon-logo.jpg';
 
@@ -474,7 +474,7 @@ export const HomePage: React.FC = () => {
                 className="group rounded-3xl border border-slate-200 bg-white overflow-hidden shadow-sm"
               >
                 <div className="h-48 overflow-hidden">
-                  <img src={item.image} alt={item.title} loading="lazy" width={640} height={360} className="h-full w-full object-cover group-hover:scale-105 transition-transform duration-500" referrerPolicy="no-referrer" />
+                  <img src={item.image} alt={buildImageAlt(item.title)} loading="lazy" width={640} height={360} className="h-full w-full object-cover group-hover:scale-105 transition-transform duration-500" referrerPolicy="no-referrer" />
                 </div>
                 <div className="p-6">
                   <h3 className="text-lg font-semibold text-brand">{item.title}</h3>

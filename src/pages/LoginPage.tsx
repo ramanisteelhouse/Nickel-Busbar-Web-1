@@ -237,8 +237,10 @@ export const LoginPage: React.FC = () => {
                     value={password}
                     onChange={(event) => setPassword(event.target.value)}
                     required
+                    minLength={isLogin ? undefined : 8}
                   />
                 </div>
+                {!isLogin && <p className="ml-1 text-xs text-zinc-400">At least 8 characters.</p>}
               </div>
 
               {error ? <p className="text-sm text-red-600">{error}</p> : null}

@@ -5,7 +5,7 @@ import { Trash2, Plus, Minus, ArrowRight, ShoppingBag, Shield } from 'lucide-rea
 import { motion } from 'motion/react';
 import { CartItem } from '../types';
 import { useLanguage } from '../i18n/LanguageProvider';
-import { getProductUnitLabel, normalizeProductUnit, resolveImageSrc } from '../lib/utils';
+import { buildImageAlt, getProductUnitLabel, normalizeProductUnit, resolveImageSrc } from '../lib/utils';
 
 interface CartPageProps {
   cart: CartItem[];
@@ -57,7 +57,7 @@ export const CartPage: React.FC<CartPageProps> = ({ cart, updateQuantity, remove
               <div className="w-24 h-24 bg-zinc-100 rounded-2xl overflow-hidden flex-shrink-0">
                 <img
                   src={resolveImageSrc(item.image)}
-                  alt={item.name}
+                  alt={buildImageAlt(item.name)}
                   width={96}
                   height={96}
                   loading="lazy"

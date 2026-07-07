@@ -1,10 +1,10 @@
 import React from 'react';
-import { Link, useLocation, useNavigate, useSearchParams } from 'react-router-dom';
-import { Filter, Search, X } from 'lucide-react';
+import { Link, useLocation, useSearchParams } from 'react-router-dom';
+import { X } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Helmet } from 'react-helmet-async';
 import { Product, Category } from '../types';
-import { cn, getProductUnitLabel, getStrikePrice, resolveImageSrc } from '../lib/utils';
+import { buildImageAlt, cn, getProductUnitLabel, getStrikePrice, resolveImageSrc } from '../lib/utils';
 import { useLanguage } from '../i18n/LanguageProvider';
 
 type EnquiryFormData = {
@@ -34,14 +34,10 @@ const initialEnquiryData: EnquiryFormData = {
 export const ProductListingPage: React.FC = () => {
   const location = useLocation();
   const isCategoriesRoute = location.pathname === '/categories';
-  const navigate = useNavigate();
-  const [searchParams, setSearchParams] = useSearchParams();
+  const [searchParams] = useSearchParams();
   const [products, setProducts] = React.useState<Product[]>([]);
   const [categories, setCategories] = React.useState<Category[]>([]);
   const [loading, setLoading] = React.useState(true);
-  const [searchInput, setSearchInput] = React.useState('');
-  const [searchSuggestions, setSearchSuggestions] = React.useState<Array<{ id: number; slug: string; name: string; category_name?: string }>>([]);
-  const [showSearchSuggestions, setShowSearchSuggestions] = React.useState(false);
   const [isEnquiryOpen, setIsEnquiryOpen] = React.useState(false);
   const [selectedProduct, setSelectedProduct] = React.useState<Product | null>(null);
   const [enquiryData, setEnquiryData] = React.useState<EnquiryFormData>(initialEnquiryData);
@@ -53,44 +49,6 @@ export const ProductListingPage: React.FC = () => {
 
   const categoryFilter = searchParams.get('category');
   const searchQuery = searchParams.get('search') ?? '';
-
-  React.useEffect(() => {
-    setSearchInput(searchQuery);
-  }, [searchQuery]);
-
-  React.useEffect(() => {
-    const query = searchInput.trim();
-    if (query.length < 1) {
-      setSearchSuggestions([]);
-      setShowSearchSuggestions(false);
-      return;
-    }
-
-    const controller = new AbortController();
-    const timer = window.setTimeout(() => {
-      fetch(`/api/products/suggestions?q=${encodeURIComponent(query)}&limit=8`, { signal: controller.signal })
-        .then((response) => {
-          if (!response.ok) {
-            throw new Error('Failed to load suggestions');
-          }
-          return response.json();
-        })
-        .then((data) => {
-          const suggestions = Array.isArray(data) ? data : [];
-          setSearchSuggestions(suggestions);
-          setShowSearchSuggestions(suggestions.length > 0);
-        })
-        .catch(() => {
-          setSearchSuggestions([]);
-          setShowSearchSuggestions(false);
-        });
-    }, 180);
-
-    return () => {
-      window.clearTimeout(timer);
-      controller.abort();
-    };
-  }, [searchInput]);
 
   React.useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -163,25 +121,6 @@ export const ProductListingPage: React.FC = () => {
 
     fetchData();
   }, [categoryFilter, searchQuery]);
-
-  const applySearch = (event: React.FormEvent) => {
-    event.preventDefault();
-    setShowSearchSuggestions(false);
-    const params = new URLSearchParams(searchParams);
-    const value = searchInput.trim();
-    if (value) {
-      params.set('search', value);
-    } else {
-      params.delete('search');
-    }
-    setSearchParams(params);
-  };
-
-  const openFromSuggestion = (slug: string, name: string) => {
-    setSearchInput(name);
-    setShowSearchSuggestions(false);
-    navigate(`/product/${slug}`);
-  };
 
   const openEnquiryForm = (product?: Product) => {
     setSelectedProduct(product ?? null);
@@ -267,56 +206,12 @@ export const ProductListingPage: React.FC = () => {
         />
       </Helmet>
       <div className="pt-28 pb-24 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-12 gap-6">
-          <div>
-            <h1 className="text-4xl font-bold text-zinc-900 tracking-tight mb-2">
-              {categoryFilter ? categories.find(c => c.slug === categoryFilter)?.name : t('product.allProducts')}
-            </h1>
-            <p className="text-zinc-500">{t('product.showingCount', { count: products.length })}</p>
-          </div>
-
-          <div className="flex items-center gap-4 w-full md:w-auto">
-            <form onSubmit={applySearch} className="relative flex-1 md:w-80">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400" size={18} />
-              <input
-                type="search"
-                value={searchInput}
-                onChange={(event) => setSearchInput(event.target.value)}
-                onFocus={() => {
-                  if (searchSuggestions.length > 0) setShowSearchSuggestions(true);
-                }}
-                onBlur={() => {
-                  window.setTimeout(() => setShowSearchSuggestions(false), 120);
-                }}
-                placeholder={t('product.searchPlaceholder')}
-                className="w-full bg-zinc-100 border border-zinc-200 rounded-full pl-10 pr-4 py-2.5 text-sm text-zinc-900 placeholder:text-zinc-400 focus:ring-2 focus:ring-brand/20 outline-none"
-              />
-              {showSearchSuggestions && searchSuggestions.length > 0 ? (
-                <div className="absolute z-30 mt-2 w-full overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-lg">
-                  {searchSuggestions.map((item) => (
-                    <button
-                      key={item.id}
-                      type="button"
-                      onMouseDown={() => openFromSuggestion(item.slug, item.name)}
-                      className="w-full border-b border-slate-100 px-3 py-2 text-left text-xs text-brand hover:bg-slate-50 last:border-b-0"
-                    >
-                      <span className="block font-semibold">{item.name}</span>
-                      {item.category_name ? (
-                        <span className="text-[10px] text-slate-500">{item.category_name}</span>
-                      ) : null}
-                    </button>
-                  ))}
-                </div>
-              ) : null}
-            </form>
-            <button className="flex items-center gap-2 bg-brand text-white px-4 py-2.5 rounded-full text-sm font-bold hover:bg-brand-dark">
-              <Filter size={18} />
-              {t('product.filter')}
-            </button>
-          </div>
+        <div className="mb-12">
+          <h1 className="text-4xl font-bold text-zinc-900 tracking-tight mb-2">
+            {categoryFilter ? categories.find(c => c.slug === categoryFilter)?.name : t('product.allProducts')}
+          </h1>
+          <p className="text-zinc-500">{t('product.showingCount', { count: products.length })}</p>
         </div>
-
-
 
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-12">
           {/* Sidebar Filters */}
@@ -392,7 +287,7 @@ export const ProductListingPage: React.FC = () => {
                     <Link to={`/product/${product.slug}`} className="block relative aspect-square overflow-hidden bg-zinc-100">
                       <img
                         src={resolveImageSrc(product.image)}
-                        alt={product.name}
+                        alt={buildImageAlt(product.name)}
                         width={600}
                         height={600}
                         loading="lazy"

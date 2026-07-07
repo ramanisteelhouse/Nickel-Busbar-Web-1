@@ -51,6 +51,18 @@ export function resolveImageSrc(src?: string | null) {
   }
 }
 
+const IMAGE_ALT_SITE_SUFFIX = 'Ramani Steel House, nickel strip manufacturer in Mumbai, India';
+
+/**
+ * Builds SEO-friendly alt text: a description of the image subject plus the
+ * brand/site context, instead of a bare product or article name.
+ */
+export function buildImageAlt(subject?: string | null, kind: string = 'product') {
+  const cleanSubject = subject?.trim();
+  const label = cleanSubject || `Nickel strip ${kind}`;
+  return `${label} - ${IMAGE_ALT_SITE_SUFFIX}`;
+}
+
 export function setCookie(name: string, value: string, days = 365) {
   const expires = new Date(Date.now() + days * 86400000).toUTCString();
   document.cookie = `${encodeURIComponent(name)}=${encodeURIComponent(value)}; expires=${expires}; path=/; SameSite=Lax`;
@@ -151,7 +163,9 @@ const isSafeHref = (href: string) => {
 export function sanitizeRichHtml(input: string) {
   const normalized = normalizeSmartQuotes(input || '').trim();
   if (!normalized) return '';
-  if (typeof window === 'undefined') return normalized;
+  // No DOM available (e.g. a future SSR context) — fail safe rather than
+  // returning unsanitized HTML that could later be rendered via dangerouslySetInnerHTML.
+  if (typeof window === 'undefined') return '';
 
   const parser = new DOMParser();
   const parsed = parser.parseFromString(`<div>${normalized}</div>`, 'text/html');

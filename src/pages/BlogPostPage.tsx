@@ -2,7 +2,7 @@ import React from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
 import type { BlogPost } from '../types';
-import { encodePathSegment, sanitizeRichHtml, resolveImageSrc } from '../lib/utils';
+import { buildImageAlt, encodePathSegment, sanitizeRichHtml, resolveImageSrc } from '../lib/utils';
 
 const formatDate = (value: string | null | undefined) => {
   if (!value) return '';
@@ -120,7 +120,7 @@ export const BlogPostPage: React.FC = () => {
         {post.cover_image_url ? (
           <img
             src={resolveImageSrc(post.cover_image_url)}
-            alt={post.title}
+            alt={buildImageAlt(post.title, 'blog article')}
             width={1000}
             height={1000}
             loading="eager"
