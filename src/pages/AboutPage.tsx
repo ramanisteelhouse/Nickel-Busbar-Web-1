@@ -1,7 +1,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
-import { Globe, Target, Gem, Factory, Users, Battery, CalendarClock, ArrowRight } from 'lucide-react';
+import { Globe, Target, Gem, Factory, Users, Battery, CalendarClock, ArrowRight, Award, ShieldCheck } from 'lucide-react';
 
 const stats = [
   { label: 'Years of Legacy', value: '50+' },
@@ -117,6 +117,65 @@ export const AboutPage: React.FC = () => {
               We manufacture nickel strips used in lithium-ion battery cells and packs, designed for consistent performance,
               reliable conductivity, and scalable supply.
             </p>
+          </div>
+        </div>
+      </section>
+
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-12 md:pb-16">
+        <div className="rounded-2xl border border-slate-200 bg-white p-6 md:p-8 shadow-sm">
+          <div className="flex items-center gap-3 text-brand">
+            <span className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-brand/10 text-brand">
+              <ShieldCheck size={20} />
+            </span>
+            <h2 className="text-xl md:text-2xl font-display font-bold">Quality &amp; Certifications</h2>
+          </div>
+          <p className="mt-4 text-sm text-slate-600 leading-relaxed max-w-3xl">
+            Every batch is manufactured under certified quality and environmental management systems, with material test
+            certificates and full traceability on every shipment.
+          </p>
+          <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <a
+              href="/img/iso-9001-2015-certificate.pdf"
+              target="_blank"
+              rel="noreferrer"
+              className="group rounded-2xl border border-slate-200 bg-brand-surface p-5 transition hover:border-brand hover:shadow-md"
+            >
+              <div className="flex items-center gap-4">
+                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-white text-brand shadow-sm">
+                  <Award size={22} />
+                </div>
+                <div>
+                  <p className="text-sm font-semibold text-brand">ISO 9001:2015</p>
+                  <p className="text-xs text-slate-500">Quality Management System</p>
+                </div>
+              </div>
+              <span className="mt-3 inline-flex items-center gap-1 text-xs font-semibold text-brand group-hover:text-brand-dark">
+                View certificate <ArrowRight size={12} />
+              </span>
+            </a>
+            <a
+              href="/img/iso-14001-certificate.pdf"
+              target="_blank"
+              rel="noreferrer"
+              className="group rounded-2xl border border-slate-200 bg-brand-surface p-5 transition hover:border-brand hover:shadow-md"
+            >
+              <div className="flex items-center gap-4">
+                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-white text-brand shadow-sm">
+                  <ShieldCheck size={22} />
+                </div>
+                <div>
+                  <p className="text-sm font-semibold text-brand">ISO 14001</p>
+                  <p className="text-xs text-slate-500">Environmental Management System</p>
+                </div>
+              </div>
+              <span className="mt-3 inline-flex items-center gap-1 text-xs font-semibold text-brand group-hover:text-brand-dark">
+                View certificate <ArrowRight size={12} />
+              </span>
+            </a>
+          </div>
+          <div className="mt-4 flex flex-wrap items-center gap-3">
+            <div className="rounded-full bg-brand/10 px-4 py-2 text-xs font-semibold text-brand">RoHS Compliant</div>
+            <div className="rounded-full bg-brand/10 px-4 py-2 text-xs font-semibold text-brand">REACH Compliant</div>
           </div>
         </div>
       </section>

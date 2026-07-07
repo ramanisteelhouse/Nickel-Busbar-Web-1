@@ -20,7 +20,7 @@ export const BackNavButton: React.FC = () => {
         }
         navigate('/');
       }}
-      className="fixed bottom-5 left-5 z-40 inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white/95 px-4 py-2 text-xs font-semibold text-[#304e58] shadow-lg backdrop-blur hover:bg-white"
+      className="fixed bottom-5 left-5 z-40 inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white/95 px-4 py-2 text-xs font-semibold text-brand shadow-lg backdrop-blur hover:bg-white"
       aria-label="Go back"
     >
       <ArrowLeft size={14} />

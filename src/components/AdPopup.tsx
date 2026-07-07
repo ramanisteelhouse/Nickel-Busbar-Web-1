@@ -103,12 +103,12 @@ export const AdPopup: React.FC = () => {
                     referrerPolicy="no-referrer"
                   />
                 ) : (
-                  <div className="h-full w-full bg-gradient-to-br from-[#304e58] via-[#314e58] to-[#3b606a]" />
+                  <div className="h-full w-full bg-gradient-to-br from-brand via-brand-dark to-[#3b606a]" />
                 )}
               </div>
               <div className="p-8">
-                <p className="text-xs font-semibold uppercase tracking-[0.3em] text-[#314e58]">New Offer</p>
-                <h3 className="mt-3 text-2xl font-display font-bold text-[#304e58]">{popupAd.title}</h3>
+                <p className="text-xs font-semibold uppercase tracking-[0.3em] text-brand-dark">New Offer</p>
+                <h3 className="mt-3 text-2xl font-display font-bold text-brand">{popupAd.title}</h3>
                 {popupAd.subtitle ? (
                   <p className="mt-3 text-sm text-slate-600">{popupAd.subtitle}</p>
                 ) : null}
@@ -119,7 +119,7 @@ export const AdPopup: React.FC = () => {
                       target="_blank"
                       rel="noreferrer"
                       onClick={handleDismiss}
-                      className="rounded-full bg-[#304e58] px-5 py-2.5 text-xs font-semibold text-white hover:bg-[#314e58] transition-colors text-center"
+                      className="rounded-full bg-brand px-5 py-2.5 text-xs font-semibold text-white hover:bg-brand-dark transition-colors text-center"
                     >
                       {ctaText}
                     </a>
@@ -127,7 +127,7 @@ export const AdPopup: React.FC = () => {
                     <Link
                       to={internalCtaPath}
                       onClick={handleDismiss}
-                      className="rounded-full bg-[#304e58] px-5 py-2.5 text-xs font-semibold text-white hover:bg-[#314e58] transition-colors text-center"
+                      className="rounded-full bg-brand px-5 py-2.5 text-xs font-semibold text-white hover:bg-brand-dark transition-colors text-center"
                     >
                       {ctaText}
                     </Link>
@@ -135,7 +135,7 @@ export const AdPopup: React.FC = () => {
                   <button
                     type="button"
                     onClick={handleDismiss}
-                    className="rounded-full border border-[#314e58]/30 px-5 py-2.5 text-xs font-semibold text-[#304e58] hover:bg-slate-50 transition-colors"
+                    className="rounded-full border border-brand-dark/30 px-5 py-2.5 text-xs font-semibold text-brand hover:bg-slate-50 transition-colors"
                   >
                     Not now
                   </button>

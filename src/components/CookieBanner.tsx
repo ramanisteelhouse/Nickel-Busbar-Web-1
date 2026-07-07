@@ -33,7 +33,7 @@ export const CookieBanner: React.FC = () => {
 
   return (
     <div className="fixed bottom-0 left-0 right-0 z-50 px-4 pb-5">
-      <div className="mx-auto max-w-4xl rounded-2xl border border-zinc-200 bg-white text-[#304e58] shadow-2xl backdrop-blur">
+      <div className="mx-auto max-w-4xl rounded-2xl border border-zinc-200 bg-white text-brand shadow-2xl backdrop-blur">
         <div className="flex flex-col gap-4 px-6 py-5 md:flex-row md:items-center md:justify-between">
           <div>
             <p className="text-sm font-semibold">{t('cookies.title')}</p>
@@ -45,14 +45,14 @@ export const CookieBanner: React.FC = () => {
             <button
               type="button"
               onClick={declineCookies}
-              className="rounded-full border border-[#304e58]/20 px-4 py-2 text-xs font-semibold text-[#304e58] hover:bg-[#f5f5f5] transition-colors"
+              className="rounded-full border border-brand/20 px-4 py-2 text-xs font-semibold text-brand hover:bg-[#f5f5f5] transition-colors"
             >
               {t('cookies.decline')}
             </button>
             <button
               type="button"
               onClick={acceptCookies}
-              className="rounded-full bg-[#304e58] px-4 py-2 text-xs font-semibold text-white hover:bg-[#314e58] transition-colors"
+              className="rounded-full bg-brand px-4 py-2 text-xs font-semibold text-white hover:bg-brand-dark transition-colors"
             >
               {t('cookies.accept')}
             </button>

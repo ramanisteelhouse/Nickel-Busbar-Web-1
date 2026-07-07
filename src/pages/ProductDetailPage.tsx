@@ -94,7 +94,7 @@ export const ProductDetailPage: React.FC<{ onAddToCart: (p: Product) => void }> 
         <p className="mt-3 text-zinc-500">Please refresh, or visit our product listing for available options.</p>
         <Link
           to="/products"
-          className="mt-6 inline-flex items-center gap-2 rounded-full bg-[#304e58] px-5 py-2.5 text-sm font-semibold text-white hover:bg-[#314e58]"
+          className="mt-6 inline-flex items-center gap-2 rounded-full bg-brand px-5 py-2.5 text-sm font-semibold text-white hover:bg-brand-dark"
         >
           Browse Products
         </Link>
@@ -120,7 +120,7 @@ export const ProductDetailPage: React.FC<{ onAddToCart: (p: Product) => void }> 
         <p className="mt-3 text-zinc-500">The product may have moved, been renamed, or no longer exists.</p>
         <Link
           to="/products"
-          className="mt-6 inline-flex items-center gap-2 rounded-full bg-[#304e58] px-5 py-2.5 text-sm font-semibold text-white hover:bg-[#314e58]"
+          className="mt-6 inline-flex items-center gap-2 rounded-full bg-brand px-5 py-2.5 text-sm font-semibold text-white hover:bg-brand-dark"
         >
           Browse Products
         </Link>

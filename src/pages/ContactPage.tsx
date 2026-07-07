@@ -3,7 +3,7 @@ import { Helmet } from 'react-helmet-async';
 
 export const ContactPage: React.FC = () => {
   return (
-    <div className="pt-28 pb-20 bg-[#f6f8f9] text-[#304e58]">
+    <div className="pt-28 pb-20 bg-[#f6f8f9] text-brand">
       <Helmet>
         <title>Contact Us | Ramani Steel House</title>
         <meta
@@ -25,7 +25,7 @@ export const ContactPage: React.FC = () => {
               href="https://maps.app.goo.gl/8D2hLs4CMunteUCN8"
               target="_blank"
               rel="noreferrer"
-              className="inline-flex rounded-full bg-[#304e58] px-4 py-2 text-xs font-semibold text-white hover:bg-[#314e58]"
+              className="inline-flex rounded-full bg-brand px-4 py-2 text-xs font-semibold text-white hover:bg-brand-dark"
             >
               Open in Google Maps
             </a>

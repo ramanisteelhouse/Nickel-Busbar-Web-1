@@ -20,8 +20,8 @@ export const NotFoundPage: React.FC = () => {
         <link rel="canonical" href={canonicalUrl} />
       </Helmet>
 
-      <p className="text-xs font-semibold uppercase tracking-[0.3em] text-[#314e58]">Error 404</p>
-      <h1 className="mt-3 text-4xl md:text-5xl font-display font-bold text-[#304e58]">Page not found</h1>
+      <p className="text-xs font-semibold uppercase tracking-[0.3em] text-brand-dark">Error 404</p>
+      <h1 className="mt-3 text-4xl md:text-5xl font-display font-bold text-brand">Page not found</h1>
       <p className="mt-4 text-slate-600">
         The link may be outdated or the page may have moved. You can continue from one of the options below.
       </p>
@@ -29,19 +29,19 @@ export const NotFoundPage: React.FC = () => {
       <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
         <Link
           to="/"
-          className="rounded-full bg-[#304e58] px-5 py-2.5 text-sm font-semibold text-white hover:bg-[#314e58] transition-colors"
+          className="rounded-full bg-brand px-5 py-2.5 text-sm font-semibold text-white hover:bg-brand-dark transition-colors"
         >
           Go to Homepage
         </Link>
         <Link
           to="/products"
-          className="rounded-full border border-[#314e58]/30 px-5 py-2.5 text-sm font-semibold text-[#304e58] hover:bg-slate-50 transition-colors"
+          className="rounded-full border border-brand-dark/30 px-5 py-2.5 text-sm font-semibold text-brand hover:bg-slate-50 transition-colors"
         >
           Browse Products
         </Link>
         <Link
           to="/contact"
-          className="rounded-full border border-[#314e58]/30 px-5 py-2.5 text-sm font-semibold text-[#304e58] hover:bg-slate-50 transition-colors"
+          className="rounded-full border border-brand-dark/30 px-5 py-2.5 text-sm font-semibold text-brand hover:bg-slate-50 transition-colors"
         >
           Contact Support
         </Link>

@@ -47,8 +47,8 @@ export const BlogListingPage: React.FC = () => {
       </Helmet>
 
       <div className="max-w-3xl">
-        <p className="text-xs font-semibold uppercase tracking-[0.3em] text-[#304e58]">Knowledge Hub</p>
-        <h1 className="mt-3 text-3xl md:text-5xl font-display font-bold text-[#304e58]">Latest Blog Articles</h1>
+        <p className="text-xs font-semibold uppercase tracking-[0.3em] text-brand">Knowledge Hub</p>
+        <h1 className="mt-3 text-3xl md:text-5xl font-display font-bold text-brand">Latest Blog Articles</h1>
       </div>
 
       {loading ? (
@@ -61,11 +61,11 @@ export const BlogListingPage: React.FC = () => {
         <div className="mt-10 grid grid-cols-1 md:grid-cols-2 gap-6">
           {posts.map((post) => (
             <article key={post.id} className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
-              <h2 className="text-xl font-semibold text-[#304e58]">{post.title}</h2>
+              <h2 className="text-xl font-semibold text-brand">{post.title}</h2>
               <p className="mt-3 text-sm text-slate-600">{post.excerpt || 'Read the full article for details.'}</p>
               <Link
                 to={`/blog/${encodePathSegment(post.slug)}`}
-                className="mt-5 inline-flex items-center gap-2 text-sm font-semibold text-[#304e58]"
+                className="mt-5 inline-flex items-center gap-2 text-sm font-semibold text-brand"
               >
                 Read more
                 <ArrowRight size={14} />

@@ -31,7 +31,7 @@ export const CartPage: React.FC<CartPageProps> = ({ cart, updateQuantity, remove
         </div>
         <h1 className="text-3xl font-bold text-zinc-900 mb-4">{t('cart.emptyTitle')}</h1>
         <p className="text-zinc-500 mb-8">{t('cart.emptyDesc')}</p>
-        <Link to="/products" className="bg-[#304e58] text-white px-8 py-4 rounded-full font-bold hover:bg-[#314e58] transition-all">
+        <Link to="/products" className="bg-brand text-white px-8 py-4 rounded-full font-bold hover:bg-brand-dark transition-all">
           {t('cart.browseProducts')}
         </Link>
       </div>
@@ -120,7 +120,7 @@ export const CartPage: React.FC<CartPageProps> = ({ cart, updateQuantity, remove
             </div>
             <Link
               to="/checkout"
-              className="w-full bg-[#304e58] text-white py-4 rounded-full font-bold hover:bg-[#314e58] transition-all flex items-center justify-center gap-2 group"
+              className="w-full bg-brand text-white py-4 rounded-full font-bold hover:bg-brand-dark transition-all flex items-center justify-center gap-2 group"
             >
               {t('cart.checkout')}
               <ArrowRight size={20} className="group-hover:translate-x-1 transition-transform" />

@@ -289,7 +289,7 @@ export const ProductListingPage: React.FC = () => {
                   window.setTimeout(() => setShowSearchSuggestions(false), 120);
                 }}
                 placeholder={t('product.searchPlaceholder')}
-                className="w-full bg-zinc-100 border border-zinc-200 rounded-full pl-10 pr-4 py-2.5 text-sm text-zinc-900 placeholder:text-zinc-400 focus:ring-2 focus:ring-[#304e58]/20 outline-none"
+                className="w-full bg-zinc-100 border border-zinc-200 rounded-full pl-10 pr-4 py-2.5 text-sm text-zinc-900 placeholder:text-zinc-400 focus:ring-2 focus:ring-brand/20 outline-none"
               />
               {showSearchSuggestions && searchSuggestions.length > 0 ? (
                 <div className="absolute z-30 mt-2 w-full overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-lg">
@@ -298,7 +298,7 @@ export const ProductListingPage: React.FC = () => {
                       key={item.id}
                       type="button"
                       onMouseDown={() => openFromSuggestion(item.slug, item.name)}
-                      className="w-full border-b border-slate-100 px-3 py-2 text-left text-xs text-[#304e58] hover:bg-slate-50 last:border-b-0"
+                      className="w-full border-b border-slate-100 px-3 py-2 text-left text-xs text-brand hover:bg-slate-50 last:border-b-0"
                     >
                       <span className="block font-semibold">{item.name}</span>
                       {item.category_name ? (
@@ -309,7 +309,7 @@ export const ProductListingPage: React.FC = () => {
                 </div>
               ) : null}
             </form>
-            <button className="flex items-center gap-2 bg-[#304e58] text-white px-4 py-2.5 rounded-full text-sm font-bold hover:bg-[#314e58]">
+            <button className="flex items-center gap-2 bg-brand text-white px-4 py-2.5 rounded-full text-sm font-bold hover:bg-brand-dark">
               <Filter size={18} />
               {t('product.filter')}
             </button>
@@ -322,13 +322,13 @@ export const ProductListingPage: React.FC = () => {
           {/* Sidebar Filters */}
           <aside className="hidden lg:block space-y-10">
             <div>
-              <h3 className="font-bold text-[#304e58] uppercase tracking-widest text-xs mb-6">{t('product.categories')}</h3>
+              <h3 className="font-bold text-brand uppercase tracking-widest text-xs mb-6">{t('product.categories')}</h3>
               <div className="space-y-3">
                 <Link
                   to="/products"
                   className={cn(
                     "block text-sm transition-colors",
-                    !categoryFilter ? "text-[#304e58] font-bold" : "text-[#5B757E] hover:text-[#304e58]"
+                    !categoryFilter ? "text-brand font-bold" : "text-[#5B757E] hover:text-brand"
                   )}
                 >
                   {t('product.allCategories')}
@@ -339,7 +339,7 @@ export const ProductListingPage: React.FC = () => {
                     to={`/products?category=${cat.slug}`}
                     className={cn(
                       "block text-sm transition-colors",
-                      categoryFilter === cat.slug ? "text-[#304e58] font-bold" : "text-[#5B757E] hover:text-[#304e58]"
+                      categoryFilter === cat.slug ? "text-brand font-bold" : "text-[#5B757E] hover:text-brand"
                     )}
                   >
                     {cat.name}
@@ -403,11 +403,11 @@ export const ProductListingPage: React.FC = () => {
                     </Link>
                     <div className="p-6">
                       <div className="text-[10px] font-bold text-emerald-600 uppercase tracking-widest mb-1">{product.category_name}</div>
-                      <h3 className="font-bold text-[#304e58] mb-1 group-hover:text-emerald-600 transition-colors">{product.name}</h3>
+                      <h3 className="font-bold text-brand mb-1 group-hover:text-emerald-600 transition-colors">{product.name}</h3>
                       <p className="text-xs text-[#5B757E] mb-4 line-clamp-1">{product.description}</p>
                       <div className="flex justify-between items-center gap-3">
                         <div className="flex flex-col">
-                          <span className="text-lg font-bold text-[#304e58]">
+                          <span className="text-lg font-bold text-brand">
                             {formatPrice(product.price)}
                             <span className="ml-1 text-xs font-semibold text-[#5B757E]">{getProductUnitLabel(product.unit)}</span>
                           </span>
@@ -432,7 +432,7 @@ export const ProductListingPage: React.FC = () => {
                         <button
                           type="button"
                           onClick={() => openEnquiryForm(product)}
-                          className="rounded-full bg-[#304e58] text-white px-4 py-2 text-xs font-semibold whitespace-nowrap hover:bg-[#314e58] transition-colors"
+                          className="rounded-full bg-brand text-white px-4 py-2 text-xs font-semibold whitespace-nowrap hover:bg-brand-dark transition-colors"
                         >
                           {t('product.submitEnquiry')}
                         </button>
@@ -475,7 +475,7 @@ export const ProductListingPage: React.FC = () => {
             >
             <div className="sticky top-0 bg-white border-b border-zinc-200 px-6 py-4 flex items-center justify-between">
               <div>
-                <h2 className="text-xl font-bold text-[#304e58]">{t('enquiry.title')}</h2>
+                <h2 className="text-xl font-bold text-brand">{t('enquiry.title')}</h2>
                 <p className="text-xs text-[#5B757E] mt-1">
                   {selectedProduct ? t('enquiry.selectedProduct', { product: selectedProduct.name }) : t('enquiry.requirementHint')}
                 </p>
@@ -483,7 +483,7 @@ export const ProductListingPage: React.FC = () => {
               <button
                 type="button"
                 onClick={closeEnquiryForm}
-                className="p-2 rounded-full text-zinc-500 hover:text-[#304e58] hover:bg-zinc-100 transition-colors"
+                className="p-2 rounded-full text-zinc-500 hover:text-brand hover:bg-zinc-100 transition-colors"
                 aria-label="Close enquiry form"
               >
                 <X size={18} />
@@ -492,99 +492,99 @@ export const ProductListingPage: React.FC = () => {
 
             <form onSubmit={submitEnquiry} className="p-6 space-y-5">
               <label className="block">
-                <span className="block text-sm font-semibold text-[#304e58] mb-1">{t('enquiry.requirement')}</span>
+                <span className="block text-sm font-semibold text-brand mb-1">{t('enquiry.requirement')}</span>
                 <textarea
                   rows={3}
                   required
                   value={enquiryData.requirement}
                   onChange={updateField('requirement')}
-                  className="w-full border border-zinc-300 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#304e58]/20 focus:border-[#304e58] resize-none"
+                  className="w-full border border-zinc-300 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand/20 focus:border-brand resize-none"
                   placeholder={t('enquiry.requirementPlaceholder')}
                 />
               </label>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <label className="block">
-                  <span className="block text-sm font-semibold text-[#304e58] mb-1">{t('enquiry.fullName')}</span>
+                  <span className="block text-sm font-semibold text-brand mb-1">{t('enquiry.fullName')}</span>
                   <input
                     type="text"
                     required
                     value={enquiryData.fullName}
                     onChange={updateField('fullName')}
-                    className="w-full border border-zinc-300 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#304e58]/20 focus:border-[#304e58]"
+                    className="w-full border border-zinc-300 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand/20 focus:border-brand"
                     placeholder="Enter full name"
                   />
                 </label>
                 <label className="block">
-                  <span className="block text-sm font-semibold text-[#304e58] mb-1">{t('enquiry.email')}</span>
+                  <span className="block text-sm font-semibold text-brand mb-1">{t('enquiry.email')}</span>
                   <input
                     type="email"
                     required
                     value={enquiryData.email}
                     onChange={updateField('email')}
-                    className="w-full border border-zinc-300 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#304e58]/20 focus:border-[#304e58]"
+                    className="w-full border border-zinc-300 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand/20 focus:border-brand"
                     placeholder="Enter email address"
                   />
                 </label>
                 <label className="block">
-                  <span className="block text-sm font-semibold text-[#304e58] mb-1">{t('enquiry.phone')}</span>
+                  <span className="block text-sm font-semibold text-brand mb-1">{t('enquiry.phone')}</span>
                   <input
                     type="tel"
                     required
                     value={enquiryData.phone}
                     onChange={updateField('phone')}
-                    className="w-full border border-zinc-300 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#304e58]/20 focus:border-[#304e58]"
+                    className="w-full border border-zinc-300 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand/20 focus:border-brand"
                     placeholder="Enter phone number"
                   />
                 </label>
                 <label className="block">
-                  <span className="block text-sm font-semibold text-[#304e58] mb-1">{t('enquiry.company')}</span>
+                  <span className="block text-sm font-semibold text-brand mb-1">{t('enquiry.company')}</span>
                   <input
                     type="text"
                     value={enquiryData.company}
                     onChange={updateField('company')}
-                    className="w-full border border-zinc-300 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#304e58]/20 focus:border-[#304e58]"
+                    className="w-full border border-zinc-300 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand/20 focus:border-brand"
                     placeholder="Enter company name"
                   />
                 </label>
                 <label className="block">
-                  <span className="block text-sm font-semibold text-[#304e58] mb-1">{t('enquiry.location')}</span>
+                  <span className="block text-sm font-semibold text-brand mb-1">{t('enquiry.location')}</span>
                   <input
                     type="text"
                     value={enquiryData.location}
                     onChange={updateField('location')}
-                    className="w-full border border-zinc-300 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#304e58]/20 focus:border-[#304e58]"
+                    className="w-full border border-zinc-300 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand/20 focus:border-brand"
                     placeholder="City / State / Country"
                   />
                 </label>
                 <label className="block">
-                  <span className="block text-sm font-semibold text-[#304e58] mb-1">{t('enquiry.quantity')}</span>
+                  <span className="block text-sm font-semibold text-brand mb-1">{t('enquiry.quantity')}</span>
                   <input
                     type="text"
                     value={enquiryData.quantity}
                     onChange={updateField('quantity')}
-                    className="w-full border border-zinc-300 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#304e58]/20 focus:border-[#304e58]"
+                    className="w-full border border-zinc-300 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand/20 focus:border-brand"
                     placeholder="Enter quantity"
                   />
                 </label>
                 <label className="block">
-                  <span className="block text-sm font-semibold text-[#304e58] mb-1">Thickness</span>
+                  <span className="block text-sm font-semibold text-brand mb-1">Thickness</span>
                   <input
                     type="text"
                     value={enquiryData.thickness}
                     onChange={updateField('thickness')}
-                    className="w-full border border-zinc-300 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#304e58]/20 focus:border-[#304e58]"
+                    className="w-full border border-zinc-300 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand/20 focus:border-brand"
                     placeholder="Enter thickness (e.g. 0.15 mm)"
                   />
                 </label>
               </div>
 
               <label className="block">
-                <span className="block text-sm font-semibold text-[#304e58] mb-1">{t('enquiry.message')}</span>
+                <span className="block text-sm font-semibold text-brand mb-1">{t('enquiry.message')}</span>
                 <textarea
                   rows={4}
                   value={enquiryData.message}
                   onChange={updateField('message')}
-                  className="w-full border border-zinc-300 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#304e58]/20 focus:border-[#304e58] resize-none"
+                  className="w-full border border-zinc-300 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand/20 focus:border-brand resize-none"
                   placeholder="Share technical requirements or notes"
                 />
               </label>
@@ -609,7 +609,7 @@ export const ProductListingPage: React.FC = () => {
                 <button
                   type="submit"
                   disabled={isSubmitting}
-                  className="px-5 py-2.5 text-sm font-semibold rounded-xl bg-[#304e58] text-white hover:bg-[#314e58] disabled:opacity-60 disabled:cursor-not-allowed transition-colors"
+                  className="px-5 py-2.5 text-sm font-semibold rounded-xl bg-brand text-white hover:bg-brand-dark disabled:opacity-60 disabled:cursor-not-allowed transition-colors"
                 >
                   {isSubmitting ? t('enquiry.submitting') : t('enquiry.submit')}
                 </button>

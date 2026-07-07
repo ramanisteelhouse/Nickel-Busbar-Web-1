@@ -20,7 +20,7 @@ export const FloatingContact: React.FC = () => {
           href="mailto:sales@ramanisteel.com?subject=Nickel%20Strip%20Enquiry"
           aria-label={t('product.email')}
           whileHover={{ x: -6 }}
-          className="contact-item email flex items-center gap-2 bg-[#304e58] px-4 py-3 text-sm font-semibold text-white transition-transform"
+          className="contact-item email flex items-center gap-2 bg-brand px-4 py-3 text-sm font-semibold text-white transition-transform"
         >
           <Mail size={16} />
           <span className="hidden sm:inline">{t('product.email')}</span>
@@ -41,7 +41,7 @@ export const FloatingContact: React.FC = () => {
           onClick={() => navigate('/products?enquiry=1')}
           aria-label={t('enquiry.title')}
           whileHover={{ x: -6 }}
-          className="contact-item flex items-center gap-2 bg-[#304e58] px-4 py-3 text-sm font-semibold text-white transition-transform text-left"
+          className="contact-item flex items-center gap-2 bg-brand px-4 py-3 text-sm font-semibold text-white transition-transform text-left"
         >
           <ClipboardList size={16} />
           <span className="hidden sm:inline">{t('enquiry.title')}</span>

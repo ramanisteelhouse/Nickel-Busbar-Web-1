@@ -67,9 +67,9 @@ export const BlogPostPage: React.FC = () => {
           <meta name="robots" content="noindex,follow,noarchive" />
           <link rel="canonical" href={canonical} />
         </Helmet>
-        <h1 className="text-3xl font-bold text-[#304e58]">Unable to load article right now</h1>
+        <h1 className="text-3xl font-bold text-brand">Unable to load article right now</h1>
         <p className="mt-3 text-slate-600">Please try again in a moment.</p>
-        <Link to="/blog" className="mt-6 inline-flex rounded-full bg-[#304e58] px-5 py-2.5 text-sm font-semibold text-white">
+        <Link to="/blog" className="mt-6 inline-flex rounded-full bg-brand px-5 py-2.5 text-sm font-semibold text-white">
           Back to Blog
         </Link>
       </div>
@@ -85,9 +85,9 @@ export const BlogPostPage: React.FC = () => {
           <meta name="prerender-status-code" content="404" />
           <link rel="canonical" href={canonical} />
         </Helmet>
-        <h1 className="text-3xl font-bold text-[#304e58]">Article not found</h1>
+        <h1 className="text-3xl font-bold text-brand">Article not found</h1>
         <p className="mt-3 text-slate-600">This article may be unpublished or moved to another URL.</p>
-        <Link to="/blog" className="mt-6 inline-flex rounded-full bg-[#304e58] px-5 py-2.5 text-sm font-semibold text-white">
+        <Link to="/blog" className="mt-6 inline-flex rounded-full bg-brand px-5 py-2.5 text-sm font-semibold text-white">
           Back to Blog
         </Link>
       </div>
@@ -98,7 +98,7 @@ export const BlogPostPage: React.FC = () => {
   const description = post.meta_description?.trim() || post.excerpt?.trim() || 'Technical insights from Ramani Steel House.';
 
   return (
-    <div className="pt-28 pb-24 bg-white text-[#304e58]">
+    <div className="pt-28 pb-24 bg-white text-brand">
       <Helmet>
         <title>{title}</title>
         <meta name="description" content={description} />
@@ -111,7 +111,7 @@ export const BlogPostPage: React.FC = () => {
       </Helmet>
 
       <article className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-        <p className="text-xs font-semibold uppercase tracking-[0.3em] text-[#304e58]">Blog</p>
+        <p className="text-xs font-semibold uppercase tracking-[0.3em] text-brand">Blog</p>
         <h1 className="mt-3 text-3xl md:text-5xl font-display font-bold leading-tight">{post.title}</h1>
         <p className="mt-4 text-sm text-slate-500">
           {post.author_name || 'Ramani Steel House'}
@@ -130,7 +130,7 @@ export const BlogPostPage: React.FC = () => {
           />
         ) : null}
         <div
-          className="mt-8 whitespace-pre-line text-base leading-relaxed text-slate-700 [&_h2]:mt-10 [&_h2]:text-2xl [&_h2]:font-bold [&_h3]:mt-8 [&_h3]:text-xl [&_h3]:font-semibold [&_p]:mt-4 [&_ul]:mt-4 [&_ul]:list-disc [&_ul]:pl-6 [&_ol]:mt-4 [&_ol]:list-decimal [&_ol]:pl-6 [&_li]:mt-2 [&_a]:font-semibold [&_a]:text-[#304e58] [&_a]:underline [&_strong]:font-semibold [&_blockquote]:mt-6 [&_blockquote]:border-l-4 [&_blockquote]:border-[#304e58]/30 [&_blockquote]:pl-4 [&_pre]:mt-4 [&_pre]:overflow-x-auto [&_pre]:rounded-xl [&_pre]:bg-slate-100 [&_pre]:p-4 [&_code]:rounded [&_code]:bg-slate-100 [&_code]:px-1.5 [&_code]:py-0.5"
+          className="mt-8 whitespace-pre-line text-base leading-relaxed text-slate-700 [&_h2]:mt-10 [&_h2]:text-2xl [&_h2]:font-bold [&_h3]:mt-8 [&_h3]:text-xl [&_h3]:font-semibold [&_p]:mt-4 [&_ul]:mt-4 [&_ul]:list-disc [&_ul]:pl-6 [&_ol]:mt-4 [&_ol]:list-decimal [&_ol]:pl-6 [&_li]:mt-2 [&_a]:font-semibold [&_a]:text-brand [&_a]:underline [&_strong]:font-semibold [&_blockquote]:mt-6 [&_blockquote]:border-l-4 [&_blockquote]:border-brand/30 [&_blockquote]:pl-4 [&_pre]:mt-4 [&_pre]:overflow-x-auto [&_pre]:rounded-xl [&_pre]:bg-slate-100 [&_pre]:p-4 [&_code]:rounded [&_code]:bg-slate-100 [&_code]:px-1.5 [&_code]:py-0.5"
           dangerouslySetInnerHTML={{ __html: sanitizedContent }}
         />
       </article>

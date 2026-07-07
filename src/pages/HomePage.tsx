@@ -17,6 +17,7 @@ import {
   ClipboardCheck,
   MessageSquareQuote,
   Star,
+  Award,
 } from 'lucide-react';
 import { motion } from 'motion/react';
 import { Helmet } from 'react-helmet-async';
@@ -579,10 +580,49 @@ export const HomePage: React.FC = () => {
                   </div>
                 ))}
               </div>
-              <div className="mt-8 flex items-center gap-4">
-                <div className="rounded-xl bg-brand/10 px-4 py-3 text-sm font-semibold text-brand">ISO 9001</div>
-                <div className="rounded-xl bg-brand/10 px-4 py-3 text-sm font-semibold text-brand">RoHS</div>
-                <div className="rounded-xl bg-brand/10 px-4 py-3 text-sm font-semibold text-brand">REACH</div>
+              <div className="mt-8 grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <a
+                  href="/img/iso-9001-2015-certificate.pdf"
+                  target="_blank"
+                  rel="noreferrer"
+                  className="group rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition hover:border-brand hover:shadow-md"
+                >
+                  <div className="flex items-center gap-4">
+                    <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-brand/10 text-brand">
+                      <Award size={22} />
+                    </div>
+                    <div>
+                      <p className="text-sm font-semibold text-brand">ISO 9001:2015</p>
+                      <p className="text-xs text-slate-500">Quality Management System</p>
+                    </div>
+                  </div>
+                  <span className="mt-3 inline-flex items-center gap-1 text-xs font-semibold text-brand group-hover:text-brand-dark">
+                    View certificate <ArrowRight size={12} />
+                  </span>
+                </a>
+                <a
+                  href="/img/iso-14001-certificate.pdf"
+                  target="_blank"
+                  rel="noreferrer"
+                  className="group rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition hover:border-brand hover:shadow-md"
+                >
+                  <div className="flex items-center gap-4">
+                    <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-brand/10 text-brand">
+                      <ShieldCheck size={22} />
+                    </div>
+                    <div>
+                      <p className="text-sm font-semibold text-brand">ISO 14001</p>
+                      <p className="text-xs text-slate-500">Environmental Management System</p>
+                    </div>
+                  </div>
+                  <span className="mt-3 inline-flex items-center gap-1 text-xs font-semibold text-brand group-hover:text-brand-dark">
+                    View certificate <ArrowRight size={12} />
+                  </span>
+                </a>
+              </div>
+              <div className="mt-4 flex flex-wrap items-center gap-3">
+                <div className="rounded-full bg-brand/10 px-4 py-2 text-xs font-semibold text-brand">RoHS Compliant</div>
+                <div className="rounded-full bg-brand/10 px-4 py-2 text-xs font-semibold text-brand">REACH Compliant</div>
               </div>
             </div>
           </div>

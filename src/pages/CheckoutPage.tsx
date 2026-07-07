@@ -212,7 +212,7 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({ cart }) => {
         </Helmet>
         <h1 className="text-3xl font-bold text-zinc-900 mb-4">{t('checkout.emptyTitle')}</h1>
         <p className="text-zinc-500 mb-8">{t('checkout.emptyDesc')}</p>
-        <Link to="/products" className="bg-[#304e58] text-white px-8 py-4 rounded-full font-bold hover:bg-[#314e58] transition-all">
+        <Link to="/products" className="bg-brand text-white px-8 py-4 rounded-full font-bold hover:bg-brand-dark transition-all">
           {t('checkout.browseProducts')}
         </Link>
       </div>
@@ -226,7 +226,7 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({ cart }) => {
         <meta name="robots" content="noindex,follow" />
       </Helmet>
       <div className="flex items-center gap-4 mb-10">
-        <Link to="/cart" className="inline-flex items-center gap-2 text-sm font-semibold text-[#304e58] hover:text-[#314e58]">
+        <Link to="/cart" className="inline-flex items-center gap-2 text-sm font-semibold text-brand hover:text-brand-dark">
           <ArrowLeft size={16} />
           {t('checkout.backToCart')}
         </Link>

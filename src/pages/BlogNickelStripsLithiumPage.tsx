@@ -8,7 +8,7 @@ export const BlogNickelStripsLithiumPage: React.FC = () => {
     'We are a manufacturer of nickel strips used in lithium-ion batteries, delivering consistent quality and competitive pricing for battery manufacturers.';
 
   return (
-    <div className="pt-28 pb-20 bg-white text-[#304e58]">
+    <div className="pt-28 pb-20 bg-white text-brand">
       <Helmet>
         <title>{title}</title>
         <meta name="description" content={description} />
@@ -20,7 +20,7 @@ export const BlogNickelStripsLithiumPage: React.FC = () => {
       </Helmet>
 
       <article className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-        <p className="text-xs font-semibold uppercase tracking-[0.3em] text-[#304e58]">Blog</p>
+        <p className="text-xs font-semibold uppercase tracking-[0.3em] text-brand">Blog</p>
         <h1 className="mt-3 text-3xl md:text-5xl font-display font-bold leading-tight">
           Nickel Strips for Lithium-Ion Batteries: Why Manufacturers Choose Us
         </h1>

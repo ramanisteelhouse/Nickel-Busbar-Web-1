@@ -139,7 +139,7 @@ export const AdBar: React.FC<{ className?: string }> = ({ className }) => {
         exit={{ opacity: 0, y: -12 }}
         transition={{ duration: 0.3 }}
         className={cn(
-          "relative z-30 w-full border-b border-[#314e58]/20 bg-gradient-to-r from-[#314e58] via-[#304e58] to-[#3f6671] text-white",
+          "relative z-30 w-full border-b border-brand-dark/20 bg-gradient-to-r from-brand-dark via-brand to-[#3f6671] text-white",
           className
         )}
       >
@@ -178,7 +178,7 @@ export const AdBar: React.FC<{ className?: string }> = ({ className }) => {
                 target="_blank"
                 rel="noreferrer"
                 onClick={handleDismiss}
-                className="rounded-full bg-white text-[#304e58] px-4 py-1.5 text-xs font-bold hover:bg-white/90 transition-colors inline-flex items-center gap-2"
+                className="rounded-full bg-white text-brand px-4 py-1.5 text-xs font-bold hover:bg-white/90 transition-colors inline-flex items-center gap-2"
               >
                 {ctaText}
                 <ArrowRight size={12} />
@@ -187,7 +187,7 @@ export const AdBar: React.FC<{ className?: string }> = ({ className }) => {
               <Link
                 to={internalCtaPath}
                 onClick={handleDismiss}
-                className="rounded-full bg-white text-[#304e58] px-4 py-1.5 text-xs font-bold hover:bg-white/90 transition-colors inline-flex items-center gap-2"
+                className="rounded-full bg-white text-brand px-4 py-1.5 text-xs font-bold hover:bg-white/90 transition-colors inline-flex items-center gap-2"
               >
                 {ctaText}
                 <ArrowRight size={12} />

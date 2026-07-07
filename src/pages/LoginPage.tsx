@@ -244,7 +244,7 @@ export const LoginPage: React.FC = () => {
               {error ? <p className="text-sm text-red-600">{error}</p> : null}
 
               <button
-                className="w-full bg-[#304e58] text-white py-4 rounded-full font-bold hover:bg-[#314e58] transition-all flex items-center justify-center gap-2 group mt-4 disabled:opacity-60"
+                className="w-full bg-brand text-white py-4 rounded-full font-bold hover:bg-brand-dark transition-all flex items-center justify-center gap-2 group mt-4 disabled:opacity-60"
                 disabled={isSubmitting}
               >
                 {isSubmitting ? t('login.processing') : isLogin ? t('login.signIn') : t('login.create')}
