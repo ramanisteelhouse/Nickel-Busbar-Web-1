@@ -93,9 +93,8 @@ const formatEnquiryMessage = (payload: EnquiryNotificationPayload) => {
   return lines.join("\n");
 };
 
-const sendEnquiryNotifications = async (payload: EnquiryNotificationPayload) => {
+const sendNotification = async (subject: string, message: string) => {
   const tasks: Promise<unknown>[] = [];
-  const message = formatEnquiryMessage(payload);
 
   if (emailTransporter && ENQUIRY_NOTIFY_EMAILS.length > 0) {
     const fromAddress = SMTP_FROM || SMTP_USER || "ramanioffice@gmail.com";
@@ -103,7 +102,7 @@ const sendEnquiryNotifications = async (payload: EnquiryNotificationPayload) => 
       emailTransporter.sendMail({
         from: fromAddress,
         to: ENQUIRY_NOTIFY_EMAILS,
-        subject: `New Product Enquiry - ${payload.productName || "General"}`,
+        subject,
         text: message,
       })
     );
@@ -124,10 +123,45 @@ const sendEnquiryNotifications = async (payload: EnquiryNotificationPayload) => 
   const results = await Promise.allSettled(tasks);
   results.forEach((result) => {
     if (result.status === "rejected") {
-      console.error("Failed to send enquiry notification", result.reason);
+      console.error("Failed to send notification", result.reason);
     }
   });
 };
+
+const sendEnquiryNotifications = (payload: EnquiryNotificationPayload) =>
+  sendNotification(`New Product Enquiry - ${payload.productName || "General"}`, formatEnquiryMessage(payload));
+
+type QuoteNotificationPayload = {
+  id: number;
+  customer: Record<string, unknown>;
+  items: Array<{ product_name?: string; quantity?: number | string; unit_price?: number | string; line_total?: number | string }>;
+  summary: Record<string, unknown>;
+};
+
+const formatQuoteMessage = (payload: QuoteNotificationPayload) => {
+  const { customer, items, summary } = payload;
+  const lines = [
+    `New quote / cart request received (#${payload.id})`,
+    `Phone: ${customer.phone_full || customer.phone_number || "N/A"}`,
+    `GST Number: ${customer.gst_number || "N/A"}`,
+    `Pin Code: ${customer.pin_code || "N/A"}`,
+    ``,
+    `Items:`,
+    ...items.map(
+      (item) =>
+        `- ${item.product_name || "Unnamed product"} | Qty: ${item.quantity ?? "N/A"} | Unit Price: ${item.unit_price ?? "N/A"} | Total: ${item.line_total ?? "N/A"}`
+    ),
+    ``,
+    `Subtotal: ${summary.subtotal ?? "N/A"}`,
+    `GST: ${summary.gst ?? "N/A"}`,
+    `Total: ${summary.total ?? "N/A"} ${summary.currency ?? ""}`.trim(),
+    `Received at: ${new Date().toISOString()}`,
+  ];
+  return lines.join("\n");
+};
+
+const sendQuoteNotifications = (payload: QuoteNotificationPayload) =>
+  sendNotification(`New Quote Request #${payload.id}`, formatQuoteMessage(payload));
 
 const sendWelcomeEmail = async (user: { name?: string | null; email: string }) => {
   if (!emailTransporter) return;
@@ -1310,6 +1344,11 @@ Answer customer questions professionally and concisely. Use the "Relevant catalo
       }
 
       await client.query("COMMIT");
+
+      sendQuoteNotifications({ id: quote.id, customer, items, summary }).catch((notifyError) => {
+        console.error("Failed to send quote notification", notifyError);
+      });
+
       res.status(201).json({ id: quote.id });
     } catch (e) {
       await client.query("ROLLBACK");
