@@ -60,6 +60,11 @@ export interface Ad {
   created_at?: string | null;
 }
 
+export interface BlogFaqItem {
+  question: string;
+  answer: string;
+}
+
 export interface BlogPost {
   id: number;
   title: string;
@@ -67,10 +72,12 @@ export interface BlogPost {
   excerpt?: string | null;
   content?: string | null;
   cover_image_url?: string | null;
+  cover_image_alt?: string | null;
   author_name?: string | null;
   status?: string | null;
   meta_title?: string | null;
   meta_description?: string | null;
+  faq_items?: BlogFaqItem[] | null;
   published_at?: string | null;
   created_at?: string | null;
   updated_at?: string | null;

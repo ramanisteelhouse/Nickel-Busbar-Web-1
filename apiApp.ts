@@ -293,6 +293,30 @@ const normalizeAdRow = (row: Record<string, unknown>) => ({
   image_url: normalizeImageSource(row.image_url),
 });
 
+const normalizeFaqItems = (value: unknown) => {
+  const raw = typeof value === "string" ? (() => {
+    try {
+      return JSON.parse(value);
+    } catch {
+      return null;
+    }
+  })() : value;
+
+  if (!Array.isArray(raw)) return null;
+
+  const items = raw
+    .map((item) => {
+      if (!item || typeof item !== "object") return null;
+      const question = String((item as Record<string, unknown>).question || "").trim();
+      const answer = String((item as Record<string, unknown>).answer || "").trim();
+      if (!question || !answer) return null;
+      return { question, answer };
+    })
+    .filter((item): item is { question: string; answer: string } => item !== null);
+
+  return items.length > 0 ? items : null;
+};
+
 const normalizeBlogRow = (row: Record<string, unknown>) => ({
   ...row,
   id: toFiniteInteger(row.id, 0),
@@ -301,10 +325,12 @@ const normalizeBlogRow = (row: Record<string, unknown>) => ({
   excerpt: row.excerpt == null ? null : String(row.excerpt),
   content: row.content == null ? null : String(row.content),
   cover_image_url: normalizeImageSource(row.cover_image_url),
+  cover_image_alt: row.cover_image_alt == null ? null : String(row.cover_image_alt).trim() || null,
   author_name: row.author_name == null ? null : String(row.author_name),
   status: row.status == null ? null : String(row.status),
   meta_title: row.meta_title == null ? null : String(row.meta_title),
   meta_description: row.meta_description == null ? null : String(row.meta_description),
+  faq_items: normalizeFaqItems(row.faq_items),
 });
 
 const getExchangeRates = async (baseCurrency: string) => {
@@ -997,6 +1023,7 @@ export function createApiApp() {
           slug,
           COALESCE(NULLIF(excerpt, ''), LEFT(REGEXP_REPLACE(content, '\s+', ' ', 'g'), 180)) AS excerpt,
           cover_image_url,
+          cover_image_alt,
           author_name,
           status,
           meta_title,
@@ -1038,10 +1065,12 @@ export function createApiApp() {
           excerpt,
           content,
           cover_image_url,
+          cover_image_alt,
           author_name,
           status,
           meta_title,
           meta_description,
+          faq_items,
           published_at,
           created_at,
           updated_at
