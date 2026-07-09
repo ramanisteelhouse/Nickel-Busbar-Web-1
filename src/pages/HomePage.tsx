@@ -254,21 +254,25 @@ export const HomePage: React.FC = () => {
   return (
     <div className="pt-28">
       <Helmet>
-        <title>Nickel Strips Manufacturer in Mumbai, India | PAN India Supply &amp; Global Export</title>
+        <title>Nickel Strip Manufacturer India | Pure Nickel Strip & Nickel Busbar Supplier</title>
         <meta
           name="description"
-          content="Nickel strips manufacturer based in Mumbai, India, supplying lithium-ion battery and energy storage customers PAN India and exporting to 17+ countries worldwide. High-purity strips, competitive pricing, reliable supply."
+          content="Ramani Steel House is a Nickel Strip Manufacturer India trusted by battery makers, supplying Pure Nickel Strip, H Type Nickel Strip, and Nickel Busbar for 18650 battery packs. PAN India supply and export to 17+ countries."
+        />
+        <meta
+          name="keywords"
+          content="Nickel Strip Manufacturer India, Pure Nickel Strip, H Type Nickel Strip, Nickel Busbar, Nickel Strip for 18650 Battery, Battery Nickel Strip Supplier"
         />
         <link rel="canonical" href="https://www.nickelbusbar.com/" />
         <meta property="og:type" content="website" />
         <meta property="og:site_name" content="Ramani Steel House" />
-        <meta property="og:title" content="Nickel Strips Manufacturer in Mumbai, India | PAN India Supply & Global Export" />
-        <meta property="og:description" content="Premium nickel strips for lithium-ion batteries and EV packs, manufactured in Mumbai and exported worldwide, with export-ready quality and consistent delivery." />
+        <meta property="og:title" content="Nickel Strip Manufacturer India | Pure Nickel Strip & Nickel Busbar Supplier" />
+        <meta property="og:description" content="Battery Nickel Strip Supplier manufacturing Pure Nickel Strip, H Type Nickel Strip, and Nickel Busbar for lithium-ion and EV battery packs. PAN India supply, exporting to 17+ countries worldwide." />
         <meta property="og:url" content="https://www.nickelbusbar.com/" />
         <meta property="og:image" content="https://www.nickelbusbar.com/img/logo.png" />
         <meta name="twitter:card" content="summary_large_image" />
-        <meta name="twitter:title" content="Nickel Strips Manufacturer | Lithium-Ion Battery Strips" />
-        <meta name="twitter:description" content="Premium nickel strips for lithium-ion batteries and EV packs, with export-ready quality and consistent delivery." />
+        <meta name="twitter:title" content="Nickel Strip Manufacturer India | Pure Nickel Strip Supplier" />
+        <meta name="twitter:description" content="Battery Nickel Strip Supplier manufacturing Pure Nickel Strip, H Type Nickel Strip, and Nickel Busbar for lithium-ion and EV battery packs." />
         <meta name="twitter:image" content="https://www.nickelbusbar.com/img/logo.png" />
         <script type="application/ld+json">
           {JSON.stringify({
@@ -277,7 +281,7 @@ export const HomePage: React.FC = () => {
             name: 'Ramani Nickel Strips',
             url: 'https://www.nickelbusbar.com/',
             logo: 'https://www.nickelbusbar.com/img/logo.png',
-            sameAs: [
+            sameAs: [ 
               'https://www.linkedin.com/company/ramani-nickel-strips',
               'https://www.facebook.com/ramani.steel.house',
               'https://www.instagram.com/ramani.steel.house'
@@ -342,13 +346,14 @@ export const HomePage: React.FC = () => {
                 52+ Years of Industrial Excellence
               </p>
               <h1 className="mt-6 text-4xl md:text-6xl font-display font-bold leading-tight">
-                Nickel Strips Manufacturer
+                Nickel Strip Manufacturer India
               </h1>
               <p className="mt-4 text-xl text-white/85">
-                Premium nickel strips, busbars and battery connectors for lithium-ion manufacturing.
+                Premium Pure Nickel Strip, Nickel Busbar and H Type Nickel Strip connectors for lithium-ion manufacturing.
               </p>
               <p className="mt-4 text-base text-white/75">
-                High conductivity, superior weldability, and custom production for 18650 / 21700 / 32650 battery packs.
+                High conductivity, superior weldability, and precision-engineered Nickel Strip for 18650 Battery, 21700, and
+                32650 battery packs &mdash; from a trusted Battery Nickel Strip Supplier.
               </p>
               <div className="mt-8 flex flex-col sm:flex-row gap-4">
                 <Link
@@ -725,10 +730,12 @@ export const HomePage: React.FC = () => {
         <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="rounded-3xl border border-slate-200 bg-white p-8 md:p-10 shadow-sm">
             <p className="text-xs font-semibold uppercase tracking-[0.3em] text-brand">Global Supply</p>
-            <h2 className="mt-3 text-2xl md:text-3xl font-display font-bold text-brand">Nickel Strips Manufacturer for Global Lithium Battery Supply</h2>
+            <h2 className="mt-3 text-2xl md:text-3xl font-display font-bold text-brand">Nickel Strip Manufacturer India for Global Lithium Battery Supply</h2>
             <p className="mt-4 text-slate-600">
-              As a trusted Nickel Strips Manufacturer, we supply high-purity nickel strips for lithium-ion batteries, EV battery packs,
-              and industrial energy storage. Our precision slitting and strict QA make us a preferred nickel strips supplier and nickel strip exporter.
+              As a trusted Nickel Strip Manufacturer India, we supply high-purity Pure Nickel Strip, H Type Nickel Strip, and
+              Nickel Busbar for lithium-ion batteries, EV battery packs, and industrial energy storage, including precision
+              Nickel Strip for 18650 Battery assemblies. Our precision slitting and strict QA make us a preferred Battery
+              Nickel Strip Supplier and nickel strip exporter.
             </p>
             <p className="mt-4 text-slate-600">
               Our manufacturing process supports custom widths, accurate thickness tolerances, and batch reports that compliance-focused manufacturers expect.

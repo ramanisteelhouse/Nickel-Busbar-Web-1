@@ -1,6 +1,6 @@
 import React from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import { ShoppingCart, Shield, Truck, RotateCcw, ChevronRight, X } from 'lucide-react';
+import { ShoppingCart, Shield, Truck, RotateCcw, ChevronRight, X, CheckCircle2 } from 'lucide-react';
 import { motion } from 'motion/react';
 import { Helmet } from 'react-helmet-async';
 import { Product } from '../types';
@@ -15,6 +15,7 @@ export const ProductDetailPage: React.FC<{ onAddToCart: (p: Product) => void }> 
   const [fetchError, setFetchError] = React.useState<'not-found' | 'server' | null>(null);
   const [showCartToast, setShowCartToast] = React.useState(false);
   const [isMobile, setIsMobile] = React.useState(false);
+  const [activeTab, setActiveTab] = React.useState<'specs' | 'applications' | 'shipping'>('specs');
   const { t, formatPrice } = useLanguage();
   const siteUrl = 'https://www.nickelbusbar.com';
 
@@ -23,6 +24,7 @@ export const ProductDetailPage: React.FC<{ onAddToCart: (p: Product) => void }> 
     setLoading(true);
     setFetchError(null);
     setProduct(null);
+    setActiveTab('specs');
 
     fetch(`/api/products/${slug}`)
       .then(async (res) => {
@@ -299,21 +301,75 @@ export const ProductDetailPage: React.FC<{ onAddToCart: (p: Product) => void }> 
       {/* Technical Details Section */}
       <section className="mt-24">
         <div className="border-b border-zinc-200 flex gap-8 mb-8">
-          <button className="pb-4 border-b-2 border-zinc-900 font-bold text-sm">{t('productDetail.techSpecs')}</button>
-          <button className="pb-4 border-b-2 border-transparent text-zinc-400 font-bold text-sm hover:text-zinc-900 transition-colors">{t('productDetail.applications')}</button>
-          <button className="pb-4 border-b-2 border-transparent text-zinc-400 font-bold text-sm hover:text-zinc-900 transition-colors">{t('productDetail.shippingInfo')}</button>
+          <button
+            type="button"
+            onClick={() => setActiveTab('specs')}
+            className={`pb-4 border-b-2 font-bold text-sm transition-colors ${activeTab === 'specs' ? 'border-zinc-900 text-zinc-900' : 'border-transparent text-zinc-400 hover:text-zinc-900'}`}
+          >
+            {t('productDetail.techSpecs')}
+          </button>
+          <button
+            type="button"
+            onClick={() => setActiveTab('applications')}
+            className={`pb-4 border-b-2 font-bold text-sm transition-colors ${activeTab === 'applications' ? 'border-zinc-900 text-zinc-900' : 'border-transparent text-zinc-400 hover:text-zinc-900'}`}
+          >
+            {t('productDetail.applications')}
+          </button>
+          <button
+            type="button"
+            onClick={() => setActiveTab('shipping')}
+            className={`pb-4 border-b-2 font-bold text-sm transition-colors ${activeTab === 'shipping' ? 'border-zinc-900 text-zinc-900' : 'border-transparent text-zinc-400 hover:text-zinc-900'}`}
+          >
+            {t('productDetail.shippingInfo')}
+          </button>
         </div>
-        <div className="prose prose-zinc max-w-none">
-          <p className="text-zinc-600 leading-relaxed">
-            {t('productDetail.techDescription', { product: product.name, astm: product.astm_value || 'ASTM' })}
-          </p>
-          <ul className="mt-6 space-y-2 text-sm text-zinc-600">
-            <li>• {t('productDetail.bullet1')}</li>
-            <li>• {t('productDetail.bullet2')}</li>
-            <li>• {t('productDetail.bullet3')}</li>
-            <li>• {t('productDetail.bullet4')}</li>
-          </ul>
-        </div>
+
+        {activeTab === 'specs' && (
+          <div className="prose prose-zinc max-w-none">
+            <p className="text-zinc-600 leading-relaxed">
+              {t('productDetail.techDescription', { product: product.name, astm: product.astm_value || 'ASTM' })}
+            </p>
+            <ul className="mt-6 space-y-2 text-sm text-zinc-600">
+              <li>• {t('productDetail.bullet1')}</li>
+              <li>• {t('productDetail.bullet2')}</li>
+              <li>• {t('productDetail.bullet3')}</li>
+              <li>• {t('productDetail.bullet4')}</li>
+            </ul>
+          </div>
+        )}
+
+        {activeTab === 'applications' && (
+          <div className="prose prose-zinc max-w-none">
+            {product.applications && product.applications.length > 0 ? (
+              <ul className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {product.applications.map((application) => (
+                  <li key={application} className="flex items-start gap-3 rounded-2xl border border-zinc-100 bg-zinc-50 p-4 text-sm text-zinc-700">
+                    <CheckCircle2 size={18} className="mt-0.5 shrink-0 text-emerald-600" />
+                    {application}
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p className="text-zinc-500">
+                Application details for {product.name} are available on request &mdash; {' '}
+                <Link to={`/products?enquiry=1&product=${product.slug}`} className="font-semibold text-brand hover:underline">
+                  contact our engineering team
+                </Link>
+                .
+              </p>
+            )}
+          </div>
+        )}
+
+        {activeTab === 'shipping' && (
+          <div className="prose prose-zinc max-w-none">
+            <p className="text-zinc-600 leading-relaxed">
+              Orders are dispatched with full material test certificates and export-ready documentation. Domestic PAN-India
+              delivery and international shipping are available, with lead times confirmed at the time of quotation based on
+              quantity and custom specification requirements.
+            </p>
+          </div>
+        )}
       </section>
 
       {showCartToast && (

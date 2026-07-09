@@ -275,6 +275,24 @@ const normalizeImageSource = (value: unknown) => {
   return `/${encodeURI(cleaned)}`;
 };
 
+const normalizeStringArray = (value: unknown) => {
+  const raw = typeof value === "string" ? (() => {
+    try {
+      return JSON.parse(value);
+    } catch {
+      return null;
+    }
+  })() : value;
+
+  if (!Array.isArray(raw)) return null;
+
+  const items = raw
+    .map((item) => (typeof item === "string" ? item.trim() : ""))
+    .filter((item) => item.length > 0);
+
+  return items.length > 0 ? items : null;
+};
+
 const normalizeProductRow = (row: Record<string, unknown>) => ({
   ...row,
   id: toFiniteInteger(row.id, 0),
@@ -282,6 +300,7 @@ const normalizeProductRow = (row: Record<string, unknown>) => ({
   price: toFiniteNumber(row.price, 0),
   stock: toFiniteInteger(row.stock, 0),
   image: normalizeImageSource(row.image),
+  applications: normalizeStringArray(row.applications),
 });
 
 const normalizeAdRow = (row: Record<string, unknown>) => ({

@@ -26,6 +26,7 @@ export interface Product {
   astm_value?: string;
   uns_value?: string;
   dimensions?: string;
+  applications?: string[] | null;
   stock: number;
   is_featured: boolean;
   created_at: string;
