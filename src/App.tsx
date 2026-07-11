@@ -9,7 +9,10 @@ import { AdPopup } from './components/AdPopup';
 import { GoogleOneTap } from './components/GoogleOneTap';
 import { Footer } from './components/Footer';
 import { BackNavButton } from './components/BackNavButton';
+import { ToastContainer, showToast } from './components/Toast';
 import { Product, CartItem } from './types';
+
+const FRESH_LOGIN_KEY = 'fresh-login';
 
 const HomePage = React.lazy(() => import('./pages/HomePage').then((m) => ({ default: m.HomePage })));
 const ProductListingPage = React.lazy(() => import('./pages/ProductListingPage').then((m) => ({ default: m.ProductListingPage })));
@@ -118,7 +121,16 @@ export default function App() {
         if (!response.ok) throw new Error('Unable to fetch session');
         const data = await response.json();
         if (!isActive) return;
-        setSessionUser(data?.user ?? null);
+        const user = data?.user ?? null;
+        setSessionUser(user);
+
+        if (user && typeof window !== 'undefined' && window.sessionStorage.getItem(FRESH_LOGIN_KEY) === '1') {
+          window.sessionStorage.removeItem(FRESH_LOGIN_KEY);
+          showToast(
+            `Welcome to NickelBusbar.com, ${user.name || user.email}!`,
+            'Thanks for signing in. Explore our nickel strips, busbars, and battery connection solutions.'
+          );
+        }
       } catch {
         if (!isActive) return;
         setSessionUser(null);
@@ -216,6 +228,7 @@ export default function App() {
           <ScrollToTop />
           <GoogleOneTap />
           <Navbar cartCount={cart.reduce((acc, item) => acc + item.quantity, 0)} />
+          <ToastContainer />
           <AdPopup />
 
           <main style={{ paddingTop: 'var(--adbar-height, 0px)' }}>

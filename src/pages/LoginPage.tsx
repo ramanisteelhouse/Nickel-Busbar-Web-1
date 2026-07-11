@@ -65,6 +65,7 @@ export const LoginPage: React.FC = () => {
         throw new Error(typeof data?.error === 'string' ? data.error : t('login.authError'));
       }
       setCurrentUser(data.user ?? null);
+      window.sessionStorage.setItem('fresh-login', '1');
       window.dispatchEvent(new Event('auth-changed'));
       navigate('/');
     } catch (googleError) {
@@ -122,6 +123,7 @@ export const LoginPage: React.FC = () => {
       }
 
       setCurrentUser(data.user ?? null);
+      window.sessionStorage.setItem('fresh-login', '1');
       window.dispatchEvent(new Event('auth-changed'));
       navigate('/');
     } catch (submissionError) {

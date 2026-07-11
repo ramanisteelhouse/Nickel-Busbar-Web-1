@@ -53,6 +53,7 @@ export const GoogleOneTap: React.FC = () => {
           });
           if (loginResponse.ok) {
             markPromptAttempt();
+            window.sessionStorage.setItem('fresh-login', '1');
             window.dispatchEvent(new Event('auth-changed'));
           }
         } catch {
