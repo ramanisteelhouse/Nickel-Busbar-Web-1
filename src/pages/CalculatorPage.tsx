@@ -2,7 +2,7 @@ import React from 'react';
 import { Helmet } from 'react-helmet-async';
 import { ArrowRight, Copy, Download, RefreshCcw, Plus, Trash2, MessageCircle } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import { encodePathSegment } from '../lib/utils';
+import { encodePathSegment, logCallClick } from '../lib/utils';
 import type { BlogPost } from '../types';
 
 interface MaterialOption {
@@ -419,6 +419,7 @@ export const CalculatorPage: React.FC = () => {
                     href="https://wa.me/918369724730"
                     target="_blank"
                     rel="noreferrer"
+                    onClick={() => logCallClick('+918369724730', 'calculator_whatsapp')}
                     className="inline-flex items-center gap-2 rounded-full border border-[#22C55E] bg-white px-5 py-3 text-sm font-semibold text-[#22C55E] shadow-sm transition hover:bg-[#ecfdf5]"
                   >
                     <MessageCircle size={16} /> WhatsApp Manufacturer
@@ -782,6 +783,7 @@ export const CalculatorPage: React.FC = () => {
                     href="https://wa.me/918369724730"
                     target="_blank"
                     rel="noreferrer"
+                    onClick={() => logCallClick('+918369724730', 'calculator_whatsapp')}
                     className="inline-flex items-center gap-2 rounded-full border border-[#22C55E] bg-white px-5 py-3 text-sm font-semibold text-[#22C55E] shadow-sm transition hover:bg-[#ecfdf5]"
                   >
                     <MessageCircle size={16} /> WhatsApp Manufacturer

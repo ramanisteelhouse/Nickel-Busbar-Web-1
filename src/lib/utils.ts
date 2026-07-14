@@ -108,6 +108,31 @@ export function getOrCreateSessionId() {
   return next;
 }
 
+/**
+ * Logs a click-to-call (or WhatsApp) action so the enquiry can be traced back to the
+ * visitor's session and the pages they viewed beforehand. Fire-and-forget — never
+ * blocks or interferes with the underlying tel:/wa.me navigation.
+ */
+export function logCallClick(phoneNumber: string, source: string) {
+  try {
+    fetch('/api/calls/log', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        phoneNumber,
+        source,
+        currentPage: typeof window !== 'undefined' ? window.location.pathname : '',
+        visitorId: getOrCreateSessionId(),
+      }),
+      keepalive: true,
+    }).catch(() => {
+      // Ignore call-tracking failures — never block the call/WhatsApp action.
+    });
+  } catch {
+    // Ignore — e.g. fetch unavailable in this environment.
+  }
+}
+
 // React Router and Express can choke on raw "%" in path params.
 // Double-encode percent so one decode pass still leaves a safe escape.
 export function encodePathSegment(value: string) {

@@ -51,15 +51,43 @@ const pool = new Pool({
   connectionString,
   ssl: { rejectUnauthorized: false },
   connectionTimeoutMillis: Number(process.env.DB_CONNECTION_TIMEOUT_MS || 8000),
+  // Supabase's transaction pooler (pgbouncer, port 6543) — and network devices in front of it —
+  // silently drop connections that sit idle. keepAlive sends TCP probes so drops are detected
+  // immediately instead of surfacing as "Connection terminated unexpectedly" on the next query, and
+  // idleTimeoutMillis proactively recycles idle clients before the pooler does it for us.
+  keepAlive: true,
+  keepAliveInitialDelayMillis: 10_000,
+  idleTimeoutMillis: 20_000,
+  max: Number(process.env.DB_POOL_MAX || 10),
 });
 
 pool.on("error", (error) => {
   console.error("Unexpected PostgreSQL client error", error);
 });
 
+const isTransientConnectionError = (error: unknown) => {
+  const message = error instanceof Error ? error.message : String(error);
+  const code = (error as { code?: string })?.code;
+  return (
+    /connection terminated/i.test(message) ||
+    /timeout/i.test(message) ||
+    code === "ECONNRESET" ||
+    code === "57P01" // admin_shutdown
+  );
+};
+
 export async function query<T = any>(text: string, params: any[] = []): Promise<T[]> {
-  const result = await pool.query(text, params);
-  return result.rows as T[];
+  try {
+    const result = await pool.query(text, params);
+    return result.rows as T[];
+  } catch (error) {
+    // One retry on a fresh pooled connection — covers the common case where the pooler
+    // dropped a specific idle client between requests. A second failure is a real error.
+    if (!isTransientConnectionError(error)) throw error;
+    console.warn("Retrying query after transient DB connection error", error);
+    const result = await pool.query(text, params);
+    return result.rows as T[];
+  }
 }
 
 export async function queryOne<T = any>(text: string, params: any[] = []): Promise<T | null> {

@@ -1,5 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
+import { logCallClick } from '../lib/utils';
 
 export const Footer: React.FC = () => {
   return (
@@ -34,8 +35,16 @@ export const Footer: React.FC = () => {
           <div>
             <p className="text-xs uppercase tracking-[0.3em] text-slate-400 mb-4">Contact</p>
             <ul className="space-y-3 text-sm text-slate-600">
-              <li>ramanioffice@gmail.com</li>
-              <li>+91 8369724730</li>
+              <li><a href="mailto:ramanioffice@gmail.com" className="hover:text-brand">ramanioffice@gmail.com</a></li>
+              <li>
+                <a
+                  href="tel:+918369724730"
+                  onClick={() => logCallClick('+918369724730', 'footer')}
+                  className="hover:text-brand"
+                >
+                  +91 8369724730
+                </a>
+              </li>
               <li>PAN India + international supply support</li>
             </ul>
           </div>

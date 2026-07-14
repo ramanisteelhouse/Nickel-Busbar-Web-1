@@ -145,6 +145,10 @@ const reviewHighlights = [
   },
 ];
 
+const aggregateRatingValue = (
+  reviewHighlights.reduce((sum, review) => sum + review.rating, 0) / reviewHighlights.length
+).toFixed(1);
+
 export const HomePage: React.FC = () => {
   const [dynamicProducts, setDynamicProducts] = React.useState<Product[]>([]);
   const [categories, setCategories] = React.useState<Category[]>([]);
@@ -282,7 +286,7 @@ export const HomePage: React.FC = () => {
             name: 'Ramani Nickel Strips',
             url: 'https://www.nickelbusbar.com/',
             logo: 'https://www.nickelbusbar.com/img/logo.png',
-            sameAs: [ 
+            sameAs: [
               'https://www.linkedin.com/company/ramani-nickel-strips',
               'https://www.facebook.com/ramani.steel.house',
               'https://www.instagram.com/ramani.steel.house'
@@ -320,7 +324,12 @@ export const HomePage: React.FC = () => {
                 opens: '09:00',
                 closes: '18:00',
               }
-            ]
+            ],
+            aggregateRating: {
+              '@type': 'AggregateRating',
+              ratingValue: aggregateRatingValue,
+              reviewCount: reviewHighlights.length,
+            },
           })}
         </script>
         <script type="application/ld+json">

@@ -1,5 +1,6 @@
 import React from 'react';
 import { Helmet } from 'react-helmet-async';
+import { logCallClick } from '../lib/utils';
 
 export const ContactPage: React.FC = () => {
   return (
@@ -17,8 +18,13 @@ export const ContactPage: React.FC = () => {
         <h1 className="text-3xl md:text-4xl font-display font-bold">Contact Us</h1>
         <p className="mt-3 text-slate-600">For product enquiries, custom requirements, and bulk orders.</p>
         <div className="mt-8 rounded-2xl border border-slate-200 bg-white p-6 space-y-3">
-          <p><span className="font-semibold">Email:</span> ramanioffice@gmail.com</p>
-          <p><span className="font-semibold">Phone:</span> +91 8369724730</p>
+          <p><span className="font-semibold">Email:</span> <a href="mailto:ramanioffice@gmail.com" className="hover:text-brand-dark">ramanioffice@gmail.com</a></p>
+          <p>
+            <span className="font-semibold">Phone:</span>{' '}
+            <a href="tel:+918369724730" onClick={() => logCallClick('+918369724730', 'contact_page')} className="hover:text-brand-dark">
+              +91 8369724730
+            </a>
+          </p>
           <p><span className="font-semibold">Service Coverage:</span> PAN India and international supply support</p>
           <div className="pt-2">
             <a

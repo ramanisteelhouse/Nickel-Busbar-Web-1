@@ -46,6 +46,7 @@ export type TranslationKey =
   | 'product.needQuoteDesc'
   | 'product.whatsapp'
   | 'product.email'
+  | 'product.call'
   | 'product.openForm'
   | 'product.categories'
   | 'product.allCategories'
@@ -205,6 +206,7 @@ const enTranslations: Record<TranslationKey, string> = {
     'product.needQuoteDesc': 'Reach our sales team instantly on WhatsApp, email, or send a detailed product enquiry form.',
     'product.whatsapp': 'WhatsApp',
     'product.email': 'Email',
+    'product.call': 'Call',
     'product.openForm': 'Open Form',
     'product.categories': 'Categories',
     'product.allCategories': 'All Categories',
@@ -364,6 +366,7 @@ const zhTranslations: Record<TranslationKey, string> = {
     'product.needQuoteDesc': '?? WhatsApp??????????????????????',
     'product.whatsapp': 'WhatsApp',
     'product.email': '????',
+    'product.call': '拨打电话',
     'product.openForm': '????',
     'product.categories': '??',
     'product.allCategories': '????',

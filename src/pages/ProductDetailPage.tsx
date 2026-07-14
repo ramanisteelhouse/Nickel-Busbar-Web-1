@@ -169,6 +169,17 @@ export const ProductDetailPage: React.FC<{ onAddToCart: (p: Product) => void }> 
             },
           })}
         </script>
+        <script type="application/ld+json">
+          {JSON.stringify({
+            '@context': 'https://schema.org',
+            '@type': 'BreadcrumbList',
+            itemListElement: [
+              { '@type': 'ListItem', position: 1, name: 'Home', item: siteUrl },
+              { '@type': 'ListItem', position: 2, name: 'Products', item: `${siteUrl}/products` },
+              { '@type': 'ListItem', position: 3, name: product.name, item: canonicalUrl },
+            ],
+          })}
+        </script>
       </Helmet>
       {/* Breadcrumbs */}
       <nav className="flex items-center gap-2 text-xs text-zinc-400 mb-8">

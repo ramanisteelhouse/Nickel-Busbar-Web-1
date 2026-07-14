@@ -1,8 +1,9 @@
 import React from 'react';
-import { MessageCircle, Mail, ClipboardList } from 'lucide-react';
+import { MessageCircle, Mail, ClipboardList, Phone } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useLanguage } from '../i18n/LanguageProvider';
 import { motion } from 'motion/react';
+import { logCallClick } from '../lib/utils';
 
 export const FloatingContact: React.FC = () => {
   const navigate = useNavigate();
@@ -17,6 +18,16 @@ export const FloatingContact: React.FC = () => {
         className="flex flex-col overflow-hidden rounded-l-2xl shadow-2xl border border-white/10"
       >
         <motion.a
+          href="tel:+918369724730"
+          aria-label={t('product.call')}
+          onClick={() => logCallClick('+918369724730', 'floating_contact')}
+          whileHover={{ x: -6 }}
+          className="contact-item call flex items-center gap-2 bg-brand-dark px-4 py-3 text-sm font-semibold text-white transition-transform"
+        >
+          <Phone size={16} />
+          <span className="hidden sm:inline">{t('product.call')}</span>
+        </motion.a>
+        <motion.a
           href="mailto:sales@ramanisteel.com?subject=Nickel%20Strip%20Enquiry"
           aria-label={t('product.email')}
           whileHover={{ x: -6 }}
@@ -30,6 +41,7 @@ export const FloatingContact: React.FC = () => {
           target="_blank"
           rel="noreferrer"
           aria-label={t('product.whatsapp')}
+          onClick={() => logCallClick('+918369724730', 'floating_contact_whatsapp')}
           whileHover={{ x: -6 }}
           className="contact-item whatsapp flex items-center gap-2 bg-[#22C55E] px-4 py-3 text-sm font-semibold text-white transition-transform"
         >

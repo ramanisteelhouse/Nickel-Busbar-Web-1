@@ -10,6 +10,7 @@ import { GoogleOneTap } from './components/GoogleOneTap';
 import { Footer } from './components/Footer';
 import { BackNavButton } from './components/BackNavButton';
 import { ToastContainer, showToast } from './components/Toast';
+import { getOrCreateSessionId } from './lib/utils';
 import { Product, CartItem } from './types';
 
 const FRESH_LOGIN_KEY = 'fresh-login';
@@ -45,7 +46,8 @@ function ScrollToTop() {
         path: pathname,
         referrer: document.referrer,
         userAgent: navigator.userAgent,
-        geo: { timestamp: new Date().toISOString() }
+        geo: { timestamp: new Date().toISOString() },
+        visitorId: getOrCreateSessionId(),
       })
     }).catch(() => {
       // Ignore analytics logging failures.
