@@ -32,8 +32,8 @@ export const CookieBanner: React.FC = () => {
   if (!visible) return null;
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 z-50 px-4 pb-5">
-      <div className="mx-auto max-w-4xl rounded-2xl border border-zinc-200 bg-white text-brand shadow-2xl backdrop-blur">
+    <div className="pointer-events-none fixed bottom-0 left-0 right-0 z-50 px-4 pb-5">
+      <div className="pointer-events-auto mx-auto max-w-4xl rounded-2xl border border-zinc-200 bg-white text-brand shadow-2xl backdrop-blur">
         <div className="flex flex-col gap-4 px-6 py-5 md:flex-row md:items-center md:justify-between">
           <div>
             <p className="text-sm font-semibold">{t('cookies.title')}</p>

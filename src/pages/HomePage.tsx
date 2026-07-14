@@ -23,6 +23,7 @@ import { motion } from 'motion/react';
 import { Helmet } from 'react-helmet-async';
 import type { Product, Category, BlogPost } from '../types';
 import { buildImageAlt, encodePathSegment, resolveImageSrc } from '../lib/utils';
+import { Tilt3D, Reveal } from '../components/Tilt3D';
 
 const fallbackShowcaseImage = '/img/icon-logo.jpg';
 
@@ -339,14 +340,58 @@ export const HomePage: React.FC = () => {
       </Helmet>
 
       <section className="relative overflow-hidden bg-gradient-to-br from-brand to-brand-light text-white">
+        {/* Animated aurora backdrop */}
+        <div className="pointer-events-none absolute inset-0 overflow-hidden" aria-hidden="true">
+          <motion.div
+            className="absolute -top-32 -left-24 h-[28rem] w-[28rem] rounded-full bg-emerald-400/20 blur-3xl"
+            animate={{ x: [0, 40, 0], y: [0, 30, 0] }}
+            transition={{ duration: 18, repeat: Infinity, ease: 'easeInOut' }}
+          />
+          <motion.div
+            className="absolute top-1/3 -right-32 h-[32rem] w-[32rem] rounded-full bg-white/10 blur-3xl"
+            animate={{ x: [0, -30, 0], y: [0, 40, 0] }}
+            transition={{ duration: 22, repeat: Infinity, ease: 'easeInOut' }}
+          />
+          <motion.div
+            className="absolute bottom-0 left-1/3 h-80 w-80 rounded-full bg-brand-dark/40 blur-3xl"
+            animate={{ x: [0, 20, 0], y: [0, -20, 0] }}
+            transition={{ duration: 16, repeat: Infinity, ease: 'easeInOut' }}
+          />
+          {/* Floating 3D strip accents */}
+          <div className="hidden lg:block" style={{ perspective: 1000 }}>
+            {[
+              { top: '12%', left: '58%', width: 220, rotate: -18, delay: 0 },
+              { top: '58%', left: '52%', width: 160, rotate: 12, delay: 0.6 },
+              { top: '32%', left: '68%', width: 130, rotate: -8, delay: 1.1 },
+            ].map((strip, index) => (
+              <motion.div
+                key={index}
+                className="absolute h-3 rounded-full bg-gradient-to-r from-white/40 via-emerald-200/30 to-white/10 shadow-lg"
+                style={{ top: strip.top, left: strip.left, width: strip.width, rotate: strip.rotate, transformStyle: 'preserve-3d' }}
+                animate={{ y: [0, -18, 0], rotateZ: [strip.rotate, strip.rotate + 6, strip.rotate] }}
+                transition={{ duration: 7 + index, repeat: Infinity, ease: 'easeInOut', delay: strip.delay }}
+              />
+            ))}
+          </div>
+        </div>
+
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-24 lg:py-32">
           <div className="grid gap-12 lg:grid-cols-[1.5fr_1fr] items-start">
             <motion.div initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.8 }} className="max-w-2xl">
               <p className="inline-flex items-center gap-2 rounded-full bg-white/10 px-4 py-2 text-xs font-semibold uppercase tracking-[0.2em] text-white/70">
+                <span className="relative flex h-2 w-2">
+                  <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-300 opacity-75" />
+                  <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-300" />
+                </span>
                 52+ Years of Industrial Excellence
               </p>
-              <h1 className="mt-6 text-4xl md:text-6xl font-display font-bold leading-tight">
-                Nickel Strip Manufacturer India
+              <h1 className="mt-6 text-4xl md:text-6xl font-display font-bold leading-[1.05] tracking-tight">
+                <motion.span initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.7, delay: 0.1 }} className="block">
+                  India's Trusted
+                </motion.span>
+                <motion.span initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.7, delay: 0.22 }} className="block bg-gradient-to-r from-white via-emerald-100 to-white bg-clip-text text-transparent">
+                  Nickel Strip Manufacturer
+                </motion.span>
               </h1>
               <p className="mt-4 text-xl text-white/85">
                 Premium Pure Nickel Strip, Nickel Busbar and H Type Nickel Strip connectors for lithium-ion manufacturing.
@@ -356,62 +401,74 @@ export const HomePage: React.FC = () => {
                 32650 battery packs &mdash; from a trusted Battery Nickel Strip Supplier.
               </p>
               <div className="mt-8 flex flex-col sm:flex-row gap-4">
-                <Link
-                  to="/products?enquiry=1"
-                  className="inline-flex items-center justify-center gap-2 rounded-full bg-white px-6 py-3 text-sm font-semibold text-brand shadow-lg shadow-brand-dark/20 hover:bg-white/90"
-                >
-                  Request a Quote
-                  <ArrowRight size={16} />
-                </Link>
-                <Link
-                  to="/products?search=nickel"
-                  className="inline-flex items-center justify-center gap-2 rounded-full border border-white/40 px-6 py-3 text-sm font-semibold text-white hover:bg-white/10"
-                >
-                  Explore Products
-                </Link>
+                <motion.div whileHover={{ y: -3, scale: 1.02 }} whileTap={{ scale: 0.98 }} transition={{ type: 'spring', stiffness: 300, damping: 20 }}>
+                  <Link
+                    to="/products?enquiry=1"
+                    className="inline-flex items-center justify-center gap-2 rounded-full bg-white px-6 py-3 text-sm font-semibold text-brand shadow-lg shadow-brand-dark/20 hover:bg-white/90"
+                  >
+                    Request a Quote
+                    <ArrowRight size={16} />
+                  </Link>
+                </motion.div>
+                <motion.div whileHover={{ y: -3, scale: 1.02 }} whileTap={{ scale: 0.98 }} transition={{ type: 'spring', stiffness: 300, damping: 20 }}>
+                  <Link
+                    to="/products?search=nickel"
+                    className="inline-flex items-center justify-center gap-2 rounded-full border border-white/40 px-6 py-3 text-sm font-semibold text-white hover:bg-white/10"
+                  >
+                    Explore Products
+                  </Link>
+                </motion.div>
               </div>
 
               <div className="mt-10 flex flex-wrap gap-3">
-                {(categories.length > 0 ? categories.slice(0, 4) : fallbackCategories.slice(0, 4)).filter((category) => category.slug).map((category) => (
-                  <Link
+                {(categories.length > 0 ? categories.slice(0, 4) : fallbackCategories.slice(0, 4)).filter((category) => category.slug).map((category, index) => (
+                  <motion.div
                     key={category.id}
-                    to={`/products?category=${encodeURIComponent(category.slug)}`}
-                    className="rounded-full border border-white/30 bg-white/10 px-4 py-2 text-xs font-semibold uppercase tracking-[0.2em] text-white transition-colors hover:bg-white/20"
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.5, delay: 0.4 + index * 0.08 }}
                   >
-                    {category.name}
-                  </Link>
+                    <Link
+                      to={`/products?category=${encodeURIComponent(category.slug)}`}
+                      className="rounded-full border border-white/30 bg-white/10 px-4 py-2 text-xs font-semibold uppercase tracking-[0.2em] text-white transition-colors hover:bg-white/20"
+                    >
+                      {category.name}
+                    </Link>
+                  </motion.div>
                 ))}
               </div>
             </motion.div>
 
-            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.9, delay: 0.1 }} className="rounded-[2rem] border border-white/10 bg-white/10 p-4 shadow-2xl shadow-slate-950/20 backdrop-blur-xl">
-              <div className="relative overflow-hidden rounded-[1.8rem] border border-white/10 bg-slate-950">
-                <video
-                  src={heroVideoUrl}
-                  autoPlay
-                  muted
-                  loop
-                  playsInline
-                  className="h-72 w-full object-cover"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-slate-950/90 via-transparent to-transparent" />
-                <div className="absolute bottom-4 left-4 right-4 rounded-3xl bg-slate-950/80 p-4 text-white backdrop-blur-sm">
-                  <p className="text-xs uppercase tracking-[0.3em] text-slate-300">Factory Tour</p>
-                  <h2 className="mt-2 text-lg font-semibold text-white">Battery pack strip production</h2>
-                  <p className="mt-2 text-sm text-slate-300">Real-time manufacturing visuals for nickel strip and connector fabrication.</p>
-                </div>
-              </div>
-              <div className="mt-5 grid gap-3 sm:grid-cols-2">
-                {[
-                  { label: 'Cell Compatibility', value: '18650, 21700, 32650' },
-                  { label: 'Material Options', value: 'Pure nickel, nickel-plated steel' },
-                ].map((item) => (
-                  <div key={item.label} className="rounded-3xl border border-white/10 bg-white/5 p-4">
-                    <p className="text-xs uppercase tracking-[0.3em] text-slate-400">{item.label}</p>
-                    <p className="mt-2 text-sm font-semibold text-white">{item.value}</p>
+            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.9, delay: 0.1 }}>
+              <Tilt3D className="rounded-[2rem] border border-white/10 bg-white/10 p-4 shadow-2xl shadow-slate-950/20 backdrop-blur-xl" maxTilt={7} liftZ={16}>
+                <div className="relative overflow-hidden rounded-[1.8rem] border border-white/10 bg-slate-950" style={{ transform: 'translateZ(40px)' }}>
+                  <video
+                    src={heroVideoUrl}
+                    autoPlay
+                    muted
+                    loop
+                    playsInline
+                    className="h-72 w-full object-cover"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-slate-950/90 via-transparent to-transparent" />
+                  <div className="absolute bottom-4 left-4 right-4 rounded-3xl bg-slate-950/80 p-4 text-white backdrop-blur-sm">
+                    <p className="text-xs uppercase tracking-[0.3em] text-slate-300">Factory Tour</p>
+                    <h2 className="mt-2 text-lg font-semibold text-white">Battery pack strip production</h2>
+                    <p className="mt-2 text-sm text-slate-300">Real-time manufacturing visuals for nickel strip and connector fabrication.</p>
                   </div>
-                ))}
-              </div>
+                </div>
+                <div className="mt-5 grid gap-3 sm:grid-cols-2">
+                  {[
+                    { label: 'Cell Compatibility', value: '18650, 21700, 32650' },
+                    { label: 'Material Options', value: 'Pure nickel, nickel-plated steel' },
+                  ].map((item) => (
+                    <div key={item.label} className="rounded-3xl border border-white/10 bg-white/5 p-4">
+                      <p className="text-xs uppercase tracking-[0.3em] text-slate-400">{item.label}</p>
+                      <p className="mt-2 text-sm font-semibold text-white">{item.value}</p>
+                    </div>
+                  ))}
+                </div>
+              </Tilt3D>
             </motion.div>
           </div>
         </div>
@@ -419,17 +476,22 @@ export const HomePage: React.FC = () => {
 
       <section className="bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="-translate-y-8 rounded-3xl border border-slate-200 bg-white shadow-xl shadow-slate-200/40 px-6 py-6 grid grid-cols-2 md:grid-cols-4 gap-6">
+          <div className="-translate-y-8 rounded-3xl border border-slate-200 bg-white shadow-xl shadow-slate-200/40 px-4 py-6 grid grid-cols-2 md:grid-cols-4 gap-4 sm:gap-6">
             {[
-              { label: '52+ Years Experience', value: 'Since 1974' },
-              { label: 'ISO Certified', value: 'Quality assured' },
-              { label: 'Global Exporter', value: '17+ countries' },
-              { label: 'High Purity Nickel', value: '99.8%+' },
-            ].map((item) => (
-              <div key={item.label} className="space-y-1">
-                <p className="text-sm font-semibold text-brand">{item.label}</p>
-                <p className="text-xs text-slate-500">{item.value}</p>
-              </div>
+              { label: '52+ Years Experience', value: 'Since 1974', icon: Factory },
+              { label: 'ISO Certified', value: 'Quality assured', icon: ShieldCheck },
+              { label: 'Global Exporter', value: '17+ countries', icon: Globe },
+              { label: 'High Purity Nickel', value: '99.8%+', icon: BadgeCheck },
+            ].map((item, index) => (
+              <Reveal key={item.label} delay={index * 0.08}>
+                <Tilt3D maxTilt={8} liftZ={12} className="h-full rounded-2xl">
+                  <div className="flex h-full flex-col gap-2 rounded-2xl p-2 transition-shadow hover:shadow-lg" style={{ transform: 'translateZ(20px)' }}>
+                    <item.icon size={18} className="text-brand" />
+                    <p className="text-sm font-semibold text-brand">{item.label}</p>
+                    <p className="text-xs text-slate-500">{item.value}</p>
+                  </div>
+                </Tilt3D>
+              </Reveal>
             ))}
           </div>
         </div>
@@ -463,37 +525,37 @@ export const HomePage: React.FC = () => {
 
       <section className="py-20 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-6 mb-12">
+          <Reveal className="flex flex-col md:flex-row md:items-end md:justify-between gap-6 mb-12">
             <div>
               <p className="text-xs font-semibold uppercase tracking-[0.3em] text-brand">Products</p>
               <h2 className="mt-3 text-3xl md:text-4xl font-display font-bold text-brand">Nickel Strip Variants</h2>
               <p className="mt-2 text-slate-500">Engineered to match your cell design, welding process, and performance targets.</p>
             </div>
             <Link to="/products?search=nickel" className="text-sm font-semibold text-brand">View all nickel strip products</Link>
-          </div>
+          </Reveal>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             {showcaseItems.map((item, index) => (
-              <motion.div
-                key={`${item.cta}-${index}`}
-                whileHover={{ y: -6 }}
-                className="group rounded-3xl border border-slate-200 bg-white overflow-hidden shadow-sm"
-              >
-                <div className="h-48 overflow-hidden">
-                  <img src={item.image} alt={buildImageAlt(item.title)} loading="lazy" width={640} height={360} className="h-full w-full object-cover group-hover:scale-105 transition-transform duration-500" referrerPolicy="no-referrer" />
-                </div>
-                <div className="p-6">
-                  <h3 className="text-lg font-semibold text-brand">{item.title}</h3>
-                  <p className="mt-2 text-sm text-slate-500">{item.spec}</p>
-                  <p className="mt-3 text-sm text-slate-600">{item.note}</p>
-                  <Link
-                    to={item.cta}
-                    className="mt-5 inline-flex items-center gap-2 text-sm font-semibold text-brand"
-                  >
-                    Get Quote
-                    <ArrowRight size={14} />
-                  </Link>
-                </div>
-              </motion.div>
+              <Reveal key={`${item.cta}-${index}`} delay={index * 0.1}>
+                <Tilt3D maxTilt={6} liftZ={20} className="group h-full rounded-3xl">
+                  <div className="h-full rounded-3xl border border-slate-200 bg-white overflow-hidden shadow-sm transition-shadow hover:shadow-2xl hover:shadow-brand/10">
+                    <div className="h-48 overflow-hidden">
+                      <img src={item.image} alt={buildImageAlt(item.title)} loading="lazy" width={640} height={360} className="h-full w-full object-cover group-hover:scale-105 transition-transform duration-500" referrerPolicy="no-referrer" />
+                    </div>
+                    <div className="p-6" style={{ transform: 'translateZ(24px)' }}>
+                      <h3 className="text-lg font-semibold text-brand">{item.title}</h3>
+                      <p className="mt-2 text-sm text-slate-500">{item.spec}</p>
+                      <p className="mt-3 text-sm text-slate-600">{item.note}</p>
+                      <Link
+                        to={item.cta}
+                        className="mt-5 inline-flex items-center gap-2 text-sm font-semibold text-brand"
+                      >
+                        Get Quote
+                        <ArrowRight size={14} />
+                      </Link>
+                    </div>
+                  </div>
+                </Tilt3D>
+              </Reveal>
             ))}
           </div>
         </div>
@@ -502,7 +564,7 @@ export const HomePage: React.FC = () => {
       <section className="py-20 bg-slate-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-1 lg:grid-cols-[1.1fr_1fr] gap-12 items-center">
-            <div>
+            <Reveal>
               <p className="text-xs font-semibold uppercase tracking-[0.3em] text-brand">Applications</p>
               <h2 className="mt-3 text-3xl md:text-4xl font-display font-bold text-brand">Where Our Nickel Strips Power Innovation</h2>
               <p className="mt-4 text-slate-500">High-performance battery manufacturers rely on consistent conductivity and tight tolerances.</p>
@@ -519,8 +581,8 @@ export const HomePage: React.FC = () => {
                   </div>
                 ))}
               </div>
-            </div>
-            <div className="rounded-3xl border border-slate-200 bg-gradient-to-br from-white via-[#ffffff] to-[#f5f5f5] p-8">
+            </Reveal>
+            <Reveal delay={0.15} className="rounded-3xl border border-slate-200 bg-gradient-to-br from-white via-[#ffffff] to-[#f5f5f5] p-8">
               <div className="grid grid-cols-2 gap-6">
                 {industries.map((industry) => (
                   <div key={industry.title} className="rounded-2xl bg-white p-4 shadow-sm">
@@ -529,14 +591,14 @@ export const HomePage: React.FC = () => {
                   </div>
                 ))}
               </div>
-            </div>
+            </Reveal>
           </div>
         </div>
       </section>
 
       <section className="py-20 bg-brand text-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-6 mb-12">
+          <Reveal className="flex flex-col md:flex-row md:items-center md:justify-between gap-6 mb-12">
             <div>
               <p className="text-xs font-semibold uppercase tracking-[0.3em] text-brand-dark">Why Choose Us</p>
               <h2 className="mt-3 text-3xl md:text-4xl font-display font-bold">Trusted Manufacturing Partner</h2>
@@ -546,14 +608,18 @@ export const HomePage: React.FC = () => {
               Speak to an Engineer
               <ArrowRight size={14} />
             </Link>
-          </div>
+          </Reveal>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {whyChooseUs.map((item) => (
-              <div key={item.title} className="rounded-2xl border border-white/10 bg-white/5 p-6">
-                <item.icon size={20} className="text-brand-dark" />
-                <h3 className="mt-4 text-lg font-semibold">{item.title}</h3>
-                <p className="mt-2 text-sm text-white/70">{item.detail}</p>
-              </div>
+            {whyChooseUs.map((item, index) => (
+              <Reveal key={item.title} delay={index * 0.06}>
+                <Tilt3D maxTilt={6} liftZ={14} className="h-full rounded-2xl">
+                  <div className="h-full rounded-2xl border border-white/10 bg-white/5 p-6 transition-colors hover:bg-white/10" style={{ transform: 'translateZ(16px)' }}>
+                    <item.icon size={20} className="text-brand-dark" />
+                    <h3 className="mt-4 text-lg font-semibold">{item.title}</h3>
+                    <p className="mt-2 text-sm text-white/70">{item.detail}</p>
+                  </div>
+                </Tilt3D>
+              </Reveal>
             ))}
           </div>
         </div>
@@ -562,18 +628,22 @@ export const HomePage: React.FC = () => {
       <section className="py-20 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-1 lg:grid-cols-[1fr_1.1fr] gap-12 items-center">
-            <div className="rounded-3xl overflow-hidden border border-slate-200">
-              <img
-                src="/img/iso-9001.jpg"
-                alt="Quality inspection"
-                width={1200}
-                height={800}
-                loading="lazy"
-                className="h-full w-full object-cover"
-                referrerPolicy="no-referrer"
-              />
-            </div>
-            <div>
+            <Reveal>
+              <Tilt3D maxTilt={5} liftZ={18} className="rounded-3xl">
+                <div className="rounded-3xl overflow-hidden border border-slate-200 shadow-lg shadow-slate-200/60">
+                  <img
+                    src="/img/iso-9001.jpg"
+                    alt="Quality inspection"
+                    width={1200}
+                    height={800}
+                    loading="lazy"
+                    className="h-full w-full object-cover"
+                    referrerPolicy="no-referrer"
+                  />
+                </div>
+              </Tilt3D>
+            </Reveal>
+            <Reveal delay={0.1}>
               <p className="text-xs font-semibold uppercase tracking-[0.3em] text-brand">Quality & Certifications</p>
               <h2 className="mt-3 text-3xl md:text-4xl font-display font-bold text-brand">Precision You Can Audit</h2>
               <p className="mt-3 text-slate-500">Every shipment includes material test certificates, traceability, and compliance documentation.</p>
@@ -629,7 +699,7 @@ export const HomePage: React.FC = () => {
                 <div className="rounded-full bg-brand/10 px-4 py-2 text-xs font-semibold text-brand">RoHS Compliant</div>
                 <div className="rounded-full bg-brand/10 px-4 py-2 text-xs font-semibold text-brand">REACH Compliant</div>
               </div>
-            </div>
+            </Reveal>
           </div>
         </div>
       </section>
