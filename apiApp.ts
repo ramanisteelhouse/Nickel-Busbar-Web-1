@@ -5,7 +5,7 @@ import jwt from "jsonwebtoken";
 import bcrypt from "bcryptjs";
 import { randomUUID } from "crypto";
 import pool, { query, queryOne } from "./db.js";
-import { GoogleGenAI } from "@google/genai";
+import Anthropic from "@anthropic-ai/sdk";
 import dotenv from "dotenv";
 import nodemailer from "nodemailer";
 import twilio from "twilio";
@@ -21,7 +21,8 @@ const JWT_SECRET: string = (() => {
   }
   return secret;
 })();
-const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
+const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY;
+const anthropic = ANTHROPIC_API_KEY ? new Anthropic({ apiKey: ANTHROPIC_API_KEY }) : null;
 const SMTP_HOST = process.env.SMTP_HOST;
 const SMTP_PORT = Number(process.env.SMTP_PORT || 587);
 const SMTP_USER = process.env.SMTP_USER;
@@ -1202,28 +1203,30 @@ Answer customer questions professionally and concisely. Use the "Relevant catalo
     if (!message) {
       return res.status(400).json({ error: "Message is required" });
     }
-    if (!GEMINI_API_KEY) return res.status(500).json({ error: "AI Key not configured" });
+    if (!anthropic) return res.status(500).json({ error: "AI Key not configured" });
 
-    const history = rawHistory
+    const history: Anthropic.MessageParam[] = rawHistory
       .filter((entry: unknown): entry is { role: unknown; text: unknown } => !!entry && typeof entry === "object")
       .slice(-10)
       .map((entry: { role: unknown; text: unknown }) => ({
-        role: entry.role === "user" ? "user" : "model",
-        parts: [{ text: String(entry.text ?? "").slice(0, 2000) }],
+        role: entry.role === "user" ? ("user" as const) : ("assistant" as const),
+        content: String(entry.text ?? "").slice(0, 2000),
       }))
-      .filter((entry) => entry.parts[0].text.trim().length > 0);
+      .filter((entry) => entry.content.trim().length > 0);
 
     try {
       const productContext = await buildProductContext(message);
-      const ai = new GoogleGenAI({ apiKey: GEMINI_API_KEY });
-      const response = await ai.models.generateContent({
-        model: "gemini-2.5-flash",
-        contents: [...history, { role: "user", parts: [{ text: message }] }],
-        config: {
-          systemInstruction: CHATBOT_SYSTEM_INSTRUCTION + productContext,
-        },
+      const response = await anthropic.messages.create({
+        model: "claude-opus-4-8",
+        max_tokens: 1024,
+        system: CHATBOT_SYSTEM_INSTRUCTION + productContext,
+        messages: [...history, { role: "user", content: message }],
       });
-      res.json({ text: response.text });
+      const text = response.content
+        .filter((block): block is Anthropic.TextBlock => block.type === "text")
+        .map((block) => block.text)
+        .join("");
+      res.json({ text });
     } catch (e) {
       console.error("Chatbot AI error", e);
       res.status(500).json({ error: "AI error" });
