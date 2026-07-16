@@ -58,17 +58,28 @@ const injectHead = (template: string, head: HeadInput) => {
     );
   }
 
+  // Strip the original og:description/og:url/og:image/twitter:* tags *before* inserting the
+  // new og:title block below — otherwise the newly-inserted tags (which appear earlier in the
+  // document) get matched and stripped instead of the stale originals.
+  html = html.replace(/<meta property="og:description"[^>]*>/, "");
+  html = html.replace(/<meta property="og:url"[^>]*>/, "");
+  html = html.replace(/<meta property="og:image"[^>]*>/, "");
+  html = html.replace(/<meta name="twitter:title"[^>]*>/, "");
+  html = html.replace(/<meta name="twitter:description"[^>]*>/, "");
+  html = html.replace(/<meta name="twitter:image"[^>]*>/, "");
+
   const ogTags = [
     `<meta property="og:title" content="${escapeAttr(head.title)}" />`,
     `<meta property="og:description" content="${escapeAttr(head.description)}" />`,
     `<meta property="og:url" content="${escapeAttr(head.canonical)}" />`,
     head.ogImage ? `<meta property="og:image" content="${escapeAttr(head.ogImage)}" />` : "",
+    `<meta name="twitter:title" content="${escapeAttr(head.title)}" />`,
+    `<meta name="twitter:description" content="${escapeAttr(head.description)}" />`,
+    head.ogImage ? `<meta name="twitter:image" content="${escapeAttr(head.ogImage)}" />` : "",
   ]
     .filter(Boolean)
     .join("\n  ");
   html = html.replace(/<meta property="og:title"[^>]*>/, ogTags);
-  html = html.replace(/<meta property="og:description"[^>]*>/, "");
-  html = html.replace(/<meta property="og:url"[^>]*>/, "");
 
   const jsonLdScripts = head.jsonLd
     .map((entry) => `<script type="application/ld+json">${JSON.stringify(entry)}</script>`)

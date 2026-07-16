@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "tsx server.ts",
-    "prebuild": "tsx scripts/generate-sitemap.ts",
+    "prebuild": "tsx scripts/generate-sitemap.ts && tsx scripts/generate-llms-txt.ts",
     "build": "vite build",
     "preview": "vite preview",
     "start": "cross-env NODE_ENV=production tsx server.ts",
