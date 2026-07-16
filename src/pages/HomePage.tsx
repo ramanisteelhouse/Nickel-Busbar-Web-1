@@ -287,9 +287,11 @@ export const HomePage: React.FC = () => {
             url: 'https://www.nickelbusbar.com/',
             logo: 'https://www.nickelbusbar.com/img/logo.png',
             sameAs: [
-              'https://www.linkedin.com/company/ramani-nickel-strips',
-              'https://www.facebook.com/ramani.steel.house',
-              'https://www.instagram.com/ramani.steel.house'
+              'https://www.linkedin.com/company/ramani-steel-house/',
+              'https://www.facebook.com/profile.php?id=61550731232092',
+              'https://www.instagram.com/ramanisteelhouse/',
+              'https://in.pinterest.com/ramanisteel2023/',
+              'https://x.com/SteelHouse69101'
             ],
           })}
         </script>

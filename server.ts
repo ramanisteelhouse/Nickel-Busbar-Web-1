@@ -1,7 +1,9 @@
 import express from "express";
 import { createServer as createViteServer } from "vite";
 import path from "path";
+import fs from "fs";
 import createApiApp from "./apiApp.js";
+import { renderBlogSnapshot, renderProductSnapshot } from "./seoSnapshot.js";
 
 const knownStaticRoutes = new Set([
   "/",
@@ -56,13 +58,37 @@ async function startServer() {
     app.use(vite.middlewares);
   } else {
     app.use(express.static("dist"));
-    app.get("*", (req, res) => {
+    const indexHtmlTemplate = fs.readFileSync(path.resolve("dist/index.html"), "utf-8");
+
+    app.get("*", async (req, res) => {
       const requestPath = normalizeRequestPath(req.path);
+
+      // Blog/product pages get a real server-rendered content snapshot injected into the
+      // HTML response — see seoSnapshot.ts for why (non-JS crawlers can't see the SPA's
+      // client-rendered content otherwise). Real browsers still get the normal SPA; React
+      // fully replaces this markup on mount.
+      const blogMatch = requestPath.match(/^\/blog\/([^/]+)$/);
+      const productMatch = requestPath.match(/^\/product\/([^/]+)$/);
+      if (blogMatch || productMatch) {
+        try {
+          const { status, html } = blogMatch
+            ? await renderBlogSnapshot(indexHtmlTemplate, decodeURIComponent(blogMatch[1]))
+            : await renderProductSnapshot(indexHtmlTemplate, decodeURIComponent(productMatch![1]));
+          if (status === 404) {
+            res.setHeader("X-Robots-Tag", "noindex, nofollow, noarchive");
+          }
+          return res.status(status).send(html);
+        } catch (error) {
+          console.error("Failed to render SEO snapshot, falling back to plain SPA shell", error);
+          // Fall through to the default SPA response below.
+        }
+      }
+
       const statusCode = isKnownSpaRoute(requestPath) ? 200 : 404;
       if (statusCode === 404) {
         res.setHeader("X-Robots-Tag", "noindex, nofollow, noarchive");
       }
-      res.status(statusCode).sendFile(path.resolve("dist/index.html"));
+      res.status(statusCode).send(indexHtmlTemplate);
     });
   }
 

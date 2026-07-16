@@ -30,6 +30,7 @@ export const FloatingContact: React.FC = () => {
         <motion.a
           href="mailto:sales@ramanisteel.com?subject=Nickel%20Strip%20Enquiry"
           aria-label={t('product.email')}
+          onClick={() => logCallClick('sales@ramanisteel.com', 'floating_contact_email')}
           whileHover={{ x: -6 }}
           className="contact-item email flex items-center gap-2 bg-brand px-4 py-3 text-sm font-semibold text-white transition-transform"
         >

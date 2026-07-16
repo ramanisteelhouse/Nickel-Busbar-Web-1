@@ -3,7 +3,7 @@ import helmet from "helmet";
 import rateLimit from "express-rate-limit";
 import jwt from "jsonwebtoken";
 import bcrypt from "bcryptjs";
-import { randomUUID } from "crypto";
+import { randomUUID, timingSafeEqual } from "crypto";
 import pool, { query, queryOne } from "./db.js";
 import Anthropic from "@anthropic-ai/sdk";
 import dotenv from "dotenv";
@@ -336,6 +336,14 @@ const normalizeFaqItems = (value: unknown) => {
 
   return items.length > 0 ? items : null;
 };
+
+const slugify = (value: string) =>
+  value
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 200);
 
 const normalizeBlogRow = (row: Record<string, unknown>) => ({
   ...row,
@@ -1140,6 +1148,78 @@ export function createApiApp() {
     } catch (error) {
       console.error("Failed to fetch blog post", error);
       res.status(500).json({ error: "Failed to fetch blog post" });
+    }
+  });
+
+  // --- Blog Admin (API-key protected, used by the scheduled content routine) ---
+  const blogAdminLimiter = rateLimit({
+    windowMs: 60 * 60 * 1000,
+    limit: 10,
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: { error: "Too many requests. Please try again later." },
+  });
+
+  const isValidAdminKey = (provided: string) => {
+    const expected = (process.env.BLOG_ADMIN_API_KEY || "").trim();
+    if (!expected || !provided) return false;
+    const providedBuf = Buffer.from(provided);
+    const expectedBuf = Buffer.from(expected);
+    if (providedBuf.length !== expectedBuf.length) return false;
+    return timingSafeEqual(providedBuf, expectedBuf);
+  };
+
+  app.post("/api/admin/blog-posts", blogAdminLimiter, async (req, res) => {
+    const providedKey = String(req.headers["x-admin-api-key"] || "");
+    if (!isValidAdminKey(providedKey)) {
+      return res.status(401).json({ error: "Unauthorized" });
+    }
+
+    const title = typeof req.body?.title === "string" ? req.body.title.trim() : "";
+    const content = typeof req.body?.content === "string" ? req.body.content.trim() : "";
+    if (!title || !content) {
+      return res.status(400).json({ error: "title and content are required" });
+    }
+
+    const slug = (typeof req.body?.slug === "string" && req.body.slug.trim() ? slugify(req.body.slug) : slugify(title));
+    if (!slug) {
+      return res.status(400).json({ error: "Could not derive a valid slug from title" });
+    }
+
+    const excerpt = typeof req.body?.excerpt === "string" ? req.body.excerpt.trim() || null : null;
+    const coverImageUrl = typeof req.body?.coverImageUrl === "string" ? req.body.coverImageUrl.trim() || null : null;
+    const coverImageAlt = typeof req.body?.coverImageAlt === "string" ? req.body.coverImageAlt.trim() || null : null;
+    const metaTitle = typeof req.body?.metaTitle === "string" ? req.body.metaTitle.trim() || null : null;
+    const metaDescription = typeof req.body?.metaDescription === "string" ? req.body.metaDescription.trim() || null : null;
+    const status = req.body?.status === "draft" ? "draft" : "published";
+    const faqItems = Array.isArray(req.body?.faqItems) ? JSON.stringify(req.body.faqItems) : null;
+
+    try {
+      const post = await queryOne(
+        `INSERT INTO blog_posts (
+           title, slug, excerpt, content, cover_image_url, cover_image_alt,
+           status, meta_title, meta_description, faq_items, published_at
+         )
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, CASE WHEN $7 = 'published' THEN now() ELSE NULL END)
+         ON CONFLICT (slug) DO UPDATE SET
+           title = excluded.title,
+           excerpt = excluded.excerpt,
+           content = excluded.content,
+           cover_image_url = excluded.cover_image_url,
+           cover_image_alt = excluded.cover_image_alt,
+           status = excluded.status,
+           meta_title = excluded.meta_title,
+           meta_description = excluded.meta_description,
+           faq_items = excluded.faq_items,
+           published_at = CASE WHEN excluded.status = 'published' THEN COALESCE(blog_posts.published_at, now()) ELSE blog_posts.published_at END,
+           updated_at = now()
+         RETURNING id, slug, status`,
+        [title, slug, excerpt, content, coverImageUrl, coverImageAlt, status, metaTitle, metaDescription, faqItems]
+      );
+      res.status(201).json(post);
+    } catch (error) {
+      console.error("Failed to create blog post", error);
+      res.status(500).json({ error: "Failed to create blog post" });
     }
   });
 

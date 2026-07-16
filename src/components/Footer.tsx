@@ -13,11 +13,13 @@ export const Footer: React.FC = () => {
               Premium nickel strips manufacturer serving lithium-ion battery producers worldwide.
             </p>
             <p className="text-sm text-slate-600">52+ years of metallurgical excellence | Mumbai, India</p>
-            <p className="text-sm text-slate-600">Office address: Govandi Industrial Estate, Mumbai</p>
-            <div className="flex items-center gap-3 pt-3">
+            <p className="text-sm text-slate-600">Office address: Marine Lines East, Mumbai, Maharashtra 400004, India</p>
+            <div className="flex flex-wrap items-center gap-3 pt-3">
               <a href="https://www.linkedin.com/company/ramani-steel-house/posts/?feedView=all" target="_blank" rel="noopener noreferrer" className="text-sm text-slate-600 hover:text-brand">LinkedIn</a>
-              <a href="https://www.facebook.com/ramani.steel.house" target="_blank" rel="noopener noreferrer" className="text-sm text-slate-600 hover:text-brand">Facebook</a>
-              <a href="https://www.instagram.com/ramani.steel.house" target="_blank" rel="noopener noreferrer" className="text-sm text-slate-600 hover:text-brand">Instagram</a>
+              <a href="https://www.facebook.com/profile.php?id=61550731232092" target="_blank" rel="noopener noreferrer" className="text-sm text-slate-600 hover:text-brand">Facebook</a>
+              <a href="https://www.instagram.com/ramanisteelhouse/" target="_blank" rel="noopener noreferrer" className="text-sm text-slate-600 hover:text-brand">Instagram</a>
+              <a href="https://in.pinterest.com/ramanisteel2023/" target="_blank" rel="noopener noreferrer" className="text-sm text-slate-600 hover:text-brand">Pinterest</a>
+              <a href="https://x.com/SteelHouse69101" target="_blank" rel="noopener noreferrer" className="text-sm text-slate-600 hover:text-brand">X</a>
             </div>
           </div>
           <div>
@@ -35,7 +37,15 @@ export const Footer: React.FC = () => {
           <div>
             <p className="text-xs uppercase tracking-[0.3em] text-slate-400 mb-4">Contact</p>
             <ul className="space-y-3 text-sm text-slate-600">
-              <li><a href="mailto:ramanioffice@gmail.com" className="hover:text-brand">ramanioffice@gmail.com</a></li>
+              <li>
+                <a
+                  href="mailto:ramanioffice@gmail.com"
+                  onClick={() => logCallClick('ramanioffice@gmail.com', 'footer_email')}
+                  className="hover:text-brand"
+                >
+                  ramanioffice@gmail.com
+                </a>
+              </li>
               <li>
                 <a
                   href="tel:+918369724730"
