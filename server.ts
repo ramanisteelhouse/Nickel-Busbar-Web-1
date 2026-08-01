@@ -3,7 +3,7 @@ import { createServer as createViteServer } from "vite";
 import path from "path";
 import fs from "fs";
 import createApiApp from "./apiApp.js";
-import { renderBlogSnapshot, renderProductSnapshot } from "./seoSnapshot.js";
+import { renderBlogSnapshot, renderProductSnapshot, renderNickelStripsLithiumSnapshot } from "./seoSnapshot.js";
 
 const knownStaticRoutes = new Set([
   "/",
@@ -69,11 +69,14 @@ async function startServer() {
       // fully replaces this markup on mount.
       const blogMatch = requestPath.match(/^\/blog\/([^/]+)$/);
       const productMatch = requestPath.match(/^\/product\/([^/]+)$/);
-      if (blogMatch || productMatch) {
+      if (requestPath === "/blog/nickel-strips-lithium-batteries" || blogMatch || productMatch) {
         try {
-          const { status, html } = blogMatch
-            ? await renderBlogSnapshot(indexHtmlTemplate, decodeURIComponent(blogMatch[1]))
-            : await renderProductSnapshot(indexHtmlTemplate, decodeURIComponent(productMatch![1]));
+          const { status, html } =
+            requestPath === "/blog/nickel-strips-lithium-batteries"
+              ? await renderNickelStripsLithiumSnapshot(indexHtmlTemplate)
+              : blogMatch
+              ? await renderBlogSnapshot(indexHtmlTemplate, decodeURIComponent(blogMatch[1]))
+              : await renderProductSnapshot(indexHtmlTemplate, decodeURIComponent(productMatch![1]));
           if (status === 404) {
             res.setHeader("X-Robots-Tag", "noindex, nofollow, noarchive");
           }

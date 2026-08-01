@@ -15,7 +15,7 @@ View your app in AI Studio: https://ai.studio/apps/75adf731-e98b-40b4-9d9b-77276
 
 1. Install dependencies:
    `npm install`
-2. Set the `GEMINI_API_KEY` in [.env.local](.env.local) to your Gemini API key
+2. Set the `ANTHROPIC_API_KEY` in `.env` to your Anthropic API key (this powers the chatbot at `/api/ai/chat`). See [.env.example](.env.example) for all required variables.
 3. Run the app locally:
    `npm run dev`
 

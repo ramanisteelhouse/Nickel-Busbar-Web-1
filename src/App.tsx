@@ -25,6 +25,7 @@ const AboutPage = React.lazy(() => import('./pages/AboutPage').then((m) => ({ de
 const ContactPage = React.lazy(() => import('./pages/ContactPage').then((m) => ({ default: m.ContactPage })));
 const BlogListingPage = React.lazy(() => import('./pages/BlogListingPage').then((m) => ({ default: m.BlogListingPage })));
 const BlogPostPage = React.lazy(() => import('./pages/BlogPostPage').then((m) => ({ default: m.BlogPostPage })));
+const BlogNickelStripsLithiumPage = React.lazy(() => import('./pages/BlogNickelStripsLithiumPage').then((m) => ({ default: m.BlogNickelStripsLithiumPage })));
 const CalculatorPage = React.lazy(() => import('./pages/CalculatorPage').then((m) => ({ default: m.CalculatorPage })));
 const NotFoundPage = React.lazy(() => import('./pages/NotFoundPage').then((m) => ({ default: m.NotFoundPage })));
 
@@ -247,6 +248,7 @@ export default function App() {
                 <Route path="/about" element={<AboutPage />} />
                 <Route path="/contact" element={<ContactPage />} />
                 <Route path="/blog" element={<BlogListingPage />} />
+                <Route path="/blog/nickel-strips-lithium-batteries" element={<BlogNickelStripsLithiumPage />} />
                 <Route path="/blog/:slug" element={<BlogPostPage />} />
                 <Route path="/calculator" element={<CalculatorPage />} />
                 <Route path="*" element={<NotFoundPage />} />

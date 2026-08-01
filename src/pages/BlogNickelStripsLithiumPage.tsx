@@ -2,7 +2,7 @@ import React from 'react';
 import { Helmet } from 'react-helmet-async';
 
 export const BlogNickelStripsLithiumPage: React.FC = () => {
-  const canonical = 'https://nickelbusbar.com/blog/nickel-strips-lithium-batteries';
+  const canonical = 'https://www.nickelbusbar.com/blog/nickel-strips-lithium-batteries';
   const title = 'Nickel Strips for Lithium-Ion Batteries | Manufacturer Guide';
   const description =
     'We are a manufacturer of nickel strips used in lithium-ion batteries, delivering consistent quality and competitive pricing for battery manufacturers.';

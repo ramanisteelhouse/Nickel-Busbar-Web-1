@@ -191,6 +191,42 @@ export async function renderBlogSnapshot(template: string, slug: string): Promis
   return { status: 200, html };
 }
 
+export async function renderNickelStripsLithiumSnapshot(template: string): Promise<SnapshotResult> {
+  const canonical = `${SITE_URL}/blog/nickel-strips-lithium-batteries`;
+  const title = "Nickel Strips for Lithium-Ion Batteries | Manufacturer Guide";
+  const description =
+    "We are a manufacturer of nickel strips used in lithium-ion batteries, delivering consistent quality and competitive pricing for battery manufacturers.";
+
+  const articleJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "Article",
+    headline: "Nickel Strips for Lithium-Ion Batteries: Why Manufacturers Choose Us",
+    description,
+    author: { "@type": "Organization", name: SITE_NAME, url: SITE_URL },
+    publisher: { "@type": "Organization", name: SITE_NAME, logo: { "@type": "ImageObject", url: SITE_LOGO_URL } },
+    mainEntityOfPage: { "@type": "WebPage", "@id": canonical },
+    datePublished: "2026-05-14",
+  };
+
+  const snapshotBody = `<article>
+    <h1>Nickel Strips for Lithium-Ion Batteries: Why Manufacturers Choose Us</h1>
+    <p>Nickel strips are a critical component in lithium-ion battery packs because they provide strong conductivity, stable weldability, and reliable performance under demanding charging cycles.</p>
+    <p>As a dedicated manufacturer of nickel strips used in lithium-ion batteries, we produce precision strips for battery manufacturers across India and selected global markets. Our production focus is consistency in thickness, controlled purity, and dependable electrical performance.</p>
+    <p>We support lithium-ion battery manufacturers with competitive pricing by combining scalable manufacturing, disciplined quality control, and efficient supply planning. This helps customers reduce procurement risk while maintaining product quality in high-volume battery assembly.</p>
+    <p>Whether your requirement is for EV battery packs, consumer electronics, or energy storage systems, we provide technically aligned nickel strip solutions with timely delivery and responsive support.</p>
+  </article>`;
+
+  const html = injectHead(template, {
+    title,
+    description,
+    canonical,
+    jsonLd: [articleJsonLd],
+    snapshotBody,
+  });
+
+  return { status: 200, html };
+}
+
 export async function renderProductSnapshot(template: string, slug: string): Promise<SnapshotResult> {
   const product = await queryOne<Record<string, unknown>>(
     `SELECT p.*, c.name as category_name FROM products p JOIN categories c ON p.category_id = c.id WHERE p.slug = $1`,

@@ -8,9 +8,19 @@ import { logCallClick } from '../lib/utils';
 export const FloatingContact: React.FC = () => {
   const navigate = useNavigate();
   const { t } = useLanguage();
+  const [chatOpen, setChatOpen] = React.useState(false);
+
+  React.useEffect(() => {
+    const handler = (e: Event) => setChatOpen(!!(e as CustomEvent<{ open: boolean }>).detail?.open);
+    window.addEventListener('chatbot-open-changed', handler);
+    return () => window.removeEventListener('chatbot-open-changed', handler);
+  }, []);
 
   return (
-    <div className="floating-contact-bar fixed right-0 top-1/2 -translate-y-1/2 z-50">
+    <div
+      className="floating-contact-bar fixed right-0 top-1/2 z-50 transition-transform duration-300"
+      style={{ transform: `translateY(-50%) translateX(${chatOpen ? '100%' : '0'})` }}
+    >
       <motion.div
         initial={{ opacity: 0, x: 40 }}
         animate={{ opacity: 1, x: 0 }}

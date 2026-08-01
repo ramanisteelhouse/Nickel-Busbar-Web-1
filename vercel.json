@@ -2,6 +2,9 @@
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "buildCommand": "npm run build",
   "outputDirectory": "dist",
+  "functions": {
+    "api/render.ts": { "includeFiles": "dist/index.html" }
+  },
   "routes": [
     {
       "src": "/(.*)",
@@ -18,7 +21,7 @@
     { "src": "/", "dest": "/index.html" },
     { "src": "/products/?", "dest": "/index.html" },
     { "src": "/categories/?", "dest": "/index.html" },
-    { "src": "/product/[^/]+/?", "dest": "/index.html" },
+    { "src": "/product/[^/]+/?", "dest": "/api/render" },
     { "src": "/cart/?", "dest": "/index.html" },
     { "src": "/checkout/?", "dest": "/index.html" },
     { "src": "/login/?", "dest": "/index.html" },
@@ -26,8 +29,7 @@
     { "src": "/contact/?", "dest": "/index.html" },
     { "src": "/calculator/?", "dest": "/index.html" },
     { "src": "/blog/?", "dest": "/index.html" },
-    { "src": "/blog/[^/]+/?", "dest": "/index.html" },
-    { "src": "/blog/nickel-strips-lithium-batteries/?", "dest": "/index.html" },
+    { "src": "/blog/[^/]+/?", "dest": "/api/render" },
     { "src": "/(.*)", "status": 404, "dest": "/404.html" }
   ]
 }
