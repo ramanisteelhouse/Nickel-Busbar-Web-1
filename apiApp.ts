@@ -5,7 +5,7 @@ import jwt from "jsonwebtoken";
 import bcrypt from "bcryptjs";
 import { randomUUID, timingSafeEqual } from "crypto";
 import pool, { query, queryOne } from "./db.js";
-import Anthropic from "@anthropic-ai/sdk";
+import { answerFromKnowledgeBase } from "./chatKnowledgeBase.js";
 import dotenv from "dotenv";
 import nodemailer from "nodemailer";
 import twilio from "twilio";
@@ -21,8 +21,6 @@ const JWT_SECRET: string = (() => {
   }
   return secret;
 })();
-const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY;
-const anthropic = ANTHROPIC_API_KEY ? new Anthropic({ apiKey: ANTHROPIC_API_KEY }) : null;
 const SMTP_HOST = process.env.SMTP_HOST;
 const SMTP_PORT = Number(process.env.SMTP_PORT || 587);
 const SMTP_USER = process.env.SMTP_USER;
@@ -1249,131 +1247,20 @@ export function createApiApp() {
     }
   });
 
-  // --- AI Chatbot ---
-  const CHATBOT_SYSTEM_INSTRUCTION = `You are the AI sales & technical assistant for Ramani Steel House, published at nickelbusbar.com — an India-based manufacturer (est. 1974, 100% family-owned) of nickel strips, nickel/copper/aluminium busbars, and battery interconnection products for lithium-ion cells and packs. Exports PAN India and internationally (Japan, Korea, China, Taiwan, Thailand, UAE, Netherlands, Germany, Belgium, France, UK, Finland, Italy, USA, Canada, New Zealand, Australia). Contact: ramanioffice@gmail.com, +91 8369724730.
-
-SCOPE: You only discuss products and information available on nickelbusbar.com — pure nickel strips, nickel battery strips, nickel/copper/aluminium/nickel-plated-copper busbars, custom busbars, custom battery connectors, EV/lithium-ion battery interconnection products, and spot-welding materials, plus this company's manufacturing, quality, and export capabilities. If asked about something unrelated or a product this company doesn't make, say briefly that you specialize only in NickelBusbar.com's own products and offer to help with something in scope instead. Never recommend or imply a product that isn't in the "Relevant catalog / content" section or these facts.
-
-GROUNDING: Use the "Relevant catalog / content" section below (if present) as your only source of specs, dimensions, grades, and pricing. Never invent specifications, certifications, grades, or prices. If the answer isn't in the provided context or the facts above, say so plainly and offer to connect the customer with the team — do not guess.
-
-STYLE: Be concise, warm, and technically credible, like an experienced applications engineer — not robotic, not a wall of text. For substantive product/technical questions, briefly cover: what it is, key specs/applications from the context, and one natural next step (a related product or how to get a quote). Keep casual questions short and conversational. Where relevant, mention one related in-scope product without being pushy.
-
-PRICING: Never state, estimate, or guess a price yourself, even if a price appears in the catalog context — quote requests always go through the sales team. If asked about price, cost, quotation, bulk rate, MOQ, stock, or delivery time, don't just say "contact us" — ask (one at a time, only what's missing) for: product, thickness/size, quantity, application, and delivery location, then tell them you'll help get this to the sales team for an accurate quote via the website enquiry form, email, or WhatsApp/call.
-
-CONTACT: When a customer is ready to buy, needs a quote, or you don't have the answer, point them to submit a product enquiry on the website or reach the team directly by email/phone/WhatsApp above — mention it naturally, not as a canned sign-off every message.`;
-
-  const buildProductContext = async (message: string) => {
-    const trimmed = String(message || "").trim();
-    try {
-      let products: Record<string, unknown>[] = [];
-      let posts: Record<string, unknown>[] = [];
-      if (trimmed) {
-        const pattern = `%${trimmed}%`;
-        [products, posts] = await Promise.all([
-          query(
-            `SELECT p.name, p.astm_value, p.uns_value, p.dimensions, p.price, p.stock, p.applications, c.name AS category_name
-             FROM products p
-             JOIN categories c ON c.id = p.category_id
-             WHERE p.name ILIKE $1 OR p.description ILIKE $1 OR p.astm_value ILIKE $1 OR p.uns_value ILIKE $1 OR c.name ILIKE $1
-             LIMIT 5`,
-            [pattern]
-          ),
-          query(
-            `SELECT title, excerpt, content, faq_items
-             FROM blog_posts
-             WHERE status = 'published' AND (title ILIKE $1 OR excerpt ILIKE $1 OR content ILIKE $1)
-             LIMIT 3`,
-            [pattern]
-          ),
-        ]);
-      }
-      if (products.length === 0) {
-        products = await query(
-          `SELECT p.name, p.astm_value, p.uns_value, p.dimensions, p.price, p.stock, p.applications, c.name AS category_name
-           FROM products p
-           JOIN categories c ON c.id = p.category_id
-           WHERE p.is_featured = true
-           ORDER BY p.id
-           LIMIT 5`
-        );
-      }
-
-      const sections: string[] = [];
-
-      if (products.length > 0) {
-        const lines = products.map((p) => {
-          const parts = [
-            `- ${String(p.name || "Unnamed product")}`,
-            p.category_name ? `Category: ${p.category_name}` : null,
-            p.astm_value ? `ASTM: ${p.astm_value}` : null,
-            p.uns_value ? `UNS: ${p.uns_value}` : null,
-            p.dimensions ? `Dimensions: ${p.dimensions}` : null,
-            Array.isArray(p.applications) && p.applications.length ? `Applications: ${(p.applications as string[]).join(", ")}` : null,
-            p.price != null ? `Price: ${p.price}` : null,
-            p.stock != null ? `Stock: ${p.stock}` : null,
-          ].filter(Boolean);
-          return parts.join(" | ");
-        });
-        sections.push(`Relevant catalog items:\n${lines.join("\n")}`);
-      }
-
-      if (posts.length > 0) {
-        const lines = posts.map((post) => {
-          const body = String(post.excerpt || post.content || "").slice(0, 500).replace(/\s+/g, " ");
-          const faqs = Array.isArray(post.faq_items)
-            ? (post.faq_items as Array<{ question?: string; answer?: string }>)
-                .slice(0, 3)
-                .map((f) => (f.question ? `Q: ${f.question} A: ${String(f.answer || "").slice(0, 300)}` : null))
-                .filter(Boolean)
-                .join(" | ")
-            : "";
-          return `- ${String(post.title || "Article")}: ${body}${faqs ? `\n  ${faqs}` : ""}`;
-        });
-        sections.push(`Relevant articles/FAQs:\n${lines.join("\n")}`);
-      }
-
-      if (sections.length === 0) return "";
-      return `\n\n${sections.join("\n\n")}`;
-    } catch (error) {
-      console.error("Failed to build product context for chatbot", error);
-      return "";
-    }
-  };
-
+  // --- Chatbot (offline keyword matcher over site data — no external API) ---
   app.post("/api/ai/chat", chatLimiter, async (req, res) => {
     const message = typeof req.body?.message === "string" ? req.body.message.trim() : "";
-    const rawHistory: unknown[] = Array.isArray(req.body?.history) ? req.body.history : [];
 
     if (!message) {
       return res.status(400).json({ error: "Message is required" });
     }
-    if (!anthropic) return res.status(500).json({ error: "AI Key not configured" });
-
-    const history: Anthropic.MessageParam[] = rawHistory
-      .filter((entry: unknown): entry is { role: unknown; text: unknown } => !!entry && typeof entry === "object")
-      .slice(-10)
-      .map((entry: { role: unknown; text: unknown }) => ({
-        role: entry.role === "user" ? ("user" as const) : ("assistant" as const),
-        content: String(entry.text ?? "").slice(0, 2000),
-      }))
-      .filter((entry) => entry.content.trim().length > 0);
 
     try {
-      const productContext = await buildProductContext(message);
-      const response = await anthropic.messages.create({
-        model: "claude-opus-4-8",
-        max_tokens: 1024,
-        system: CHATBOT_SYSTEM_INSTRUCTION + productContext,
-        messages: [...history, { role: "user", content: message }],
-      });
-      const text = response.content
-        .filter((block): block is Anthropic.TextBlock => block.type === "text")
-        .map((block) => block.text)
-        .join("");
+      const text = await answerFromKnowledgeBase(message);
       res.json({ text });
     } catch (e) {
-      console.error("Chatbot AI error", e);
-      res.status(500).json({ error: "AI error" });
+      console.error("Chatbot error", e);
+      res.status(500).json({ error: "Chatbot error" });
     }
   });
 
