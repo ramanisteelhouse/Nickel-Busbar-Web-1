@@ -495,4 +495,21 @@ begin
   end if;
 end $$;
 
+-- Deny-by-default Row Level Security on every table created above.
+-- Without this, the publishable key (which ships in browsers) can read all rows
+-- over PostgREST, including customer PII. The API is unaffected because it
+-- connects as the table owner. See supabase/rls.sql for the full rationale.
+do $$
+declare
+  t record;
+begin
+  for t in
+    select tablename
+    from pg_tables
+    where schemaname = 'public'
+  loop
+    execute format('alter table public.%I enable row level security', t.tablename);
+  end loop;
+end $$;
+
 commit;
