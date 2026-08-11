@@ -4,6 +4,7 @@ import path from "path";
 import {
   renderBlogSnapshot,
   renderProductSnapshot,
+  renderProductListSnapshot,
   renderNickelStripsLithiumSnapshot,
 } from "../seoSnapshot.js";
 
@@ -28,6 +29,8 @@ export default async function handler(req: IncomingMessage, res: ServerResponse)
 
     if (pathname === "/blog/nickel-strips-lithium-batteries") {
       result = await renderNickelStripsLithiumSnapshot(template);
+    } else if (pathname === "/products" || pathname === "/categories") {
+      result = await renderProductListSnapshot(template, pathname === "/categories");
     } else {
       const blogMatch = pathname.match(/^\/blog\/([^/]+)$/);
       const productMatch = pathname.match(/^\/product\/([^/]+)$/);

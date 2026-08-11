@@ -161,10 +161,26 @@ const RICH_TEXT_ALLOWED_TAGS = new Set([
   'br',
   'hr',
   'a',
+  'img',
+  'figure',
+  'figcaption',
 ]);
 
 const RICH_TEXT_ALLOWED_ATTRS: Record<string, Set<string>> = {
   a: new Set(['href', 'title', 'target', 'rel']),
+  img: new Set(['src', 'alt', 'title', 'width', 'height', 'loading', 'decoding']),
+};
+
+const isSafeImageSrc = (src: string) => {
+  const trimmed = src.trim();
+  if (!trimmed) return false;
+  if (trimmed.startsWith('/')) return true;
+  try {
+    const parsed = new URL(trimmed, window.location.origin);
+    return ['http:', 'https:'].includes(parsed.protocol);
+  } catch {
+    return false;
+  }
 };
 
 const normalizeSmartQuotes = (value: string) =>
@@ -239,8 +255,36 @@ export function sanitizeRichHtml(input: string) {
           return;
         }
 
+        if (tag === 'img' && attrName === 'src') {
+          if (!isSafeImageSrc(attrValue)) return;
+          clean.setAttribute('src', attrValue);
+          return;
+        }
+
+        if (tag === 'img' && (attrName === 'width' || attrName === 'height')) {
+          if (!/^\d+$/.test(attrValue)) return;
+          clean.setAttribute(attrName, attrValue);
+          return;
+        }
+
+        if (tag === 'img' && attrName === 'loading') {
+          clean.setAttribute('loading', attrValue === 'eager' ? 'eager' : 'lazy');
+          return;
+        }
+
+        if (tag === 'img' && attrName === 'decoding') {
+          clean.setAttribute('decoding', attrValue === 'sync' ? 'sync' : 'async');
+          return;
+        }
+
         clean.setAttribute(attrName, attrValue);
       });
+    }
+
+    // <img> has no meaningful children and a missing/unsafe src would leave a broken
+    // image node in the DOM, so drop the element entirely rather than render it empty.
+    if (tag === 'img' && !clean.getAttribute('src')) {
+      return;
     }
 
     if (tag === 'a' && clean.getAttribute('target') === '_blank') {

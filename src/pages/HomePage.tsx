@@ -266,7 +266,7 @@ export const HomePage: React.FC = () => {
         />
         <meta
           name="keywords"
-          content="Nickel Strip Manufacturer India, Pure Nickel Strip, H Type Nickel Strip, Nickel Busbar, Nickel Strip for 18650 Battery, Battery Nickel Strip Supplier"
+          content="Nickel Strip Manufacturer India, Pure Nickel Strip, H Type Nickel Strip, Nickel Busbar, Nickel Strip for 18650 Battery, Battery Nickel Strip Supplier, Nickel Strip Exporter, Nickel Strip Supplier for Export, Nickel Busbar Wholesale Supplier, Bulk Nickel Strip Order"
         />
         <link rel="canonical" href="https://www.nickelbusbar.com/" />
         <meta property="og:type" content="website" />
@@ -286,6 +286,7 @@ export const HomePage: React.FC = () => {
             name: 'Ramani Nickel Strips',
             url: 'https://www.nickelbusbar.com/',
             logo: 'https://www.nickelbusbar.com/img/logo.png',
+            areaServed: 'Worldwide',
             sameAs: [
               'https://www.linkedin.com/company/ramani-steel-house/',
               'https://www.facebook.com/profile.php?id=61550731232092',
@@ -315,10 +316,20 @@ export const HomePage: React.FC = () => {
             email: 'ramanioffice@gmail.com',
             address: {
               '@type': 'PostalAddress',
+              streetAddress: 'Marine Lines East',
               addressLocality: 'Mumbai',
               addressRegion: 'Maharashtra',
+              postalCode: '400004',
               addressCountry: 'IN',
             },
+            areaServed: 'Worldwide',
+            sameAs: [
+              'https://www.linkedin.com/company/ramani-steel-house/posts/?feedView=all',
+              'https://www.facebook.com/profile.php?id=61550731232092',
+              'https://www.instagram.com/ramanisteelhouse/',
+              'https://in.pinterest.com/ramanisteel2023/',
+              'https://x.com/SteelHouse69101',
+            ],
             openingHoursSpecification: [
               {
                 '@type': 'OpeningHoursSpecification',

@@ -227,6 +227,39 @@ export async function renderNickelStripsLithiumSnapshot(template: string): Promi
   return { status: 200, html };
 }
 
+export async function renderProductListSnapshot(template: string, isCategoriesRoute: boolean): Promise<SnapshotResult> {
+  const canonical = `${SITE_URL}${isCategoriesRoute ? "/categories" : "/products"}`;
+  const title = isCategoriesRoute
+    ? "Nickel Strip Categories | Pure Nickel, Nickel Plated & Battery Tabs"
+    : "Nickel Strip Products | Pure Nickel & Nickel Plated Strips - Ramani Steel House";
+  const description = isCategoriesRoute
+    ? "Browse nickel strip categories from Ramani Steel House: pure nickel, nickel-plated strips, battery tabs, busbars and custom coils. Manufactured in Mumbai, supplied PAN India and exported worldwide."
+    : "Shop nickel strips, nickel-plated strips, and battery tabs manufactured in Mumbai, India. PAN India supply and export to 17+ countries. Request bulk and custom quotes.";
+
+  const collectionJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "CollectionPage",
+    name: title,
+    description,
+    url: canonical,
+  };
+
+  const snapshotBody = `<article>
+    <h1>${escapeHtml(isCategoriesRoute ? "Nickel Strip Categories" : "Nickel Strip Products")}</h1>
+    <p>${escapeHtml(description)}</p>
+  </article>`;
+
+  const html = injectHead(template, {
+    title,
+    description,
+    canonical,
+    jsonLd: [collectionJsonLd],
+    snapshotBody,
+  });
+
+  return { status: 200, html };
+}
+
 export async function renderProductSnapshot(template: string, slug: string): Promise<SnapshotResult> {
   const product = await queryOne<Record<string, unknown>>(
     `SELECT p.*, c.name as category_name FROM products p JOIN categories c ON p.category_id = c.id WHERE p.slug = $1`,

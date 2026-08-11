@@ -210,7 +210,7 @@ const enTranslations: Record<TranslationKey, string> = {
     'product.openForm': 'Open Form',
     'product.categories': 'Categories',
     'product.allCategories': 'All Categories',
-    'product.submitEnquiry': 'Submit Enquiry',
+    'product.submitEnquiry': 'Get Best Price',
     'product.noProducts': 'No products found matching your criteria.',
     'product.clearFilters': 'Clear all filters',
     'enquiry.title': 'Custom Enquiry',

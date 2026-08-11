@@ -11,6 +11,7 @@ const staticPages: Array<{ path: string; changefreq: string; priority: string }>
   { path: "/contact", changefreq: "monthly", priority: "0.5" },
   { path: "/calculator", changefreq: "monthly", priority: "0.7" },
   { path: "/blog", changefreq: "weekly", priority: "0.7" },
+  { path: "/blog/nickel-strips-lithium-batteries", changefreq: "monthly", priority: "0.7" },
 ];
 
 type SitemapUrl = { loc: string; lastmod: string; changefreq: string; priority: string };
