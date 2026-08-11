@@ -65,7 +65,9 @@ async function main() {
         `SELECT slug, published_at FROM blog_posts
          WHERE status = 'published' AND (published_at IS NULL OR published_at <= now())
            AND slug IS NOT NULL AND slug <> ''
-         ORDER BY published_at DESC NULLS LAST`
+         -- id breaks ties so the generated sitemap is byte-stable between builds when
+         -- several posts share a NULL published_at.
+         ORDER BY published_at DESC NULLS LAST, id DESC`
       );
       for (const post of posts) {
         urls.push({

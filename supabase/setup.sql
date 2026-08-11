@@ -178,6 +178,11 @@ create table if not exists public.cart_items (
   unique (user_id, product_id)
 );
 
+-- Sign-in and registration look users up with lower(email) so accounts created before email
+-- normalization (mixed case, stray whitespace) still resolve. The plain unique index on
+-- email cannot serve that predicate, so this functional index backs it.
+create index if not exists idx_users_email_lower on public.users (lower(email));
+
 create index if not exists idx_categories_slug on public.categories(slug);
 create index if not exists idx_products_slug on public.products(slug);
 create index if not exists idx_products_category_id on public.products(category_id);

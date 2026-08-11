@@ -193,13 +193,7 @@
     <priority>0.7</priority>
   </url>
   <url>
-    <loc>https://www.nickelbusbar.com/blog/Nickel-Strips-for-Electric-Vehicles</loc>
-    <lastmod>2026-08-11</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.7</priority>
-  </url>
-  <url>
-    <loc>https://www.nickelbusbar.com/blog/nickel-200-vs-nickel-201-battery-strip</loc>
+    <loc>https://www.nickelbusbar.com/blog/zig-zag-vs-h-type-nickel-strip</loc>
     <lastmod>2026-08-11</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
@@ -211,13 +205,25 @@
     <priority>0.7</priority>
   </url>
   <url>
-    <loc>https://www.nickelbusbar.com/blog/zig-zag-vs-h-type-nickel-strip</loc>
+    <loc>https://www.nickelbusbar.com/blog/nickel-200-vs-nickel-201-battery-strip</loc>
+    <lastmod>2026-08-11</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://www.nickelbusbar.com/blog/nickel-strip-vs-copper-busbar-battery-interconnects</loc>
     <lastmod>2026-08-11</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
     <loc>https://www.nickelbusbar.com/blog/battery-spot-welding-tips-nickel-strip</loc>
+    <lastmod>2026-08-11</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://www.nickelbusbar.com/blog/nickel-strip-current-carrying-capacity</loc>
     <lastmod>2026-08-11</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
@@ -235,25 +241,19 @@
     <priority>0.7</priority>
   </url>
   <url>
-    <loc>https://www.nickelbusbar.com/blog/Manufacturers-Guide</loc>
-    <lastmod>2026-08-11</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.7</priority>
-  </url>
-  <url>
     <loc>https://www.nickelbusbar.com/blog/Nickel-Strip-Manufacturer-for-UK-Battery-Industry</loc>
     <lastmod>2026-08-11</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
-    <loc>https://www.nickelbusbar.com/blog/nickel-strip-current-carrying-capacity</loc>
+    <loc>https://www.nickelbusbar.com/blog/Nickel-Strips-for-Electric-Vehicles</loc>
     <lastmod>2026-08-11</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
-    <loc>https://www.nickelbusbar.com/blog/nickel-strip-vs-copper-busbar-battery-interconnects</loc>
+    <loc>https://www.nickelbusbar.com/blog/Manufacturers-Guide</loc>
     <lastmod>2026-08-11</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>

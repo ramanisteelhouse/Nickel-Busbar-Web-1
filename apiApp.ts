@@ -37,6 +37,7 @@ const ENQUIRY_NOTIFY_WHATSAPP = process.env.ENQUIRY_NOTIFY_WHATSAPP;
 const EXCHANGE_RATE_API_KEY = process.env.EXCHANGE_RATE_API_KEY;
 const IPSTACK_API_KEY = process.env.IPSTACK_API_KEY;
 const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID;
+const MAX_QUOTE_ITEMS = 200;
 
 const emailTransporter =
   SMTP_HOST && SMTP_USER && SMTP_PASS
@@ -335,6 +336,11 @@ const normalizeFaqItems = (value: unknown) => {
   return items.length > 0 ? items : null;
 };
 
+// Addresses are stored lowercased and trimmed from here on. Lookups still compare with
+// lower(email) rather than an exact match, so accounts created before this normalization
+// (which may hold mixed case or stray whitespace) can still sign in.
+const normalizeEmail = (value: string) => value.trim().toLowerCase();
+
 const slugify = (value: string) =>
   value
     .toLowerCase()
@@ -395,6 +401,23 @@ const getExchangeRates = async (baseCurrency: string) => {
 
   return payload;
 };
+
+// Express 4 does not forward a rejected promise from an async route handler to the error
+// middleware at the bottom of this file. The rejection escapes as an unhandledRejection,
+// which terminates the process on Node >= 15, so one malformed request could take the whole
+// API down. Every async handler is registered through this wrapper so failures reach next()
+// and get the generic 500 response instead.
+const asyncHandler =
+  (
+    handler: (
+      req: express.Request,
+      res: express.Response,
+      next: express.NextFunction
+    ) => Promise<unknown>
+  ): express.RequestHandler =>
+  (req, res, next) => {
+    handler(req, res, next).catch(next);
+  };
 
 const getAuthTokenFromRequest = (req: express.Request) => {
   const authHeader = req.headers.authorization;
@@ -467,21 +490,46 @@ const ensureCallTrackingSchema = async () => {
   }
 };
 
+// Both migrations used to be kicked off unawaited at app construction, which on serverless
+// means once per cold start with requests free to race ahead of the ALTER TABLE. Memoizing
+// one promise lets the handlers that depend on these columns await it without re-running the
+// DDL. Neither function rejects - each logs and swallows its own errors - so awaiting this is
+// safe even when a migration fails.
+let schemaReadyPromise: Promise<void> | null = null;
+const ensureSchemaReady = () => {
+  if (!schemaReadyPromise) {
+    schemaReadyPromise = (async () => {
+      await ensureProductEnquiriesSchema();
+      await ensureCallTrackingSchema();
+    })();
+  }
+  return schemaReadyPromise;
+};
+
 export function createApiApp() {
   const app = express();
+  // The token's own expiry and the cookie's lifetime are derived from one value so they
+  // can't drift apart. A token without an `expiresIn` stays valid forever and is accepted
+  // as a Bearer header, where the cookie's maxAge gives no protection at all.
+  const AUTH_TOKEN_TTL_SECONDS = 7 * 24 * 60 * 60;
   const authCookieOptions = {
     httpOnly: true,
     sameSite: "lax" as const,
-    maxAge: 7 * 24 * 60 * 60 * 1000,
+    maxAge: AUTH_TOKEN_TTL_SECONDS * 1000,
     secure: process.env.NODE_ENV === "production",
   };
+  const signAuthToken = (user: { id: number; email: string; role: string }) =>
+    jwt.sign({ id: user.id, email: user.email, role: user.role }, JWT_SECRET, {
+      expiresIn: AUTH_TOKEN_TTL_SECONDS,
+    });
 
   // Trust the first proxy hop (Vercel's edge network / any reverse proxy) so
   // req.ip reflects the real client IP for rate limiting instead of the proxy's.
   app.set("trust proxy", 1);
 
-  void ensureProductEnquiriesSchema();
-  void ensureCallTrackingSchema();
+  // Start the migrations at boot so the common case is already settled by the first request;
+  // the handlers that need these columns await the same promise before writing.
+  void ensureSchemaReady();
 
   // CSP is left disabled here since it would need to allow Google Fonts, Unsplash,
   // Supabase storage, and Google Identity — safer to leave that to a follow-up pass
@@ -522,6 +570,16 @@ export function createApiApp() {
     message: { error: "Too many requests. Please try again later." },
   });
 
+  // Page-view logging fires on every navigation, so this ceiling is well above what a real
+  // browsing session produces while still bounding how fast one client can grow the table.
+  const analyticsLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000,
+    limit: 200,
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: { error: "Too many requests. Please try again later." },
+  });
+
   app.get("/api/auth/google/config", (_req, res) => {
     const clientId = (process.env.GOOGLE_CLIENT_ID || process.env.VITE_GOOGLE_CLIENT_ID || "").trim();
     if (!clientId) {
@@ -548,7 +606,7 @@ export function createApiApp() {
     next();
   });
 
-  app.get("/api/localization/bootstrap", async (req, res) => {
+  app.get("/api/localization/bootstrap", asyncHandler(async (req, res) => {
     const fallback = {
       countryCode: "IN",
       countryName: "India",
@@ -649,9 +707,9 @@ export function createApiApp() {
       console.error("Failed to fetch IP localization", error);
       res.json(fallback);
     }
-  });
+  }));
 
-  app.get("/api/localization/countries", async (_req, res) => {
+  app.get("/api/localization/countries", asyncHandler(async (_req, res) => {
     try {
       const countries = await fetchJson<unknown[]>(
         "https://restcountries.com/v3.1/all?fields=cca2,name,currencies",
@@ -661,9 +719,9 @@ export function createApiApp() {
       console.error("Failed to fetch countries", error);
       res.status(502).json({ error: "Failed to fetch countries" });
     }
-  });
+  }));
 
-  app.get("/api/localization/exchange-rates", async (req, res) => {
+  app.get("/api/localization/exchange-rates", asyncHandler(async (req, res) => {
     const base = typeof req.query.base === "string" && req.query.base.trim()
       ? req.query.base.trim().toUpperCase()
       : "INR";
@@ -687,9 +745,9 @@ export function createApiApp() {
         provider: "fallback",
       });
     }
-  });
+  }));
 
-  app.get("/api/localization/postal/:country/:postalCode", async (req, res) => {
+  app.get("/api/localization/postal/:country/:postalCode", asyncHandler(async (req, res) => {
     const country = String(req.params.country || "").toLowerCase();
     const postalCode = String(req.params.postalCode || "").trim();
 
@@ -714,10 +772,10 @@ export function createApiApp() {
     } catch (error) {
       res.status(404).json({ error: "Postal code not found." });
     }
-  });
+  }));
 
   // --- Auth Routes ---
-  app.post("/api/auth/register", authLimiter, async (req, res) => {
+  app.post("/api/auth/register", authLimiter, asyncHandler(async (req, res) => {
     const { name, email, password } = req.body ?? {};
 
     if (typeof name !== "string" || !name.trim()) {
@@ -730,34 +788,51 @@ export function createApiApp() {
       return res.status(400).json({ error: "Password must be at least 8 characters." });
     }
 
+    const normalizedEmail = normalizeEmail(email);
+
     try {
+      // The unique index on email is case-sensitive, so it alone would let User@x.com and
+      // user@x.com both register and then collide with Google sign-in, which always
+      // supplies a lowercased address.
+      const existing = await queryOne<{ id: number }>("SELECT id FROM users WHERE lower(email) = $1", [
+        normalizedEmail,
+      ]);
+      if (existing) {
+        return res.status(400).json({ error: "Email already exists" });
+      }
+
       const hashedPassword = await bcrypt.hash(password, 10);
       const user = await queryOne<{ id: number; name: string; email: string; role: string }>(
         "INSERT INTO users (name, email, password) VALUES ($1, $2, $3) RETURNING id, name, email, role",
-        [name, email, hashedPassword]
+        [name.trim(), normalizedEmail, hashedPassword]
       );
       if (!user) return res.status(500).json({ error: "Failed to create user" });
-      const token = jwt.sign({ id: user.id, email: user.email, role: user.role }, JWT_SECRET);
+      const token = signAuthToken(user);
       res.cookie("auth_token", token, authCookieOptions);
       void sendWelcomeEmail(user);
       res.json({ token, user });
     } catch (e) {
       res.status(400).json({ error: "Email already exists" });
     }
-  });
+  }));
 
-  app.post("/api/auth/login", authLimiter, async (req, res) => {
-    const { email, password } = req.body;
-    const user = await queryOne<any>("SELECT * FROM users WHERE email = $1", [email]);
+  app.post("/api/auth/login", authLimiter, asyncHandler(async (req, res) => {
+    const { email, password } = req.body ?? {};
+    // Both fields are type-checked before use: bcrypt.compare throws on a non-string
+    // password, which previously escaped this handler as an unhandled rejection.
+    if (typeof email !== "string" || typeof password !== "string" || !email.trim() || !password) {
+      return res.status(401).json({ error: "Invalid credentials" });
+    }
+    const user = await queryOne<any>("SELECT * FROM users WHERE lower(email) = $1", [normalizeEmail(email)]);
     if (!user || !(await bcrypt.compare(password, user.password))) {
       return res.status(401).json({ error: "Invalid credentials" });
     }
-    const token = jwt.sign({ id: user.id, email: user.email, role: user.role }, JWT_SECRET);
+    const token = signAuthToken(user);
     res.cookie("auth_token", token, authCookieOptions);
     res.json({ token, user: { id: user.id, name: user.name, email: user.email, role: user.role } });
-  });
+  }));
 
-  app.post("/api/auth/google", authLimiter, async (req, res) => {
+  app.post("/api/auth/google", authLimiter, asyncHandler(async (req, res) => {
     const { credential } = req.body ?? {};
     if (!credential || typeof credential !== "string") {
       return res.status(400).json({ error: "Google credential is required." });
@@ -765,12 +840,13 @@ export function createApiApp() {
 
     try {
       const profile = await verifyGoogleCredential(credential);
+      const normalizedEmail = normalizeEmail(profile.email as string);
       const existing = await queryOne<{
         id: number;
         name: string;
         email: string;
         role: string;
-      }>("SELECT id, name, email, role FROM users WHERE email = $1", [profile.email]);
+      }>("SELECT id, name, email, role FROM users WHERE lower(email) = $1", [normalizedEmail]);
 
       let user = existing;
       const isNewUser = !existing;
@@ -780,7 +856,7 @@ export function createApiApp() {
           `INSERT INTO users (name, email, password, role, provider, google_id, avatar_url)
            VALUES ($1, $2, $3, 'user', 'google', $4, $5)
            RETURNING id, name, email, role`,
-          [profile.name || "Google User", profile.email, hashedPassword, profile.sub, profile.picture || null]
+          [profile.name || "Google User", normalizedEmail, hashedPassword, profile.sub, profile.picture || null]
         );
       } else {
         await query(
@@ -798,7 +874,7 @@ export function createApiApp() {
         return res.status(500).json({ error: "Failed to save Google user." });
       }
 
-      const token = jwt.sign({ id: user.id, email: user.email, role: user.role }, JWT_SECRET);
+      const token = signAuthToken(user);
       res.cookie("auth_token", token, authCookieOptions);
       if (isNewUser) {
         void sendWelcomeEmail(user);
@@ -808,9 +884,9 @@ export function createApiApp() {
       console.error("Google sign-in failed", error);
       res.status(401).json({ error: "Google sign-in failed." });
     }
-  });
+  }));
 
-  app.get("/api/auth/session", async (req, res) => {
+  app.get("/api/auth/session", asyncHandler(async (req, res) => {
     const token = getAuthTokenFromRequest(req);
     if (!token) {
       return res.json({ user: null });
@@ -833,14 +909,14 @@ export function createApiApp() {
       res.clearCookie("auth_token");
       res.json({ user: null });
     }
-  });
+  }));
 
   app.post("/api/auth/logout", (_req, res) => {
     res.clearCookie("auth_token");
     res.sendStatus(204);
   });
 
-  app.get("/api/user/preferences", async (req, res) => {
+  app.get("/api/user/preferences", asyncHandler(async (req, res) => {
     const userId = getSessionUserId(req);
     if (!userId) {
       return res.status(401).json({ error: "Unauthorized" });
@@ -864,9 +940,9 @@ export function createApiApp() {
       console.error("Failed to load user preferences", error);
       res.status(500).json({ error: "Failed to load preferences" });
     }
-  });
+  }));
 
-  app.put("/api/user/preferences", async (req, res) => {
+  app.put("/api/user/preferences", asyncHandler(async (req, res) => {
     const userId = getSessionUserId(req);
     if (!userId) {
       return res.status(401).json({ error: "Unauthorized" });
@@ -908,10 +984,10 @@ export function createApiApp() {
       console.error("Failed to save user preferences", error);
       res.status(500).json({ error: "Failed to save preferences" });
     }
-  });
+  }));
 
   // --- Cart Routes ---
-  app.get("/api/cart", async (req, res) => {
+  app.get("/api/cart", asyncHandler(async (req, res) => {
     const userId = getSessionUserId(req);
     if (!userId) {
       return res.status(401).json({ error: "Unauthorized" });
@@ -934,9 +1010,9 @@ export function createApiApp() {
       console.error("Failed to load cart", error);
       res.status(500).json({ error: "Failed to load cart" });
     }
-  });
+  }));
 
-  app.put("/api/cart", async (req, res) => {
+  app.put("/api/cart", asyncHandler(async (req, res) => {
     const userId = getSessionUserId(req);
     if (!userId) {
       return res.status(401).json({ error: "Unauthorized" });
@@ -973,12 +1049,12 @@ export function createApiApp() {
     } finally {
       client.release();
     }
-  });
+  }));
 
   // --- Product Routes ---
-  app.get("/api/products", async (req, res) => {
+  app.get("/api/products", asyncHandler(async (req, res) => {
     const { category, featured, search } = req.query;
-    let sql = "SELECT p.*, c.name as category_name FROM products p JOIN categories c ON p.category_id = c.id WHERE 1=1";
+    let sql = "SELECT p.*, c.name as category_name FROM products p LEFT JOIN categories c ON p.category_id = c.id WHERE 1=1";
     const params: any[] = [];
 
     if (category) {
@@ -1010,9 +1086,9 @@ export function createApiApp() {
       console.error("Failed to fetch products", e);
       res.status(500).json({ error: "Failed to fetch products" });
     }
-  });
+  }));
 
-  app.get("/api/products/suggestions", async (req, res) => {
+  app.get("/api/products/suggestions", asyncHandler(async (req, res) => {
     const rawQuery = typeof req.query.q === "string" ? req.query.q.trim() : "";
     const limit = Math.min(Math.max(Number(req.query.limit) || 8, 1), 20);
 
@@ -1030,7 +1106,7 @@ export function createApiApp() {
           p.name,
           c.name AS category_name
          FROM products p
-         JOIN categories c ON c.id = p.category_id
+         LEFT JOIN categories c ON c.id = p.category_id
          WHERE p.name ILIKE $1 OR p.name ILIKE $2
          ORDER BY
            CASE WHEN p.name ILIKE $1 THEN 0 ELSE 1 END,
@@ -1043,12 +1119,12 @@ export function createApiApp() {
       console.error("Failed to fetch product suggestions", error);
       res.status(500).json({ error: "Failed to fetch product suggestions" });
     }
-  });
+  }));
 
-  app.get("/api/products/:slug", async (req, res) => {
+  app.get("/api/products/:slug", asyncHandler(async (req, res) => {
     try {
       const product = await queryOne(
-        "SELECT p.*, c.name as category_name FROM products p JOIN categories c ON p.category_id = c.id WHERE p.slug = $1",
+        "SELECT p.*, c.name as category_name FROM products p LEFT JOIN categories c ON p.category_id = c.id WHERE p.slug = $1",
         [req.params.slug]
       );
       if (!product) return res.status(404).json({ error: "Product not found" });
@@ -1057,9 +1133,9 @@ export function createApiApp() {
       console.error("Failed to fetch product", e);
       res.status(500).json({ error: "Failed to fetch product" });
     }
-  });
+  }));
 
-  app.get("/api/categories", async (req, res) => {
+  app.get("/api/categories", asyncHandler(async (req, res) => {
     try {
       const categories = await query("SELECT * FROM categories ORDER BY id");
       res.json(categories);
@@ -1067,10 +1143,10 @@ export function createApiApp() {
       console.error("Failed to fetch categories", e);
       res.status(500).json({ error: "Failed to fetch categories" });
     }
-  });
+  }));
 
   // --- Blog Routes ---
-  app.get("/api/blog-posts", async (req, res) => {
+  app.get("/api/blog-posts", asyncHandler(async (req, res) => {
     const limit = Math.min(Math.max(Number(req.query.limit) || 6, 1), 50);
 
     try {
@@ -1101,9 +1177,9 @@ export function createApiApp() {
       console.error("Failed to fetch blog posts", error);
       res.status(500).json({ error: "Failed to fetch blog posts" });
     }
-  });
+  }));
 
-  app.get("/api/blog-posts/:slug", async (req, res) => {
+  app.get("/api/blog-posts/:slug", asyncHandler(async (req, res) => {
     const rawSlug = String(req.params.slug || "").trim();
     const normalizedSlug = (() => {
       if (!rawSlug) return rawSlug;
@@ -1147,7 +1223,7 @@ export function createApiApp() {
       console.error("Failed to fetch blog post", error);
       res.status(500).json({ error: "Failed to fetch blog post" });
     }
-  });
+  }));
 
   // --- Blog Admin (API-key protected, used by the scheduled content routine) ---
   const blogAdminLimiter = rateLimit({
@@ -1167,7 +1243,7 @@ export function createApiApp() {
     return timingSafeEqual(providedBuf, expectedBuf);
   };
 
-  app.post("/api/admin/blog-posts", blogAdminLimiter, async (req, res) => {
+  app.post("/api/admin/blog-posts", blogAdminLimiter, asyncHandler(async (req, res) => {
     const providedKey = String(req.headers["x-admin-api-key"] || "");
     if (!isValidAdminKey(providedKey)) {
       return res.status(401).json({ error: "Unauthorized" });
@@ -1219,10 +1295,10 @@ export function createApiApp() {
       console.error("Failed to create blog post", error);
       res.status(500).json({ error: "Failed to create blog post" });
     }
-  });
+  }));
 
   // --- Ads ---
-  app.get("/api/ads/active", async (_req, res) => {
+  app.get("/api/ads/active", asyncHandler(async (_req, res) => {
     try {
       const ads = await query(
         `SELECT *
@@ -1245,10 +1321,10 @@ export function createApiApp() {
       console.error("Failed to fetch ads", e);
       res.status(500).json({ error: "Failed to fetch ads" });
     }
-  });
+  }));
 
   // --- Chatbot (offline keyword matcher over site data — no external API) ---
-  app.post("/api/ai/chat", chatLimiter, async (req, res) => {
+  app.post("/api/ai/chat", chatLimiter, asyncHandler(async (req, res) => {
     const message = typeof req.body?.message === "string" ? req.body.message.trim() : "";
 
     if (!message) {
@@ -1262,28 +1338,39 @@ export function createApiApp() {
       console.error("Chatbot error", e);
       res.status(500).json({ error: "Chatbot error" });
     }
-  });
+  }));
 
   // --- Analytics ---
-  app.post("/api/analytics/log", async (req, res) => {
-    const { path, referrer, userAgent, geo, visitorId } = req.body;
+  app.post("/api/analytics/log", analyticsLimiter, asyncHandler(async (req, res) => {
+    const { path, referrer, userAgent, geo, visitorId } = req.body ?? {};
+    // Unauthenticated write path: every field is length-capped so a caller can't push
+    // megabyte strings (up to the 1mb body limit) straight into visitor_logs.
+    const cap = (value: unknown, max: number) =>
+      typeof value === "string" ? value.slice(0, max) : null;
     try {
       const userId = getSessionUserId(req);
       await query(
         "INSERT INTO visitor_logs (user_id, path, referrer, user_agent, geo_location, visitor_id) VALUES ($1, $2, $3, $4, $5, $6)",
-        [userId, path, referrer, userAgent, JSON.stringify(geo), typeof visitorId === "string" ? visitorId.slice(0, 128) : null]
+        [
+          userId,
+          cap(path, 500),
+          cap(referrer, 500),
+          cap(userAgent, 500),
+          JSON.stringify(geo ?? null).slice(0, 1000),
+          cap(visitorId, 128),
+        ]
       );
       res.sendStatus(200);
     } catch (e) {
       console.error("Failed to log analytics", e);
       res.status(500).json({ error: "Failed to log analytics" });
     }
-  });
+  }));
 
   // --- Call tracking ---
   // Captures a "direct call" (or WhatsApp) click along with the visitor's page-view
   // trail, so sales can see what someone was looking at right before they reached out.
-  app.post("/api/calls/log", callLimiter, async (req, res) => {
+  app.post("/api/calls/log", callLimiter, asyncHandler(async (req, res) => {
     const phoneNumber = typeof req.body?.phoneNumber === "string" ? req.body.phoneNumber.trim().slice(0, 40) : "";
     const source = typeof req.body?.source === "string" ? req.body.source.trim().slice(0, 40) : null;
     const currentPage = typeof req.body?.currentPage === "string" ? req.body.currentPage.slice(0, 500) : null;
@@ -1292,6 +1379,9 @@ export function createApiApp() {
     if (!phoneNumber) {
       return res.status(400).json({ error: "phoneNumber is required" });
     }
+
+    // call_clicks and visitor_logs.visitor_id are both created by this migration.
+    await ensureSchemaReady();
 
     try {
       const userId = getSessionUserId(req);
@@ -1328,14 +1418,17 @@ export function createApiApp() {
       console.error("Failed to log call click", e);
       res.status(500).json({ error: "Failed to log call click" });
     }
-  });
+  }));
 
   // --- Product Enquiries ---
-  app.post("/api/enquiries", enquiryLimiter, async (req, res) => {
-    const { productId, productName, requirement, thickness, fullName, email, phone, company, location, quantity, message } = req.body;
+  app.post("/api/enquiries", enquiryLimiter, asyncHandler(async (req, res) => {
+    const { productId, productName, requirement, thickness, fullName, email, phone, company, location, quantity, message } = req.body ?? {};
     if (!fullName || !email || !phone) {
       return res.status(400).json({ error: "Full name, email, and phone are required." });
     }
+
+    // product_enquiries.thickness and .user_id are both added by this migration.
+    await ensureSchemaReady();
 
     const initialUserId = getSessionUserId(req);
 
@@ -1412,14 +1505,19 @@ export function createApiApp() {
       console.error("Failed to submit enquiry", e);
       res.status(500).json({ error: "Failed to submit enquiry", ...(devDetail ? { devDetail } : {}) });
     }
-  });
+  }));
 
   // --- Quote Requests (Cart/RFQ) ---
-  app.post("/api/quotes", enquiryLimiter, async (req, res) => {
+  app.post("/api/quotes", enquiryLimiter, asyncHandler(async (req, res) => {
     const { customer = {}, items = [], summary = {}, shipping_option, meta = {} } = req.body ?? {};
 
     if (!Array.isArray(items) || items.length === 0) {
       return res.status(400).json({ error: "Cart items are required." });
+    }
+    // Each item becomes its own INSERT inside one transaction, so an oversized array would
+    // hold a pooled connection open for thousands of round trips.
+    if (items.length > MAX_QUOTE_ITEMS) {
+      return res.status(400).json({ error: `A quote cannot contain more than ${MAX_QUOTE_ITEMS} items.` });
     }
 
     const userId = getSessionUserId(req);
@@ -1483,14 +1581,21 @@ export function createApiApp() {
 
       res.status(201).json({ id: quote.id });
     } catch (e) {
-      await client.query("ROLLBACK");
+      // A dropped connection is the usual reason the transaction failed in the first place,
+      // and ROLLBACK will then fail too. Unguarded, that second error escapes this catch
+      // block entirely and takes the process down.
+      try {
+        await client.query("ROLLBACK");
+      } catch (rollbackError) {
+        console.error("Failed to roll back quote request transaction", rollbackError);
+      }
       console.error("Failed to save quote request", e);
-      const message = e instanceof Error ? e.message : "Failed to save quote request";
-      res.status(500).json({ error: message });
+      // The raw driver message can carry schema and constraint details - keep it in the log.
+      res.status(500).json({ error: "Failed to save quote request" });
     } finally {
       client.release();
     }
-  });
+  }));
 
   app.use("/api", (_req, res) => {
     res.status(404).json({ error: "API route not found." });

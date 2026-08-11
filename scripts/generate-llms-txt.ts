@@ -68,7 +68,10 @@ async function main() {
         `SELECT title, slug, excerpt FROM blog_posts
          WHERE status = 'published' AND (published_at IS NULL OR published_at <= now())
            AND slug IS NOT NULL AND slug <> ''
-         ORDER BY published_at DESC NULLS LAST`
+         -- id breaks ties: several posts share a NULL published_at, and without a
+         -- deterministic secondary sort their order changes between builds, churning
+         -- this generated file on every deploy.
+         ORDER BY published_at DESC NULLS LAST, id DESC`
       );
       if (posts.length) {
         lines.push("");

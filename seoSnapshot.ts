@@ -33,26 +33,37 @@ type HeadInput = {
   snapshotBody: string;
 };
 
+// String.replace treats `$&`, `$'`, "$`" and `$$` as substitution patterns inside a
+// replacement *string*, which corrupts any content containing a dollar sign - and escapeHtml
+// makes it worse, since it turns `&` into `&amp;` and `'` into `&#39;`, so both `$&` and `$'`
+// in the source text end up as a live `$&` sequence. Passing a function instead makes the
+// replacement literal. Every replace below goes through this.
+const replaceOnce = (html: string, pattern: RegExp | string, replacement: string) =>
+  html.replace(pattern, () => replacement);
+
 const injectHead = (template: string, head: HeadInput) => {
   let html = template;
 
   // Replace the default <title>...</title>.
-  html = html.replace(/<title>[\s\S]*?<\/title>/, `<title>${escapeHtml(head.title)}</title>`);
+  html = replaceOnce(html, /<title>[\s\S]*?<\/title>/, `<title>${escapeHtml(head.title)}</title>`);
 
   // Replace the default meta description.
-  html = html.replace(
+  html = replaceOnce(
+    html,
     /<meta name="description"[^>]*>/,
     `<meta name="description" content="${escapeAttr(head.description)}" />`
   );
 
   // Replace the default canonical link.
-  html = html.replace(
+  html = replaceOnce(
+    html,
     /<link rel="canonical"[^>]*>/,
     `<link rel="canonical" href="${escapeAttr(head.canonical)}" />`
   );
 
   if (head.robots) {
-    html = html.replace(
+    html = replaceOnce(
+      html,
       /<meta name="robots"[^>]*>/,
       `<meta name="robots" content="${escapeAttr(head.robots)}" />`
     );
@@ -79,14 +90,21 @@ const injectHead = (template: string, head: HeadInput) => {
   ]
     .filter(Boolean)
     .join("\n  ");
-  html = html.replace(/<meta property="og:title"[^>]*>/, ogTags);
+  html = replaceOnce(html, /<meta property="og:title"[^>]*>/, ogTags);
 
+  // JSON.stringify escapes neither `<` nor `/`, so a title or FAQ answer containing the
+  // literal text `</script>` would close this tag early and turn whatever follows into live
+  // markup. Escaping `<` as its \u003c form keeps the JSON valid and the tag intact.
   const jsonLdScripts = head.jsonLd
-    .map((entry) => `<script type="application/ld+json">${JSON.stringify(entry)}</script>`)
+    .map(
+      (entry) =>
+        `<script type="application/ld+json">${JSON.stringify(entry).replace(/</g, "\\u003c")}</script>`
+    )
     .join("\n  ");
 
   // Inject an SSR content snapshot inside #root (real crawlers see this; React replaces it on mount).
-  html = html.replace(
+  html = replaceOnce(
+    html,
     '<div id="root"></div>',
     `<div id="root">${head.snapshotBody ?? ""}</div>\n  ${jsonLdScripts}`
   );
@@ -262,7 +280,9 @@ export async function renderProductListSnapshot(template: string, isCategoriesRo
 
 export async function renderProductSnapshot(template: string, slug: string): Promise<SnapshotResult> {
   const product = await queryOne<Record<string, unknown>>(
-    `SELECT p.*, c.name as category_name FROM products p JOIN categories c ON p.category_id = c.id WHERE p.slug = $1`,
+    // LEFT JOIN: products.category_id is ON DELETE SET NULL, so an inner join would 404 a
+    // live product page (and mark it noindex) as soon as its category was removed.
+    `SELECT p.*, c.name as category_name FROM products p LEFT JOIN categories c ON p.category_id = c.id WHERE p.slug = $1`,
     [slug]
   );
 
