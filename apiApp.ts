@@ -1043,7 +1043,14 @@ export function createApiApp() {
       await client.query("COMMIT");
       res.sendStatus(204);
     } catch (error) {
-      await client.query("ROLLBACK");
+      // Same guard as /api/quotes: when the transaction failed because the connection
+      // dropped, ROLLBACK fails too, and an unguarded await here would skip the logging
+      // and response below.
+      try {
+        await client.query("ROLLBACK");
+      } catch (rollbackError) {
+        console.error("Failed to roll back cart transaction", rollbackError);
+      }
       console.error("Failed to save cart", error);
       res.status(500).json({ error: "Failed to save cart" });
     } finally {
@@ -1155,7 +1162,10 @@ export function createApiApp() {
           id,
           title,
           slug,
-          COALESCE(NULLIF(excerpt, ''), LEFT(REGEXP_REPLACE(content, '\s+', ' ', 'g'), 180)) AS excerpt,
+          -- The backslash must be doubled: this SQL lives in a JS template literal, where a
+          -- lone \s collapses to a bare "s" and Postgres would strip the letter s from every
+          -- generated excerpt instead of collapsing whitespace.
+          COALESCE(NULLIF(excerpt, ''), LEFT(REGEXP_REPLACE(content, '\\s+', ' ', 'g'), 180)) AS excerpt,
           cover_image_url,
           cover_image_alt,
           author_name,
