@@ -3,6 +3,7 @@ import { Helmet } from 'react-helmet-async';
 import { ArrowRight, Copy, Download, RefreshCcw, Plus, Trash2, MessageCircle } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { encodePathSegment, logCallClick } from '../lib/utils';
+import { PRIMARY_WHATSAPP, buildWhatsAppUrl } from '../lib/contact';
 import type { BlogPost } from '../types';
 
 interface MaterialOption {
@@ -416,10 +417,10 @@ export const CalculatorPage: React.FC = () => {
                     <Download size={16} /> Export to PDF
                   </button>
                   <a
-                    href="https://wa.me/918369724730"
+                    href={buildWhatsAppUrl('Hello Team, I used the weight calculator and need a quote.')}
                     target="_blank"
                     rel="noreferrer"
-                    onClick={() => logCallClick('+918369724730', 'calculator_whatsapp')}
+                    onClick={() => logCallClick(`+${PRIMARY_WHATSAPP.e164}`, 'calculator_whatsapp')}
                     className="inline-flex items-center gap-2 rounded-full border border-[#22C55E] bg-white px-5 py-3 text-sm font-semibold text-[#22C55E] shadow-sm transition hover:bg-[#ecfdf5]"
                   >
                     <MessageCircle size={16} /> WhatsApp Manufacturer
@@ -780,10 +781,10 @@ export const CalculatorPage: React.FC = () => {
                     <ArrowRight size={16} />
                   </Link>
                   <a
-                    href="https://wa.me/918369724730"
+                    href={buildWhatsAppUrl('Hello Team, I used the weight calculator and need a quote.')}
                     target="_blank"
                     rel="noreferrer"
-                    onClick={() => logCallClick('+918369724730', 'calculator_whatsapp')}
+                    onClick={() => logCallClick(`+${PRIMARY_WHATSAPP.e164}`, 'calculator_whatsapp')}
                     className="inline-flex items-center gap-2 rounded-full border border-[#22C55E] bg-white px-5 py-3 text-sm font-semibold text-[#22C55E] shadow-sm transition hover:bg-[#ecfdf5]"
                   >
                     <MessageCircle size={16} /> WhatsApp Manufacturer

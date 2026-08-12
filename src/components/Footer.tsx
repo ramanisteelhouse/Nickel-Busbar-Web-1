@@ -1,6 +1,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { logCallClick } from '../lib/utils';
+import { EMAIL_ADDRESSES, PHONE_NUMBERS, telHref } from '../lib/contact';
 
 export const Footer: React.FC = () => {
   return (
@@ -37,24 +38,28 @@ export const Footer: React.FC = () => {
           <div>
             <p className="text-xs uppercase tracking-[0.3em] text-slate-400 mb-4">Contact</p>
             <ul className="space-y-3 text-sm text-slate-600">
-              <li>
-                <a
-                  href="mailto:ramanioffice@gmail.com"
-                  onClick={() => logCallClick('ramanioffice@gmail.com', 'footer_email')}
-                  className="hover:text-brand"
-                >
-                  ramanioffice@gmail.com
-                </a>
-              </li>
-              <li>
-                <a
-                  href="tel:+918369724730"
-                  onClick={() => logCallClick('+918369724730', 'footer')}
-                  className="hover:text-brand"
-                >
-                  +91 8369724730
-                </a>
-              </li>
+              {EMAIL_ADDRESSES.map((email) => (
+                <li key={email}>
+                  <a
+                    href={`mailto:${email}`}
+                    onClick={() => logCallClick(email, 'footer_email')}
+                    className="hover:text-brand"
+                  >
+                    {email}
+                  </a>
+                </li>
+              ))}
+              {PHONE_NUMBERS.map((number) => (
+                <li key={number.e164}>
+                  <a
+                    href={telHref(number)}
+                    onClick={() => logCallClick(`+${number.e164}`, 'footer')}
+                    className="hover:text-brand"
+                  >
+                    {number.display}
+                  </a>
+                </li>
+              ))}
               <li>PAN India + international supply support</li>
             </ul>
           </div>

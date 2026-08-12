@@ -6,6 +6,7 @@
 // the HTML response, before the client bundle ever runs. Real browsers still get the normal
 // SPA: React's createRoot().render() fully replaces this markup on mount.
 import { query, queryOne } from "./db.js";
+import { EMAIL_ADDRESSES, PHONE_NUMBERS, PRIMARY_CALL, PRIMARY_EMAIL } from "./src/lib/contact.js";
 
 const SITE_URL = "https://www.nickelbusbar.com";
 const SITE_NAME = "Ramani Steel House";
@@ -246,7 +247,10 @@ export async function renderNickelStripsLithiumSnapshot(template: string): Promi
 }
 
 export async function renderProductListSnapshot(template: string, isCategoriesRoute: boolean): Promise<SnapshotResult> {
-  const canonical = `${SITE_URL}${isCategoriesRoute ? "/categories" : "/products"}`;
+  // /categories renders the exact same product grid as /products (see ProductListingPage —
+  // only the title/description differ), so it canonicalises to /products rather than
+  // self-canonicalising. Two indexable URLs for identical content split their own ranking.
+  const canonical = `${SITE_URL}/products`;
   const title = isCategoriesRoute
     ? "Nickel Strip Categories | Pure Nickel, Nickel Plated & Battery Tabs"
     : "Nickel Strip Products | Pure Nickel & Nickel Plated Strips - Ramani Steel House";
@@ -273,6 +277,183 @@ export async function renderProductListSnapshot(template: string, isCategoriesRo
     canonical,
     jsonLd: [collectionJsonLd],
     snapshotBody,
+  });
+
+  return { status: 200, html };
+}
+
+// The content routes below have no per-URL database record behind them, so before this they
+// were served the unmodified dist/index.html — which carries the *homepage's* title and, worse,
+// `<link rel="canonical" href="https://www.nickelbusbar.com/">`. Every non-rendering crawler
+// therefore saw /about, /contact and /calculator each declare itself a duplicate of the
+// homepage. These values mirror the <Helmet> block in the matching page component
+// (AboutPage / ContactPage / CalculatorPage); update both together.
+const STATIC_ROUTE_SEO: Record<string, { title: string; description: string; jsonLd: object[]; body: string }> = {
+  "/about": {
+    title: "About Us | Ramani Steel House - Nickel Strip Manufacturer",
+    description:
+      "Ramani Steel House has manufactured nickel strips for lithium-ion battery applications since 1974, serving PAN India and 17+ international markets.",
+    jsonLd: [
+      {
+        "@context": "https://schema.org",
+        "@type": "AboutPage",
+        name: "About Ramani Steel House",
+        url: `${SITE_URL}/about`,
+        about: { "@type": "Organization", name: SITE_NAME, url: SITE_URL, foundingDate: "1974" },
+      },
+    ],
+    body: `<article>
+    <h1>Trusted Nickel Strip Manufacturer Since 1974</h1>
+    <p>We manufacture high-quality nickel strips with reliable delivery, competitive pricing, and technical support, supplying PAN India and exporting to 17+ countries. Our core focus is nickel strips for lithium-ion battery applications.</p>
+  </article>`,
+  },
+  "/contact": {
+    title: "Contact Us | Ramani Steel House",
+    description:
+      "Contact Ramani Steel House, a nickel strip manufacturer in India, for nickel strip and nickel busbar enquiries. Request a quote for lithium-ion battery manufacturing applications.",
+    jsonLd: [
+      {
+        "@context": "https://schema.org",
+        "@type": "ContactPage",
+        name: "Contact Ramani Steel House",
+        url: `${SITE_URL}/contact`,
+        about: {
+          "@type": "Organization",
+          name: SITE_NAME,
+          email: PRIMARY_EMAIL,
+          telephone: `+${PRIMARY_CALL.e164}`,
+          contactPoint: PHONE_NUMBERS.map((number) => ({
+            "@type": "ContactPoint",
+            telephone: `+${number.e164}`,
+            contactType: "sales",
+            areaServed: "IN",
+          })),
+        },
+      },
+    ],
+    body: `<article>
+    <h1>Contact Us</h1>
+    <p>For product enquiries, custom requirements, and bulk orders.</p>
+    <p>Email: ${EMAIL_ADDRESSES.join(" / ")}</p>
+    <p>Phone: ${PHONE_NUMBERS.map((n) => n.display).join(" / ")}</p>
+  </article>`,
+  },
+  "/calculator": {
+    title: "Nickel Alloy Weight Calculator | Nickel Strip Weight Tool",
+    description:
+      "Calculate nickel strip and alloy weight instantly with a premium calculator built for battery, EV, and industrial manufacturing applications.",
+    jsonLd: [
+      {
+        "@context": "https://schema.org",
+        "@type": "WebApplication",
+        name: "Nickel Alloy Weight Calculator",
+        description:
+          "A weight calculator for nickel strips, sheets, busbars, foil, wire and coil used in battery and industrial manufacturing.",
+        url: `${SITE_URL}/calculator`,
+        applicationCategory: "UtilitiesApplication",
+        operatingSystem: "Any",
+        publisher: { "@type": "Organization", name: SITE_NAME, url: SITE_URL },
+      },
+    ],
+    body: `<article>
+    <h1>Nickel Alloy Weight Calculator</h1>
+    <p>Instantly calculate weight for nickel strips, sheets, busbars, foil, wire and coil in mm or inches. Built for battery pack engineers, EV manufacturers and industrial metal buyers.</p>
+  </article>`,
+  },
+};
+
+export function isStaticSnapshotRoute(pathname: string): boolean {
+  return Object.prototype.hasOwnProperty.call(STATIC_ROUTE_SEO, pathname);
+}
+
+export async function renderStaticRouteSnapshot(template: string, pathname: string): Promise<SnapshotResult> {
+  // hasOwnProperty rather than a bare lookup: `/constructor` and `/toString` would otherwise
+  // resolve to inherited Object members and pass the truthiness check below with no title.
+  const route = isStaticSnapshotRoute(pathname) ? STATIC_ROUTE_SEO[pathname] : undefined;
+  if (!route) {
+    return { status: 200, html: template };
+  }
+
+  const html = injectHead(template, {
+    title: route.title,
+    description: route.description,
+    canonical: `${SITE_URL}${pathname}`,
+    ogImage: SITE_LOGO_URL,
+    jsonLd: route.jsonLd,
+    snapshotBody: route.body,
+  });
+
+  return { status: 200, html };
+}
+
+export async function renderBlogListSnapshot(template: string): Promise<SnapshotResult> {
+  const canonical = `${SITE_URL}/blog`;
+  const title = "Blog | Nickel Strips, Battery Materials & Manufacturing Guides";
+  const description =
+    "Read technical guides and industry insights from Ramani Steel House on nickel strips, battery tabs, and lithium manufacturing.";
+
+  let posts: Array<{ title: string; slug: string; excerpt: string | null }> = [];
+  try {
+    posts = await query<{ title: string; slug: string; excerpt: string | null }>(
+      `SELECT title, slug, excerpt FROM blog_posts
+       WHERE status = 'published' AND (published_at IS NULL OR published_at <= now())
+         AND slug IS NOT NULL AND slug <> ''
+       ORDER BY published_at DESC NULLS LAST, id DESC
+       LIMIT 20`
+    );
+  } catch (error) {
+    // A listing with no posts is still a better snapshot than the homepage shell, so a failed
+    // query degrades to the heading-only body rather than losing the corrected head tags.
+    console.warn("[seo] Blog list snapshot could not load posts; rendering heading only.", error);
+  }
+
+  // Without this, /blog was a dead end for non-rendering crawlers: the post links exist only
+  // in the client bundle, so nothing but the sitemap pointed at individual articles.
+  const postsHtml = posts.length
+    ? `<ul>${posts
+        .map(
+          (post) =>
+            `<li><a href="${SITE_URL}/blog/${encodeURIComponent(post.slug)}">${escapeHtml(post.title)}</a>${
+              post.excerpt ? ` — ${escapeHtml(post.excerpt)}` : ""
+            }</li>`
+        )
+        .join("")}</ul>`
+    : "";
+
+  const jsonLd: object[] = [
+    {
+      "@context": "https://schema.org",
+      "@type": "CollectionPage",
+      name: title,
+      description,
+      url: canonical,
+    },
+  ];
+
+  if (posts.length) {
+    jsonLd.push({
+      "@context": "https://schema.org",
+      "@type": "ItemList",
+      itemListElement: posts.map((post, index) => ({
+        "@type": "ListItem",
+        position: index + 1,
+        name: post.title,
+        url: `${SITE_URL}/blog/${encodeURIComponent(post.slug)}`,
+      })),
+    });
+  }
+
+  const html = injectHead(template, {
+    title,
+    description,
+    canonical,
+    ogImage: SITE_LOGO_URL,
+    jsonLd,
+    snapshotBody: `<article>
+    <h1>Latest Blog Articles</h1>
+    <p>${escapeHtml(description)}</p>
+    ${postsHtml}
+  </article>`,
   });
 
   return { status: 200, html };
@@ -310,6 +491,12 @@ export async function renderProductSnapshot(template: string, slug: string): Pro
 
   const applications = Array.isArray(product.applications) ? (product.applications as string[]) : [];
 
+  // Products quoted on enquiry have no price, and `Number(price) || 0` used to publish those
+  // as a `price: 0` InStock Offer — a structurally valid claim that the item is free. An
+  // absent price means "no offer to advertise", so the Offer node is omitted entirely.
+  const numericPrice = Number(product.price);
+  const hasPrice = Number.isFinite(numericPrice) && numericPrice > 0;
+
   const productJsonLd = {
     "@context": "https://schema.org",
     "@type": "Product",
@@ -319,13 +506,18 @@ export async function renderProductSnapshot(template: string, slug: string): Pro
     brand: { "@type": "Brand", name: SITE_NAME },
     category: (product.category_name as string) || "Nickel Strips",
     sku: product.slug,
-    offers: {
-      "@type": "Offer",
-      priceCurrency: "INR",
-      price: Number(product.price) || 0,
-      availability: Number(product.stock) > 0 ? "https://schema.org/InStock" : "https://schema.org/OutOfStock",
-      url: canonical,
-    },
+    ...(hasPrice
+      ? {
+          offers: {
+            "@type": "Offer",
+            priceCurrency: "INR",
+            price: numericPrice,
+            availability:
+              Number(product.stock) > 0 ? "https://schema.org/InStock" : "https://schema.org/OutOfStock",
+            url: canonical,
+          },
+        }
+      : {}),
   };
 
   const breadcrumbJsonLd = {

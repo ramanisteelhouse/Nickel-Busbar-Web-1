@@ -23,6 +23,7 @@ import { motion } from 'motion/react';
 import { Helmet } from 'react-helmet-async';
 import type { Product, Category, BlogPost } from '../types';
 import { buildImageAlt, encodePathSegment, resolveImageSrc } from '../lib/utils';
+import { PHONE_NUMBERS, PRIMARY_CALL, PRIMARY_EMAIL } from '../lib/contact';
 import { Tilt3D, Reveal } from '../components/Tilt3D';
 
 const fallbackShowcaseImage = '/img/icon-logo.jpg';
@@ -144,10 +145,6 @@ const reviewHighlights = [
     rating: 4,
   },
 ];
-
-const aggregateRatingValue = (
-  reviewHighlights.reduce((sum, review) => sum + review.rating, 0) / reviewHighlights.length
-).toFixed(1);
 
 export const HomePage: React.FC = () => {
   const [dynamicProducts, setDynamicProducts] = React.useState<Product[]>([]);
@@ -312,8 +309,14 @@ export const HomePage: React.FC = () => {
             '@type': 'LocalBusiness',
             name: 'Ramani Steel House',
             image: 'https://www.nickelbusbar.com/img/logo.png',
-            telephone: '+91 8369724730',
-            email: 'ramanioffice@gmail.com',
+            telephone: `+${PRIMARY_CALL.e164}`,
+            email: PRIMARY_EMAIL,
+            contactPoint: PHONE_NUMBERS.map((number) => ({
+              '@type': 'ContactPoint',
+              telephone: `+${number.e164}`,
+              contactType: 'sales',
+              areaServed: 'IN',
+            })),
             address: {
               '@type': 'PostalAddress',
               streetAddress: 'Marine Lines East',
@@ -338,11 +341,10 @@ export const HomePage: React.FC = () => {
                 closes: '18:00',
               }
             ],
-            aggregateRating: {
-              '@type': 'AggregateRating',
-              ratingValue: aggregateRatingValue,
-              reviewCount: reviewHighlights.length,
-            },
+            // No aggregateRating here on purpose: reviewHighlights below is hardcoded
+            // placeholder copy attributed to anonymous job titles, and marking that up as a
+            // real rating is self-serving review markup — a manual-action risk that would
+            // cost rich results site-wide. It stays as plain on-page testimonial content.
           })}
         </script>
         <script type="application/ld+json">

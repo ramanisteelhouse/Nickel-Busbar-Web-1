@@ -200,10 +200,10 @@ export const ProductListingPage: React.FC = () => {
               : 'Shop nickel strips, nickel-plated strips, and battery tabs manufactured in Mumbai, India. PAN India supply and export to 17+ countries. Request bulk and custom quotes.'
           }
         />
-        <link
-          rel="canonical"
-          href={isCategoriesRoute ? 'https://www.nickelbusbar.com/categories' : 'https://www.nickelbusbar.com/products'}
-        />
+        {/* /categories renders this same component with the same product grid, so it
+            canonicalises to /products instead of self-canonicalising — otherwise the two
+            URLs compete as duplicates. Mirrored in seoSnapshot.renderProductListSnapshot. */}
+        <link rel="canonical" href="https://www.nickelbusbar.com/products" />
       </Helmet>
       <div className="pt-28 pb-24 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="mb-12">

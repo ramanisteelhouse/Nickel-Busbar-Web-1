@@ -6,7 +6,8 @@ const SITE_URL = "https://www.nickelbusbar.com";
 const staticPages: Array<{ path: string; changefreq: string; priority: string }> = [
   { path: "/", changefreq: "weekly", priority: "1.0" },
   { path: "/products", changefreq: "weekly", priority: "0.9" },
-  { path: "/categories", changefreq: "weekly", priority: "0.7" },
+  // /categories is deliberately absent: it serves the same grid as /products and now
+  // canonicalises there, so submitting it would ask Google to index a known duplicate.
   { path: "/about", changefreq: "monthly", priority: "0.6" },
   { path: "/contact", changefreq: "monthly", priority: "0.5" },
   { path: "/calculator", changefreq: "monthly", priority: "0.7" },

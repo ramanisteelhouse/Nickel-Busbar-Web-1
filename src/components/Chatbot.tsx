@@ -5,9 +5,13 @@ import { useNavigate } from 'react-router-dom';
 import { cn, logCallClick, getSessionValue, setSessionValue } from '../lib/utils';
 import { useLanguage } from '../i18n/LanguageProvider';
 
-const SALES_PHONE = '+918369724730';
-const SALES_EMAIL = 'ramanioffice@gmail.com';
-const SALES_WHATSAPP_URL = 'https://wa.me/918369724730?text=Hello%20Team%2C%20we%20need%20a%20quote%20for%20nickel%20strips%20or%20busbars.';
+import { PRIMARY_CALL, PRIMARY_EMAIL, buildWhatsAppUrl } from '../lib/contact';
+
+const SALES_PHONE = `+${PRIMARY_CALL.e164}`;
+const SALES_EMAIL = PRIMARY_EMAIL;
+const SALES_WHATSAPP_URL = buildWhatsAppUrl(
+  'Hello Team, we need a quote for nickel strips or busbars.'
+);
 const TEASER_SEEN_KEY = 'chatbot_teaser_seen';
 
 export const Chatbot: React.FC = () => {
@@ -93,11 +97,16 @@ export const Chatbot: React.FC = () => {
       className: 'bg-[#22C55E]',
     },
     {
+      // Opens the enquiry form rather than mailto, so the lead reaches the CRM.
       key: 'email',
       icon: Mail,
       label: t('product.email'),
-      onClick: () => logCallClick(SALES_EMAIL, 'chatbot_quick_action_email'),
-      href: `mailto:${SALES_EMAIL}?subject=Product%20Enquiry`,
+      onClick: () => {
+        logCallClick(SALES_EMAIL, 'chatbot_quick_action_email');
+        setIsOpen(false);
+        navigate('/products?enquiry=1');
+      },
+      href: undefined as string | undefined,
       className: 'bg-brand',
     },
   ];
@@ -181,19 +190,29 @@ export const Chatbot: React.FC = () => {
             </div>
 
             <div className="flex gap-1.5 overflow-x-auto border-t border-slate-200 bg-white px-3 pt-2.5 shrink-0">
-              {quickActions.map(({ key, icon: Icon, label, onClick, href, external }) => (
-                <a
-                  key={key}
-                  href={href}
-                  target={external ? '_blank' : undefined}
-                  rel={external ? 'noreferrer' : undefined}
-                  onClick={onClick}
-                  className="flex items-center gap-1 whitespace-nowrap rounded-full border border-slate-200 px-2.5 py-1 text-xs font-medium text-brand-dark transition-colors hover:bg-slate-100"
-                >
-                  <Icon size={12} />
-                  {label}
-                </a>
-              ))}
+              {quickActions.map(({ key, icon: Icon, label, onClick, href, external }) => {
+                const actionClassName =
+                  'flex items-center gap-1 whitespace-nowrap rounded-full border border-slate-200 px-2.5 py-1 text-xs font-medium text-brand-dark transition-colors hover:bg-slate-100';
+                // Actions without an href navigate in-app instead of handing off.
+                return href ? (
+                  <a
+                    key={key}
+                    href={href}
+                    target={external ? '_blank' : undefined}
+                    rel={external ? 'noreferrer' : undefined}
+                    onClick={onClick}
+                    className={actionClassName}
+                  >
+                    <Icon size={12} />
+                    {label}
+                  </a>
+                ) : (
+                  <button key={key} type="button" onClick={onClick} className={actionClassName}>
+                    <Icon size={12} />
+                    {label}
+                  </button>
+                );
+              })}
               <button
                 onClick={() => { setIsOpen(false); navigate('/products?enquiry=1'); }}
                 className="flex items-center gap-1 whitespace-nowrap rounded-full border border-slate-200 px-2.5 py-1 text-xs font-medium text-brand-dark transition-colors hover:bg-slate-100"

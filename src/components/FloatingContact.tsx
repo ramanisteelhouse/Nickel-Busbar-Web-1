@@ -4,6 +4,16 @@ import { useNavigate } from 'react-router-dom';
 import { useLanguage } from '../i18n/LanguageProvider';
 import { motion } from 'motion/react';
 import { logCallClick } from '../lib/utils';
+import {
+  PRIMARY_CALL,
+  PRIMARY_EMAIL,
+  PRIMARY_WHATSAPP,
+  buildWhatsAppUrl,
+  telHref,
+} from '../lib/contact';
+
+const WHATSAPP_MESSAGE =
+  'Hello Team, we need a quote for nickel strips for lithium-ion batteries.';
 
 export const FloatingContact: React.FC = () => {
   const navigate = useNavigate();
@@ -28,31 +38,36 @@ export const FloatingContact: React.FC = () => {
         className="flex flex-col overflow-hidden rounded-l-2xl shadow-2xl border border-white/10"
       >
         <motion.a
-          href="tel:+918369724730"
+          href={telHref(PRIMARY_CALL)}
           aria-label={t('product.call')}
-          onClick={() => logCallClick('+918369724730', 'floating_contact')}
+          onClick={() => logCallClick(`+${PRIMARY_CALL.e164}`, 'floating_contact')}
           whileHover={{ x: -6 }}
           className="contact-item call flex items-center gap-2 bg-brand-dark px-4 py-3 text-sm font-semibold text-white transition-transform"
         >
           <Phone size={16} />
           <span className="hidden sm:inline">{t('product.call')}</span>
         </motion.a>
-        <motion.a
-          href="mailto:sales@ramanisteel.com?subject=Nickel%20Strip%20Enquiry"
+        {/* Opens the enquiry form rather than mailto: a mail client hand-off never
+            reaches the server, so the lead would never arrive in the CRM. */}
+        <motion.button
+          type="button"
           aria-label={t('product.email')}
-          onClick={() => logCallClick('sales@ramanisteel.com', 'floating_contact_email')}
+          onClick={() => {
+            logCallClick(PRIMARY_EMAIL, 'floating_contact_email');
+            navigate('/products?enquiry=1');
+          }}
           whileHover={{ x: -6 }}
-          className="contact-item email flex items-center gap-2 bg-brand px-4 py-3 text-sm font-semibold text-white transition-transform"
+          className="contact-item email flex items-center gap-2 bg-brand px-4 py-3 text-sm font-semibold text-white transition-transform text-left"
         >
           <Mail size={16} />
           <span className="hidden sm:inline">{t('product.email')}</span>
-        </motion.a>
+        </motion.button>
         <motion.a
-          href="https://wa.me/918369724730?text=Hello%20Team%2C%20we%20need%20a%20quote%20for%20nickel%20strips%20for%20lithium-ion%20batteries."
+          href={buildWhatsAppUrl(WHATSAPP_MESSAGE)}
           target="_blank"
           rel="noreferrer"
           aria-label={t('product.whatsapp')}
-          onClick={() => logCallClick('+918369724730', 'floating_contact_whatsapp')}
+          onClick={() => logCallClick(`+${PRIMARY_WHATSAPP.e164}`, 'floating_contact_whatsapp')}
           whileHover={{ x: -6 }}
           className="contact-item whatsapp flex items-center gap-2 bg-[#22C55E] px-4 py-3 text-sm font-semibold text-white transition-transform"
         >

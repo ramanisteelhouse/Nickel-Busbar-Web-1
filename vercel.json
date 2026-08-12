@@ -25,10 +25,10 @@
     { "src": "/cart/?", "dest": "/index.html" },
     { "src": "/checkout/?", "dest": "/index.html" },
     { "src": "/login/?", "dest": "/index.html" },
-    { "src": "/about/?", "dest": "/index.html" },
-    { "src": "/contact/?", "dest": "/index.html" },
-    { "src": "/calculator/?", "dest": "/index.html" },
-    { "src": "/blog/?", "dest": "/index.html" },
+    { "src": "/about/?", "dest": "/api/render?path=/about" },
+    { "src": "/contact/?", "dest": "/api/render?path=/contact" },
+    { "src": "/calculator/?", "dest": "/api/render?path=/calculator" },
+    { "src": "/blog/?", "dest": "/api/render?path=/blog" },
     { "src": "/blog/[^/]+/?", "dest": "/api/render" },
     { "src": "/(.*)", "status": 404, "dest": "/404.html" }
   ]

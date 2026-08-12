@@ -134,6 +134,10 @@ export const ProductDetailPage: React.FC<{ onAddToCart: (p: Product) => void }> 
   const pageTitle = `${product.name} | Nickel Strips Manufacturer`;
   const pageDescription = `${product.name} by Ramani Steel House. ${product.description || 'Industrial-grade nickel strip for lithium-ion battery and precision applications.'}`.slice(0, 160);
   const imageUrl = resolveImageSrc(product.image || '/img/logo.png');
+  // Enquiry-only products carry no price; publishing `price: 0` would advertise them as free
+  // in structured data, so the Offer node is omitted instead. Mirrored in seoSnapshot.ts.
+  const numericPrice = Number(product.price);
+  const hasPrice = Number.isFinite(numericPrice) && numericPrice > 0;
 
   return (
     <div className="pt-28 pb-24 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -160,13 +164,17 @@ export const ProductDetailPage: React.FC<{ onAddToCart: (p: Product) => void }> 
             brand: { '@type': 'Brand', name: 'Ramani Steel House' },
             category: product.category_name || 'Nickel Strips',
             sku: product.slug,
-            offers: {
-              '@type': 'Offer',
-              priceCurrency: 'INR',
-              price: Number(product.price) || 0,
-              availability: product.stock > 0 ? 'https://schema.org/InStock' : 'https://schema.org/OutOfStock',
-              url: canonicalUrl,
-            },
+            ...(hasPrice
+              ? {
+                  offers: {
+                    '@type': 'Offer',
+                    priceCurrency: 'INR',
+                    price: numericPrice,
+                    availability: product.stock > 0 ? 'https://schema.org/InStock' : 'https://schema.org/OutOfStock',
+                    url: canonicalUrl,
+                  },
+                }
+              : {}),
           })}
         </script>
         <script type="application/ld+json">

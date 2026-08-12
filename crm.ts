@@ -359,7 +359,12 @@ export const processQueue = async (): Promise<void> => {
   }
 };
 
+let workerStarted = false;
+
+/** Idempotent: createApiApp() may run more than once per process (tests, cold starts). */
 export const startCrmSyncWorker = (): void => {
+  if (workerStarted) return;
+  workerStarted = true;
   const timer = setInterval(() => void processQueue(), CRM_POLL_INTERVAL_MS);
   timer.unref?.();
   void processQueue();

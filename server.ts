@@ -5,9 +5,12 @@ import fs from "fs";
 import createApiApp from "./apiApp.js";
 import {
   renderBlogSnapshot,
+  renderBlogListSnapshot,
   renderProductSnapshot,
   renderProductListSnapshot,
   renderNickelStripsLithiumSnapshot,
+  renderStaticRouteSnapshot,
+  isStaticSnapshotRoute,
 } from "./seoSnapshot.js";
 
 const knownStaticRoutes = new Set([
@@ -72,32 +75,42 @@ async function startServer() {
       // HTML response — see seoSnapshot.ts for why (non-JS crawlers can't see the SPA's
       // client-rendered content otherwise). Real browsers still get the normal SPA; React
       // fully replaces this markup on mount.
-      const blogMatch = requestPath.match(/^\/blog\/([^/]+)$/);
-      const productMatch = requestPath.match(/^\/product\/([^/]+)$/);
-      const isProductList = requestPath === "/products" || requestPath === "/categories";
-      if (
-        requestPath === "/blog/nickel-strips-lithium-batteries" ||
-        blogMatch ||
-        productMatch ||
-        isProductList
-      ) {
-        try {
-          const { status, html } =
-            requestPath === "/blog/nickel-strips-lithium-batteries"
-              ? await renderNickelStripsLithiumSnapshot(indexHtmlTemplate)
-              : isProductList
-              ? await renderProductListSnapshot(indexHtmlTemplate, requestPath === "/categories")
-              : blogMatch
-              ? await renderBlogSnapshot(indexHtmlTemplate, decodeURIComponent(blogMatch[1]))
-              : await renderProductSnapshot(indexHtmlTemplate, decodeURIComponent(productMatch![1]));
+      const renderSnapshot = () => {
+        if (requestPath === "/blog/nickel-strips-lithium-batteries") {
+          return renderNickelStripsLithiumSnapshot(indexHtmlTemplate);
+        }
+        if (requestPath === "/products" || requestPath === "/categories") {
+          return renderProductListSnapshot(indexHtmlTemplate, requestPath === "/categories");
+        }
+        if (requestPath === "/blog") {
+          return renderBlogListSnapshot(indexHtmlTemplate);
+        }
+        if (isStaticSnapshotRoute(requestPath)) {
+          return renderStaticRouteSnapshot(indexHtmlTemplate, requestPath);
+        }
+        const blogMatch = requestPath.match(/^\/blog\/([^/]+)$/);
+        if (blogMatch) {
+          return renderBlogSnapshot(indexHtmlTemplate, decodeURIComponent(blogMatch[1]));
+        }
+        const productMatch = requestPath.match(/^\/product\/([^/]+)$/);
+        if (productMatch) {
+          return renderProductSnapshot(indexHtmlTemplate, decodeURIComponent(productMatch[1]));
+        }
+        return null;
+      };
+
+      try {
+        const pending = renderSnapshot();
+        if (pending) {
+          const { status, html } = await pending;
           if (status === 404) {
             res.setHeader("X-Robots-Tag", "noindex, nofollow, noarchive");
           }
           return res.status(status).send(html);
-        } catch (error) {
-          console.error("Failed to render SEO snapshot, falling back to plain SPA shell", error);
-          // Fall through to the default SPA response below.
         }
+      } catch (error) {
+        console.error("Failed to render SEO snapshot, falling back to plain SPA shell", error);
+        // Fall through to the default SPA response below.
       }
 
       const statusCode = isKnownSpaRoute(requestPath) ? 200 : 404;

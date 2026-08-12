@@ -6,6 +6,7 @@ import { CartItem, Country } from '../types';
 import { useLanguage } from '../i18n/LanguageProvider';
 import { getCountryOptions } from '../lib/countryCodes';
 import { getProductUnitLabel, normalizeProductUnit } from '../lib/utils';
+import { PRIMARY_WHATSAPP } from '../lib/contact';
 
 interface CheckoutPageProps {
   cart: CartItem[];
@@ -27,6 +28,8 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({ cart }) => {
   const countryOptions = useMemo(() => getCountryOptions(), []);
   const [selectedCountry, setSelectedCountry] = useState<Country | null>(null);
   const [countrySearchInput, setCountrySearchInput] = useState('');
+  const [customerName, setCustomerName] = useState('');
+  const [customerEmail, setCustomerEmail] = useState('');
   const [phoneNumber, setPhoneNumber] = useState('');
   const [gstNumber, setGstNumber] = useState('');
   const [pinCode, setPinCode] = useState('');
@@ -115,9 +118,20 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({ cart }) => {
   };
 
   const handleWhatsAppRFQ = async () => {
-    const businessPhoneNumber = (import.meta.env.VITE_WHATSAPP_BUSINESS_NUMBER as string | undefined)?.trim() || '8369724730';
-    if (!phoneNumber.trim()) {
-      setSaveError('Mobile number is required to continue.');
+    // Fallback must be full international format - wa.me rejects a bare 10-digit number.
+    const businessPhoneNumber =
+      (import.meta.env.VITE_WHATSAPP_BUSINESS_NUMBER as string | undefined)?.trim() ||
+      PRIMARY_WHATSAPP.e164;
+    const trimmedName = customerName.trim();
+    const trimmedEmail = customerEmail.trim();
+
+    // The RFQ is a sales lead, so it is worthless without a way to reply.
+    if (!trimmedName || !trimmedEmail || !phoneNumber.trim()) {
+      setSaveError('Name, email and mobile number are required to continue.');
+      return;
+    }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmedEmail)) {
+      setSaveError('Please enter a valid email address.');
       return;
     }
 
@@ -129,6 +143,8 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({ cart }) => {
 
     let message = `*RFQ from Ramani Steel House*%0A`;
     message += `--------------------------%0A`;
+    message += `Name: ${trimmedName}%0A`;
+    message += `Email: ${trimmedEmail}%0A`;
     message += `Customer Phone: ${customerPhone || 'N/A'}%0A`;
     message += `Delivery PIN: ${pinCode || 'N/A'}%0A`;
     message += `Shipping: ${selectedShipping}%0A`;
@@ -153,6 +169,8 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({ cart }) => {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           customer: {
+            full_name: trimmedName,
+            email: trimmedEmail,
             phone_country_code: countryCode || null,
             phone_number: phoneNumber || null,
             phone_full: customerPhone || null,
@@ -237,6 +255,36 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({ cart }) => {
         <div className="lg:col-span-2 space-y-10">
           <div className="bg-white rounded-3xl border border-zinc-100 shadow-sm p-8 space-y-6">
             <h2 className="text-2xl font-bold text-zinc-900">{t('checkout.detailsTitle')}</h2>
+
+            <div className="space-y-4">
+              <label className="block text-sm font-semibold text-zinc-900" htmlFor="rfq-name">
+                Full Name
+              </label>
+              <input
+                id="rfq-name"
+                type="text"
+                autoComplete="name"
+                placeholder="Enter your full name"
+                className="w-full rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm text-zinc-900 outline-none"
+                value={customerName}
+                onChange={(e) => setCustomerName(e.target.value)}
+              />
+            </div>
+
+            <div className="space-y-4">
+              <label className="block text-sm font-semibold text-zinc-900" htmlFor="rfq-email">
+                Email Address
+              </label>
+              <input
+                id="rfq-email"
+                type="email"
+                autoComplete="email"
+                placeholder="Enter your email address"
+                className="w-full rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm text-zinc-900 outline-none"
+                value={customerEmail}
+                onChange={(e) => setCustomerEmail(e.target.value)}
+              />
+            </div>
 
             <div className="space-y-4">
               <label className="block text-sm font-semibold text-zinc-900">{t('checkout.mobileLabel')}</label>

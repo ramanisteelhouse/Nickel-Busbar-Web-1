@@ -1,4 +1,5 @@
 import { query } from "./db.js";
+import { emailListSentence, phoneListSentence } from "./src/lib/contact.js";
 
 // Offline keyword-matching chatbot: answers are drawn entirely from products/blog_posts
 // already in the database plus a handful of static site facts below. No external API call.
@@ -167,7 +168,8 @@ async function getKnowledgeBase(): Promise<{ entries: KBEntry[]; docFreq: Map<st
 }
 
 const CONTACT_LINE =
-  "You can reach our team directly at ramanioffice@gmail.com, call/WhatsApp +91 8369724730, or submit a product enquiry at /products?enquiry=1.";
+  `You can reach our team directly at ${emailListSentence()}, call/WhatsApp ${phoneListSentence()}, ` +
+  "or submit a product enquiry at /products?enquiry=1.";
 
 const STATIC_INTENTS: StaticIntent[] = [
   {

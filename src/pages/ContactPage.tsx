@@ -1,6 +1,7 @@
 import React from 'react';
 import { Helmet } from 'react-helmet-async';
 import { logCallClick } from '../lib/utils';
+import { EMAIL_ADDRESSES, PHONE_NUMBERS, PRIMARY_CALL, PRIMARY_EMAIL, telHref } from '../lib/contact';
 
 const SITE_URL = 'https://www.nickelbusbar.com';
 
@@ -64,8 +65,15 @@ export const ContactPage: React.FC = () => {
     about: {
       '@type': 'Organization',
       name: 'Ramani Steel House',
-      email: 'ramanioffice@gmail.com',
-      telephone: '+91 8369724730',
+      email: PRIMARY_EMAIL,
+      telephone: `+${PRIMARY_CALL.e164}`,
+      contactPoint: PHONE_NUMBERS.map((number) => ({
+        '@type': 'ContactPoint',
+        telephone: `+${number.e164}`,
+        contactType: 'sales',
+        areaServed: 'IN',
+        availableLanguage: ['en', 'hi'],
+      })),
     },
   };
 
@@ -89,19 +97,33 @@ export const ContactPage: React.FC = () => {
           <div className="rounded-2xl border border-slate-200 bg-white p-6 space-y-3 h-fit">
             <p>
               <span className="font-semibold">Email:</span>{' '}
-              <a
-                href="mailto:ramanioffice@gmail.com"
-                onClick={() => logCallClick('ramanioffice@gmail.com', 'contact_page_email')}
-                className="hover:text-brand-dark"
-              >
-                ramanioffice@gmail.com
-              </a>
+              {EMAIL_ADDRESSES.map((email, index) => (
+                <React.Fragment key={email}>
+                  {index > 0 ? ' / ' : ''}
+                  <a
+                    href={`mailto:${email}`}
+                    onClick={() => logCallClick(email, 'contact_page_email')}
+                    className="hover:text-brand-dark"
+                  >
+                    {email}
+                  </a>
+                </React.Fragment>
+              ))}
             </p>
             <p>
-              <span className="font-semibold">Phone:</span>{' '}
-              <a href="tel:+918369724730" onClick={() => logCallClick('+918369724730', 'contact_page')} className="hover:text-brand-dark">
-                +91 8369724730
-              </a>
+              <span className="font-semibold">Phone / WhatsApp:</span>{' '}
+              {PHONE_NUMBERS.map((number, index) => (
+                <React.Fragment key={number.e164}>
+                  {index > 0 ? ' / ' : ''}
+                  <a
+                    href={telHref(number)}
+                    onClick={() => logCallClick(`+${number.e164}`, 'contact_page')}
+                    className="hover:text-brand-dark"
+                  >
+                    {number.display}
+                  </a>
+                </React.Fragment>
+              ))}
             </p>
             <p><span className="font-semibold">Service Coverage:</span> PAN India and international supply support</p>
             <div className="pt-2">
