@@ -6,6 +6,24 @@ import bcrypt from "bcryptjs";
 import { randomUUID, timingSafeEqual } from "crypto";
 import pool, { query, queryOne } from "./db.js";
 import { answerFromKnowledgeBase } from "./chatKnowledgeBase.js";
+import type { CrmLead } from "./crm.js";
+import {
+  CRM_API_KEY,
+  acknowledgeLead,
+  buildEnquiryLead,
+  buildQuoteLead,
+  enqueueLead,
+  ensureCrmSyncSchema,
+  listLeads,
+  retryFailedLeads,
+  startCrmSyncWorker,
+} from "./crm.js";
+import {
+  EMAIL_ADDRESSES,
+  PRIMARY_EMAIL,
+  emailListSentence,
+  phoneListSentence,
+} from "./src/lib/contact.js";
 import dotenv from "dotenv";
 import nodemailer from "nodemailer";
 import twilio from "twilio";
@@ -26,10 +44,15 @@ const SMTP_PORT = Number(process.env.SMTP_PORT || 587);
 const SMTP_USER = process.env.SMTP_USER;
 const SMTP_PASS = process.env.SMTP_PASS;
 const SMTP_FROM = process.env.SMTP_FROM;
-const ENQUIRY_NOTIFY_EMAILS = (process.env.ENQUIRY_NOTIFY_EMAILS || "")
-  .split(",")
-  .map((email) => email.trim())
-  .filter(Boolean);
+// Falls back to the published addresses so lead alerts still arrive if the env
+// var is missing, rather than silently going nowhere.
+const ENQUIRY_NOTIFY_EMAILS = (() => {
+  const configured = (process.env.ENQUIRY_NOTIFY_EMAILS || "")
+    .split(",")
+    .map((email) => email.trim())
+    .filter(Boolean);
+  return configured.length > 0 ? configured : [...EMAIL_ADDRESSES];
+})();
 const TWILIO_ACCOUNT_SID = process.env.TWILIO_ACCOUNT_SID;
 const TWILIO_AUTH_TOKEN = process.env.TWILIO_AUTH_TOKEN;
 const TWILIO_WHATSAPP_FROM = process.env.TWILIO_WHATSAPP_FROM;
@@ -38,6 +61,9 @@ const EXCHANGE_RATE_API_KEY = process.env.EXCHANGE_RATE_API_KEY;
 const IPSTACK_API_KEY = process.env.IPSTACK_API_KEY;
 const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID;
 const MAX_QUOTE_ITEMS = 200;
+const MAX_CART_ITEMS = 200;
+const MAX_CART_QUANTITY = 1_000_000;
+const MAX_PREFERENCES_BYTES = 16 * 1024;
 
 const emailTransporter =
   SMTP_HOST && SMTP_USER && SMTP_PASS
@@ -59,6 +85,21 @@ const whatsappClient =
 let adsTableMissingWarned = false;
 const exchangeRateCache = new Map<string, { expiresAt: number; payload: Record<string, unknown> }>();
 const localizationCache = new Map<string, { expiresAt: number; payload: Record<string, string> }>();
+// This cache is keyed by client IP, so without pruning it grows for the life of the process
+// (expiry was only ever consulted on read, never used to evict). Called before each insert:
+// drop everything already expired, then, if still over the ceiling, evict oldest-first.
+const MAX_LOCALIZATION_CACHE_ENTRIES = 5_000;
+const pruneLocalizationCache = () => {
+  const now = Date.now();
+  for (const [key, entry] of localizationCache) {
+    if (entry.expiresAt <= now) localizationCache.delete(key);
+  }
+  // Map preserves insertion order, so the oldest surviving entries come first.
+  for (const key of localizationCache.keys()) {
+    if (localizationCache.size <= MAX_LOCALIZATION_CACHE_ENTRIES) break;
+    localizationCache.delete(key);
+  }
+};
 let ipApiCooldownUntil = 0;
 
 type EnquiryNotificationPayload = {
@@ -97,7 +138,7 @@ const sendNotification = async (subject: string, message: string) => {
   const tasks: Promise<unknown>[] = [];
 
   if (emailTransporter && ENQUIRY_NOTIFY_EMAILS.length > 0) {
-    const fromAddress = SMTP_FROM || SMTP_USER || "ramanioffice@gmail.com";
+    const fromAddress = SMTP_FROM || SMTP_USER || PRIMARY_EMAIL;
     tasks.push(
       emailTransporter.sendMail({
         from: fromAddress,
@@ -142,6 +183,8 @@ const formatQuoteMessage = (payload: QuoteNotificationPayload) => {
   const { customer, items, summary } = payload;
   const lines = [
     `New quote / cart request received (#${payload.id})`,
+    `Name: ${customer.full_name || "N/A"}`,
+    `Email: ${customer.email || "N/A"}`,
     `Phone: ${customer.phone_full || customer.phone_number || "N/A"}`,
     `GST Number: ${customer.gst_number || "N/A"}`,
     `Pin Code: ${customer.pin_code || "N/A"}`,
@@ -166,7 +209,7 @@ const sendQuoteNotifications = (payload: QuoteNotificationPayload) =>
 const sendWelcomeEmail = async (user: { name?: string | null; email: string }) => {
   if (!emailTransporter) return;
 
-  const fromAddress = SMTP_FROM || SMTP_USER || "ramanioffice@gmail.com";
+  const fromAddress = SMTP_FROM || SMTP_USER || PRIMARY_EMAIL;
   const displayName = user.name?.trim() || "there";
 
   try {
@@ -181,7 +224,7 @@ const sendWelcomeEmail = async (user: { name?: string | null; email: string }) =
         "",
         "You can now browse our nickel strip, nickel alloy and stainless steel catalog, save items to your cart, and request quotes directly from your account.",
         "",
-        "If you have any questions, reach us anytime at ramanioffice@gmail.com or +91 8369724730.",
+        `If you have any questions, reach us anytime at ${emailListSentence()} or ${phoneListSentence()}.`,
         "",
         "Best regards,",
         "Ramani Steel House Team",
@@ -340,6 +383,17 @@ const normalizeFaqItems = (value: unknown) => {
 // lower(email) rather than an exact match, so accounts created before this normalization
 // (which may hold mixed case or stray whitespace) can still sign in.
 const normalizeEmail = (value: string) => value.trim().toLowerCase();
+
+const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+// Accepts strings only: anything else (object, array, number) becomes null rather than being
+// stringified into a text column by the driver. Trims, then caps length so a caller cannot
+// push values up to the 1mb body limit into free-text columns.
+const optionalText = (value: unknown, maxLength: number) => {
+  if (typeof value !== "string") return null;
+  const trimmed = value.trim();
+  return trimmed ? trimmed.slice(0, maxLength) : null;
+};
 
 const slugify = (value: string) =>
   value
@@ -501,6 +555,7 @@ const ensureSchemaReady = () => {
     schemaReadyPromise = (async () => {
       await ensureProductEnquiriesSchema();
       await ensureCallTrackingSchema();
+      await ensureCrmSyncSchema();
     })();
   }
   return schemaReadyPromise;
@@ -698,6 +753,7 @@ export function createApiApp() {
         }
       }
 
+      pruneLocalizationCache();
       localizationCache.set(cacheKey, {
         expiresAt: Date.now() + 60 * 60 * 1000,
         payload: localized,
@@ -781,7 +837,7 @@ export function createApiApp() {
     if (typeof name !== "string" || !name.trim()) {
       return res.status(400).json({ error: "Full name is required." });
     }
-    if (typeof email !== "string" || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
+    if (typeof email !== "string" || !EMAIL_PATTERN.test(email.trim())) {
       return res.status(400).json({ error: "A valid email address is required." });
     }
     if (typeof password !== "string" || password.length < 8) {
@@ -949,6 +1005,12 @@ export function createApiApp() {
     }
 
     const { locale, country_code, currency, postal_code, preferences } = req.body ?? {};
+    // Short identifiers with fixed shapes; capping them keeps a 1mb body from landing in
+    // free-text columns. `preferences` is a jsonb blob, so it is bounded by serialized size.
+    const preferencesJson = preferences == null ? null : JSON.stringify(preferences);
+    if (preferencesJson && preferencesJson.length > MAX_PREFERENCES_BYTES) {
+      return res.status(400).json({ error: "Preferences payload is too large." });
+    }
 
     try {
       const saved = await queryOne<{
@@ -972,10 +1034,10 @@ export function createApiApp() {
          RETURNING locale, country_code, currency, postal_code, preferences`,
         [
           userId,
-          locale ?? null,
-          country_code ?? null,
-          currency ?? null,
-          postal_code ?? null,
+          optionalText(locale, 35),
+          optionalText(country_code, 2),
+          optionalText(currency, 3),
+          optionalText(postal_code, 20),
           preferences ?? null,
         ]
       );
@@ -1019,14 +1081,28 @@ export function createApiApp() {
     }
 
     const rawItems = Array.isArray(req.body?.items) ? req.body.items : [];
-    const items = rawItems
+    if (rawItems.length > MAX_CART_ITEMS) {
+      return res.status(400).json({ error: `A cart cannot contain more than ${MAX_CART_ITEMS} items.` });
+    }
+
+    const parsed = rawItems
       .map((item: any) => ({
         product_id: Number(item?.product_id ?? item?.productId ?? item?.id),
-        quantity: Math.max(1, Math.floor(Number(item?.quantity ?? 0))),
+        // Capped as well as floored: quantity lands in an `integer` column, so a value like
+        // 1e308 would clear the isFinite check below and then overflow on INSERT.
+        quantity: Math.min(MAX_CART_QUANTITY, Math.max(1, Math.floor(Number(item?.quantity ?? 0)))),
       }))
       .filter((item: { product_id: number; quantity: number }) =>
         Number.isFinite(item.product_id) && item.product_id > 0 && Number.isFinite(item.quantity) && item.quantity > 0
       );
+
+    // cart_items is unique on (user_id, product_id), so the same product listed twice would
+    // abort the whole transaction. Collapse duplicates to the last quantity seen instead.
+    const deduped = new Map<number, { product_id: number; quantity: number }>();
+    for (const item of parsed) {
+      deduped.set(item.product_id, item);
+    }
+    const items = [...deduped.values()];
 
     const client = await pool.connect();
     try {
@@ -1035,7 +1111,8 @@ export function createApiApp() {
 
       for (const item of items) {
         await client.query(
-          "INSERT INTO cart_items (user_id, product_id, quantity) VALUES ($1, $2, $3)",
+          `INSERT INTO cart_items (user_id, product_id, quantity) VALUES ($1, $2, $3)
+           ON CONFLICT (user_id, product_id) DO UPDATE SET quantity = EXCLUDED.quantity, updated_at = now()`,
           [userId, item.product_id, item.quantity]
         );
       }
@@ -1064,8 +1141,11 @@ export function createApiApp() {
     let sql = "SELECT p.*, c.name as category_name FROM products p LEFT JOIN categories c ON p.category_id = c.id WHERE 1=1";
     const params: any[] = [];
 
-    if (category) {
-      params.push(category);
+    // Type-guarded like `search` below: a repeated query param (?category=a&category=b)
+    // arrives as an array, which pg encodes as a Postgres array literal and Postgres then
+    // rejects against a text column, turning a bad request into a 500.
+    if (typeof category === "string" && category.trim()) {
+      params.push(category.trim());
       sql += ` AND c.slug = $${params.length}`;
     }
     if (featured !== undefined) {
@@ -1432,9 +1512,28 @@ export function createApiApp() {
 
   // --- Product Enquiries ---
   app.post("/api/enquiries", enquiryLimiter, asyncHandler(async (req, res) => {
-    const { productId, productName, requirement, thickness, fullName, email, phone, company, location, quantity, message } = req.body ?? {};
+    const body = req.body ?? {};
+    // Previously these were only checked for truthiness, so a non-string (object, array,
+    // number) was stringified into a text column, and a 1mb value was storable in any field.
+    const productName = optionalText(body.productName, 200);
+    const requirement = optionalText(body.requirement, 2000);
+    const thickness = optionalText(body.thickness, 100);
+    const fullName = optionalText(body.fullName, 200);
+    const email = optionalText(body.email, 320);
+    const phone = optionalText(body.phone, 40);
+    const company = optionalText(body.company, 200);
+    const location = optionalText(body.location, 200);
+    const quantity = optionalText(body.quantity, 100);
+    const message = optionalText(body.message, 5000);
+    const productId = body.productId;
+
     if (!fullName || !email || !phone) {
       return res.status(400).json({ error: "Full name, email, and phone are required." });
+    }
+    // Matches the check on /api/auth/register: a malformed address here still triggers a real
+    // notification email and WhatsApp message to the sales inbox.
+    if (!EMAIL_PATTERN.test(email)) {
+      return res.status(400).json({ error: "A valid email address is required." });
     }
 
     // product_enquiries.thickness and .user_id are both added by this migration.
@@ -1443,10 +1542,11 @@ export function createApiApp() {
     const initialUserId = getSessionUserId(req);
 
     const insertEnquiry = (productIdValue: unknown, userIdValue: unknown) =>
-      query(
+      queryOne<{ id: number }>(
         `INSERT INTO product_enquiries
           (product_id, product_name, requirement, thickness, full_name, email, phone, company, location, quantity, message, user_id)
-          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)`,
+          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+          RETURNING id`,
         [
           productIdValue ?? null,
           productName ?? null,
@@ -1464,18 +1564,48 @@ export function createApiApp() {
       );
 
     try {
+      let enquiry: { id: number } | null = null;
+      let storedProductId = productId;
+      let storedUserId = initialUserId;
+
       try {
-        await insertEnquiry(productId, initialUserId);
+        enquiry = await insertEnquiry(productId, initialUserId);
       } catch (insertError) {
         const pgError = insertError as { code?: string; constraint?: string };
         const failedOnProduct = pgError?.code === "23503" && pgError.constraint?.includes("product_id") && productId != null;
         const failedOnUser = pgError?.code === "23503" && pgError.constraint?.includes("user_id") && initialUserId != null;
         if (failedOnProduct || failedOnUser) {
           // A referenced product or session user no longer exists (deleted/stale login); retry without the stale link.
-          await insertEnquiry(failedOnProduct ? null : productId, failedOnUser ? null : initialUserId);
+          storedProductId = failedOnProduct ? null : productId;
+          storedUserId = failedOnUser ? null : initialUserId;
+          enquiry = await insertEnquiry(storedProductId, storedUserId);
         } else {
           throw insertError;
         }
+      }
+
+      if (enquiry) {
+        void enqueueLead(
+          "enquiry",
+          enquiry.id,
+          buildEnquiryLead(
+            enquiry.id,
+            {
+              productId: storedProductId,
+              productName,
+              requirement,
+              thickness,
+              fullName,
+              email,
+              phone,
+              company,
+              location,
+              quantity,
+              message,
+            },
+            storedUserId ?? null
+          )
+        );
       }
 
       sendEnquiryNotifications({
@@ -1585,9 +1715,35 @@ export function createApiApp() {
 
       await client.query("COMMIT");
 
-      sendQuoteNotifications({ id: quote.id, customer, items, summary }).catch((notifyError) => {
-        console.error("Failed to send quote notification", notifyError);
-      });
+      // The checkout form may only collect phone/GST/PIN, so fall back to the
+      // signed-in account for a usable contact name and email.
+      const account = userId
+        ? await queryOne<{ name: string; email: string }>(
+            "SELECT name, email FROM users WHERE id = $1",
+            [userId]
+          )
+        : null;
+
+      const leadBody = {
+        ...(req.body ?? {}),
+        customer: {
+          ...customer,
+          full_name: customer.full_name ?? account?.name ?? null,
+          email: customer.email ?? account?.email ?? null,
+        },
+      };
+
+      void enqueueLead(
+        "quote",
+        quote.id,
+        buildQuoteLead(quote.id, leadBody, userId ?? null, itemsCount)
+      );
+
+      sendQuoteNotifications({ id: quote.id, customer: leadBody.customer, items, summary }).catch(
+        (notifyError) => {
+          console.error("Failed to send quote notification", notifyError);
+        }
+      );
 
       res.status(201).json({ id: quote.id });
     } catch (e) {
@@ -1606,6 +1762,58 @@ export function createApiApp() {
       client.release();
     }
   }));
+
+  // --- CRM / ERP sync ---
+  // Used by the CRM when it cannot receive inbound webhooks, and for replaying
+  // deliveries that exhausted their retries.
+  const requireCrmApiKey = (req: express.Request, res: express.Response) => {
+    if (!CRM_API_KEY) {
+      res.status(503).json({ error: "CRM_API_KEY is not configured." });
+      return false;
+    }
+    const provided = String(req.headers["x-api-key"] || "");
+    const expected = CRM_API_KEY;
+    const providedBuf = Buffer.from(provided);
+    const expectedBuf = Buffer.from(expected);
+    const ok =
+      providedBuf.length === expectedBuf.length && timingSafeEqual(providedBuf, expectedBuf);
+    if (!ok) {
+      res.status(401).json({ error: "Unauthorized" });
+      return false;
+    }
+    return true;
+  };
+
+  app.get("/api/crm/leads", asyncHandler(async (req, res) => {
+    if (!requireCrmApiKey(req, res)) return;
+    await ensureSchemaReady();
+
+    const since = typeof req.query.since === "string" && req.query.since.trim() ? req.query.since.trim() : undefined;
+    const status = typeof req.query.status === "string" && req.query.status.trim() ? req.query.status.trim() : undefined;
+    const limit = Math.min(Math.max(Number(req.query.limit) || 100, 1), 500);
+
+    res.json(await listLeads({ since, status, limit }));
+  }));
+
+  app.post("/api/crm/leads/:externalId/ack", asyncHandler(async (req, res) => {
+    if (!requireCrmApiKey(req, res)) return;
+    await ensureSchemaReady();
+
+    const updated = await acknowledgeLead(req.params.externalId, req.body?.crm_record_id ?? null);
+    if (!updated) return res.status(404).json({ error: "Lead not found" });
+    res.json(updated);
+  }));
+
+  app.post("/api/crm/retry", asyncHandler(async (req, res) => {
+    if (!requireCrmApiKey(req, res)) return;
+    await ensureSchemaReady();
+
+    res.json({ requeued: await retryFailedLeads(req.body?.external_id) });
+  }));
+
+  // The queue is drained in-process. On serverless this also runs per instance,
+  // and FOR UPDATE SKIP LOCKED keeps concurrent drains from double-sending.
+  void ensureSchemaReady().then(() => startCrmSyncWorker());
 
   app.use("/api", (_req, res) => {
     res.status(404).json({ error: "API route not found." });

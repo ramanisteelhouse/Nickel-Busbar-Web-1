@@ -174,7 +174,10 @@ const RICH_TEXT_ALLOWED_ATTRS: Record<string, Set<string>> = {
 const isSafeImageSrc = (src: string) => {
   const trimmed = src.trim();
   if (!trimmed) return false;
-  if (trimmed.startsWith('/')) return true;
+  // `//host/path` also starts with '/' but is protocol-relative, i.e. absolute and
+  // cross-origin. Let it fall through to the parsed protocol check rather than being
+  // waved through as a same-origin path.
+  if (trimmed.startsWith('/') && !trimmed.startsWith('//')) return true;
   try {
     const parsed = new URL(trimmed, window.location.origin);
     return ['http:', 'https:'].includes(parsed.protocol);
@@ -191,7 +194,9 @@ const normalizeSmartQuotes = (value: string) =>
 const isSafeHref = (href: string) => {
   const trimmed = href.trim();
   if (!trimmed) return false;
-  if (trimmed.startsWith('/') || trimmed.startsWith('#')) return true;
+  // See isSafeImageSrc: `//host/path` is protocol-relative, not a same-origin path, so it
+  // must go through the protocol check below rather than being accepted outright.
+  if ((trimmed.startsWith('/') && !trimmed.startsWith('//')) || trimmed.startsWith('#')) return true;
 
   try {
     const parsed = new URL(trimmed, window.location.origin);
