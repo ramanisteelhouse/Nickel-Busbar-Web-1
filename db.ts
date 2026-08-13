@@ -58,7 +58,12 @@ const pool = new Pool({
   keepAlive: true,
   keepAliveInitialDelayMillis: 10_000,
   idleTimeoutMillis: 20_000,
-  max: Number(process.env.DB_POOL_MAX || 10),
+  // Each serverless instance gets its OWN pool, and Vercel runs many instances
+  // concurrently. A max of 10 means two warm instances alone can exhaust a
+  // Supabase session-mode pooler (pool_size 15) and every query starts failing
+  // with EMAXCONNSESSION. One connection per instance is the correct shape here;
+  // concurrency comes from more instances, not a bigger pool inside each.
+  max: Number(process.env.DB_POOL_MAX || (process.env.VERCEL ? 1 : 10)),
 });
 
 pool.on("error", (error) => {

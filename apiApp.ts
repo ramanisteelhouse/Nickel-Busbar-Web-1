@@ -15,7 +15,9 @@ import {
   enqueueLead,
   ensureCrmSyncSchema,
   listLeads,
+  processQueue,
   retryFailedLeads,
+  runAfterResponse,
   startCrmSyncWorker,
 } from "./crm.js";
 import {
@@ -1585,25 +1587,27 @@ export function createApiApp() {
       }
 
       if (enquiry) {
-        void enqueueLead(
-          "enquiry",
-          enquiry.id,
-          buildEnquiryLead(
+        runAfterResponse(
+          enqueueLead(
+            "enquiry",
             enquiry.id,
-            {
-              productId: storedProductId,
-              productName,
-              requirement,
-              thickness,
-              fullName,
-              email,
-              phone,
-              company,
-              location,
-              quantity,
-              message,
-            },
-            storedUserId ?? null
+            buildEnquiryLead(
+              enquiry.id,
+              {
+                productId: storedProductId,
+                productName,
+                requirement,
+                thickness,
+                fullName,
+                email,
+                phone,
+                company,
+                location,
+                quantity,
+                message,
+              },
+              storedUserId ?? null
+            )
           )
         );
       }
@@ -1733,10 +1737,8 @@ export function createApiApp() {
         },
       };
 
-      void enqueueLead(
-        "quote",
-        quote.id,
-        buildQuoteLead(quote.id, leadBody, userId ?? null, itemsCount)
+      runAfterResponse(
+        enqueueLead("quote", quote.id, buildQuoteLead(quote.id, leadBody, userId ?? null, itemsCount))
       );
 
       sendQuoteNotifications({ id: quote.id, customer: leadBody.customer, items, summary }).catch(
@@ -1804,6 +1806,23 @@ export function createApiApp() {
     res.json(updated);
   }));
 
+  // Safety net for anything still pending - a Vercel Cron, an uptime pinger, or a
+  // manual curl can drive this. Awaits the drain so the caller sees the result.
+  app.post("/api/crm/drain", asyncHandler(async (req, res) => {
+    if (!requireCrmApiKey(req, res)) return;
+    await ensureSchemaReady();
+    await processQueue();
+
+    const [counts] = await query<{ pending: number; sent: number; failed: number }>(
+      `SELECT
+         count(*) FILTER (WHERE status = 'pending')::int AS pending,
+         count(*) FILTER (WHERE status = 'sent')::int    AS sent,
+         count(*) FILTER (WHERE status = 'failed')::int  AS failed
+       FROM crm_lead_sync`
+    );
+    res.json(counts ?? { pending: 0, sent: 0, failed: 0 });
+  }));
+
   app.post("/api/crm/retry", asyncHandler(async (req, res) => {
     if (!requireCrmApiKey(req, res)) return;
     await ensureSchemaReady();
@@ -1811,9 +1830,13 @@ export function createApiApp() {
     res.json({ requeued: await retryFailedLeads(req.body?.external_id) });
   }));
 
-  // The queue is drained in-process. On serverless this also runs per instance,
-  // and FOR UPDATE SKIP LOCKED keeps concurrent drains from double-sending.
-  void ensureSchemaReady().then(() => startCrmSyncWorker());
+  // Long-lived servers only. On Vercel this would fire schema DDL and a polling
+  // timer on every cold start of every instance, competing with real traffic for
+  // a pooler that only allows 15 clients. There, leads push via runAfterResponse
+  // and the schema is ensured lazily by the routes that need it.
+  if (!process.env.VERCEL) {
+    void ensureSchemaReady().then(() => startCrmSyncWorker());
+  }
 
   app.use("/api", (_req, res) => {
     res.status(404).json({ error: "API route not found." });
