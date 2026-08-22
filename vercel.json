@@ -17,8 +17,8 @@
       "continue": true
     },
     { "src": "/api/(.*)", "dest": "/api/index" },
+    { "src": "/", "dest": "/api/render?path=/" },
     { "handle": "filesystem" },
-    { "src": "/", "dest": "/index.html" },
     { "src": "/products/?", "dest": "/api/render" },
     { "src": "/categories/?", "dest": "/api/render" },
     { "src": "/product/[^/]+/?", "dest": "/api/render" },

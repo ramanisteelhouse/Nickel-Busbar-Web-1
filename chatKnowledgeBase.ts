@@ -1,5 +1,6 @@
 import { query } from "./db.js";
 import { emailListSentence, phoneListSentence } from "./src/lib/contact.js";
+import { ANSWER_BLOCK } from "./src/lib/answerBlock.js";
 
 // Offline keyword-matching chatbot: answers are drawn entirely from products/blog_posts
 // already in the database plus a handful of static site facts below. No external API call.
@@ -190,6 +191,21 @@ const STATIC_INTENTS: StaticIntent[] = [
     patterns: [/\b(calculator|ampacity|current\s?carrying|current\s?capacity|resistiv|joule\s?heat)\b/],
     answer:
       "For sizing nickel strip or busbar to your current and thermal requirements, try our interconnect sizing calculator at /calculator.",
+  },
+  {
+    // "What is a nickel busbar?" used to fall through to FALLBACK_ANSWER: every catalog entry
+    // in the index is one specific product and none of them define the category. Answering it
+    // in the wording the homepage publishes means a visitor, a crawler and this bot get one
+    // version of the claim rather than three. Deliberately narrow, and placed below the
+    // pricing intent: "busbar price" still reaches pricing, "20mm busbar" still reaches the
+    // product index, and only a definitional question lands here.
+    patterns: [
+      /\b(what|which)\s+(is|are)\s+(a\s+|an\s+|the\s+)?(pure\s+|nickel\s+)*bus\s?bars?\b/,
+      /\b(what's|whats)\s+(a\s+|an\s+|the\s+)?(pure\s+|nickel\s+)*bus\s?bars?\b/,
+      /\b(define|definition|meaning)\s+(of\s+)?(a\s+)?(nickel\s+)?bus\s?bars?\b/,
+    ],
+    answer:
+      `${ANSWER_BLOCK} Browse the range at /products, or send your dimensions and quantity via /products?enquiry=1 for a quote.`,
   },
   {
     patterns: [/\b(who\s?are\s?you|about\s?(you|the\s?company|ramani)|company\s?info|history|since\s?when|established)\b/],

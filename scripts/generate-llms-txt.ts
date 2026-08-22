@@ -1,10 +1,11 @@
-import { writeFileSync } from "fs";
+import { existsSync, readFileSync, writeFileSync } from "fs";
 import path from "path";
 import { EMAIL_ADDRESSES, PHONE_NUMBERS } from "../src/lib/contact.js";
 
 const SITE_URL = "https://www.nickelbusbar.com";
 
 async function main() {
+  let degraded = false;
   const lines: string[] = [];
   lines.push("# Ramani Steel House (NickelBusbar.com)");
   lines.push("");
@@ -64,6 +65,7 @@ async function main() {
       }
     } catch (error) {
       console.warn("[llms.txt] Failed to fetch products; omitting product list.", error);
+      degraded = true;
     }
 
     try {
@@ -86,13 +88,32 @@ async function main() {
       }
     } catch (error) {
       console.warn("[llms.txt] Failed to fetch blog posts; omitting article list.", error);
+      degraded = true;
     }
   } catch (error) {
     console.warn("[llms.txt] Database unavailable at build time; generating llms.txt with static pages only.", error);
+    degraded = true;
   }
 
   const content = lines.join("\n") + "\n";
-  writeFileSync(path.resolve(process.cwd(), "public/llms.txt"), content, "utf-8");
+  // A run that could not reach the database still produces a *valid* file - just one with
+  // the static pages and nothing else. Writing it would replace every product and article
+  // entry with silence, and because the committed copy still looks right, nothing downstream
+  // would show the loss. A DB hiccup must not fail the build, so a degraded run keeps its
+  // warning and leaves the existing file alone; only a first run with no file to protect
+  // writes the short version.
+  const outputPath = path.resolve(process.cwd(), "public/llms.txt");
+  if (degraded && existsSync(outputPath)) {
+    const existing = readFileSync(outputPath, "utf-8");
+    const listedLinks = (text: string) => text.split("\n").filter((line) => line.startsWith("- [")).length;
+    const existingCount = listedLinks(existing);
+    console.warn(
+      `[llms.txt] Database unreachable: this run would write ${listedLinks(content)} link(s) over an existing ${existingCount}. Leaving public/llms.txt untouched - fix the build-time DB connection and re-run.`
+    );
+    return;
+  }
+
+  writeFileSync(outputPath, content, "utf-8");
   console.log(`[llms.txt] Wrote public/llms.txt (${content.length} bytes)`);
 }
 

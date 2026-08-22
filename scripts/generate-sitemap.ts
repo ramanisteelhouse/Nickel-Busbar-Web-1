@@ -1,4 +1,4 @@
-import { writeFileSync } from "fs";
+import { existsSync, readFileSync, writeFileSync } from "fs";
 import path from "path";
 
 const SITE_URL = "https://www.nickelbusbar.com";
@@ -32,6 +32,7 @@ const toDateStamp = (value?: string | Date | null) => {
 };
 
 async function main() {
+  let degraded = false;
   const today = new Date().toISOString().slice(0, 10);
   const urls: SitemapUrl[] = staticPages.map((page) => ({
     loc: `${SITE_URL}${page.path}`,
@@ -59,6 +60,7 @@ async function main() {
       }
     } catch (error) {
       console.warn("[sitemap] Failed to fetch products; omitting product URLs.", error);
+      degraded = true;
     }
 
     try {
@@ -80,9 +82,11 @@ async function main() {
       }
     } catch (error) {
       console.warn("[sitemap] Failed to fetch blog posts; omitting blog post URLs.", error);
+      degraded = true;
     }
   } catch (error) {
     console.warn("[sitemap] Database unavailable at build time; generating sitemap with static pages only.", error);
+    degraded = true;
   }
 
   const xml = `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${urls
@@ -92,7 +96,23 @@ async function main() {
     )
     .join("\n")}\n</urlset>\n`;
 
-  writeFileSync(path.resolve(process.cwd(), "public/sitemap.xml"), xml, "utf-8");
+  // A run that could not reach the database still produces a *valid* file - just one with
+  // the static pages and nothing else. Writing it would replace every product and article
+  // entry with silence, and because the committed copy still looks right, nothing downstream
+  // would show the loss. A DB hiccup must not fail the build, so a degraded run keeps its
+  // warning and leaves the existing file alone; only a first run with no file to protect
+  // writes the short version.
+  const outputPath = path.resolve(process.cwd(), "public/sitemap.xml");
+  if (degraded && existsSync(outputPath)) {
+    const existing = readFileSync(outputPath, "utf-8");
+    const existingCount = (existing.match(/<loc>/g) || []).length;
+    console.warn(
+      `[sitemap] Database unreachable: this run would write ${urls.length} URL(s) over an existing ${existingCount}. Leaving public/sitemap.xml untouched - fix the build-time DB connection and re-run.`
+    );
+    return;
+  }
+
+  writeFileSync(outputPath, xml, "utf-8");
   console.log(`[sitemap] Wrote ${urls.length} URL(s) to public/sitemap.xml`);
 }
 

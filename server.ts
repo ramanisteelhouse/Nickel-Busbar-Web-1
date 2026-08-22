@@ -10,6 +10,7 @@ import {
   renderProductListSnapshot,
   renderNickelStripsLithiumSnapshot,
   renderStaticRouteSnapshot,
+  renderUnavailableShell,
   isStaticSnapshotRoute,
 } from "./seoSnapshot.js";
 
@@ -65,7 +66,10 @@ async function startServer() {
     });
     app.use(vite.middlewares);
   } else {
-    app.use(express.static("dist"));
+    // index:false so a request for "/" falls through to the snapshot handler below instead
+    // of being answered with the bare dist/index.html shell - the homepage is the one route
+    // express.static would otherwise intercept before any SEO snapshot could run.
+    app.use(express.static("dist", { index: false }));
     const indexHtmlTemplate = fs.readFileSync(path.resolve("dist/index.html"), "utf-8");
 
     app.get("*", async (req, res) => {
@@ -109,8 +113,10 @@ async function startServer() {
           return res.status(status).send(html);
         }
       } catch (error) {
-        console.error("Failed to render SEO snapshot, falling back to plain SPA shell", error);
-        // Fall through to the default SPA response below.
+        console.error("SEO snapshot failed; serving 503 rather than a shell that canonicalises to the homepage", error);
+        const { status, html } = renderUnavailableShell(indexHtmlTemplate, requestPath);
+        res.setHeader("Retry-After", "120");
+        return res.status(status).send(html);
       }
 
       const statusCode = isKnownSpaRoute(requestPath) ? 200 : 404;

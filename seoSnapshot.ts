@@ -7,6 +7,7 @@
 // SPA: React's createRoot().render() fully replaces this markup on mount.
 import { query, queryOne } from "./db.js";
 import { EMAIL_ADDRESSES, PHONE_NUMBERS, PRIMARY_CALL, PRIMARY_EMAIL } from "./src/lib/contact.js";
+import { ANSWER_BLOCK, ANSWER_BLOCK_QUESTION } from "./src/lib/answerBlock.js";
 
 const SITE_URL = "https://www.nickelbusbar.com";
 const SITE_NAME = "Ramani Steel House";
@@ -112,6 +113,29 @@ const injectHead = (template: string, head: HeadInput) => {
 
   return html;
 };
+
+// Every renderer below reads the database, so any of them can throw when it is unreachable.
+// Answering that with the untouched template returns 200 carrying the *homepage's* title and
+// <link rel="canonical" href="https://www.nickelbusbar.com/">, so during an outage every
+// product and article URL tells a crawler it is a duplicate of the homepage - the same failure
+// STATIC_ROUTE_SEO exists to prevent, surfacing only when the site is already unwell. 503 says
+// "temporary, come back" and leaves the URL's existing index entry alone, while the
+// self-canonical withdraws the duplicate claim. Deliberately no noindex: a temporary failure
+// marked noindex turns into a permanent removal if the outage outlasts the next few crawls.
+// The body is still the SPA shell, so a real visitor's app still boots and shows its own error
+// state rather than a dead page.
+export function renderUnavailableShell(template: string, pathname: string): SnapshotResult {
+  const html = injectHead(template, {
+    title: "Temporarily Unavailable | Ramani Steel House",
+    description:
+      "This page is temporarily unavailable while we restore service. Please try again shortly.",
+    canonical: `${SITE_URL}${pathname === "/" ? "/" : pathname}`,
+    ogImage: SITE_LOGO_URL,
+    jsonLd: [],
+    snapshotBody: "",
+  });
+  return { status: 503, html };
+}
 
 export async function renderBlogSnapshot(template: string, slug: string): Promise<SnapshotResult> {
   const post = await queryOne<Record<string, unknown>>(
@@ -287,8 +311,39 @@ export async function renderProductListSnapshot(template: string, isCategoriesRo
 // `<link rel="canonical" href="https://www.nickelbusbar.com/">`. Every non-rendering crawler
 // therefore saw /about, /contact and /calculator each declare itself a duplicate of the
 // homepage. These values mirror the <Helmet> block in the matching page component
-// (AboutPage / ContactPage / CalculatorPage); update both together.
+// (HomePage / AboutPage / ContactPage / CalculatorPage); update both together.
 const STATIC_ROUTE_SEO: Record<string, { title: string; description: string; jsonLd: object[]; body: string }> = {
+  // The homepage is the first URL an answer engine fetches and was the last content route
+  // with no snapshot at all: vercel.json sent "/" straight to the static dist/index.html,
+  // whose body is an empty <div id="root">. Its head was already correct - what a crawler
+  // that runs no JavaScript could not see was a single sentence of the answer. The title and
+  // description below therefore mirror index.html's own head and HomePage's <Helmet> exactly;
+  // all three change together. The FAQPage carries only the answer-block question because
+  // HomePage's <Helmet> publishes the other three, and the same Q&A marked up twice on one
+  // URL is two competing copies of one claim.
+  "/": {
+    title: "Nickel Strip Manufacturer India | Pure Nickel Strip & Nickel Busbar Supplier",
+    description:
+      "Ramani Steel House is a Nickel Strip Manufacturer India trusted by battery makers, supplying Pure Nickel Strip, H Type Nickel Strip, and Nickel Busbar for 18650 battery packs. PAN India supply and export to 17+ countries.",
+    jsonLd: [
+      {
+        "@context": "https://schema.org",
+        "@type": "FAQPage",
+        mainEntity: [
+          {
+            "@type": "Question",
+            name: ANSWER_BLOCK_QUESTION,
+            acceptedAnswer: { "@type": "Answer", text: ANSWER_BLOCK },
+          },
+        ],
+      },
+    ],
+    body: `<article>
+    <h1>India's Trusted Nickel Strip Manufacturer</h1>
+    <h2>${ANSWER_BLOCK_QUESTION}</h2>
+    <p>${ANSWER_BLOCK}</p>
+  </article>`,
+  },
   "/about": {
     title: "About Us | Ramani Steel House - Nickel Strip Manufacturer",
     description:

@@ -24,6 +24,7 @@ import { Helmet } from 'react-helmet-async';
 import type { Product, Category, BlogPost } from '../types';
 import { buildImageAlt, encodePathSegment, resolveImageSrc } from '../lib/utils';
 import { PHONE_NUMBERS, PRIMARY_CALL, PRIMARY_EMAIL } from '../lib/contact';
+import { ANSWER_BLOCK, ANSWER_BLOCK_QUESTION } from '../lib/answerBlock';
 import { Tilt3D, Reveal } from '../components/Tilt3D';
 
 const fallbackShowcaseImage = '/img/icon-logo.jpg';
@@ -517,6 +518,20 @@ export const HomePage: React.FC = () => {
                 </Tilt3D>
               </Reveal>
             ))}
+          </div>
+        </div>
+      </section>
+
+      {/* The definition answer engines quote. It is the first prose on the page and one
+          self-contained paragraph naming the company inside itself, because an answer that
+          needs the surrounding page to make sense gets paraphrased rather than cited - and a
+          paraphrase drops the attribution. Same text as the FAQPage markup the `/` snapshot
+          publishes (seoSnapshot.ts): the answer marked up has to be the answer on screen. */}
+      <section className="bg-white pt-2 pb-10">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="rounded-3xl border border-slate-200 bg-slate-50 px-6 py-8 md:px-10 md:py-10">
+            <h2 className="text-2xl md:text-3xl font-display font-bold text-brand">{ANSWER_BLOCK_QUESTION}</h2>
+            <p className="mt-4 max-w-4xl text-base md:text-lg leading-relaxed text-slate-700">{ANSWER_BLOCK}</p>
           </div>
         </div>
       </section>

@@ -8,6 +8,7 @@ import {
   renderProductListSnapshot,
   renderNickelStripsLithiumSnapshot,
   renderStaticRouteSnapshot,
+  renderUnavailableShell,
   isStaticSnapshotRoute,
 } from "../seoSnapshot.js";
 
@@ -72,9 +73,11 @@ export default async function handler(req: IncomingMessage, res: ServerResponse)
     res.statusCode = result.status;
     res.end(result.html);
   } catch (error) {
-    console.error("SSR snapshot render failed, falling back to plain SPA shell", error);
+    console.error("SSR snapshot render failed; serving 503 rather than a shell that canonicalises to the homepage", error);
+    const { status, html } = renderUnavailableShell(template, pathname);
     res.setHeader("Content-Type", "text/html; charset=utf-8");
-    res.statusCode = 200;
-    res.end(template);
+    res.setHeader("Retry-After", "120");
+    res.statusCode = status;
+    res.end(html);
   }
 }
