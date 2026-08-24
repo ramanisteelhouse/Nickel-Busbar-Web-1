@@ -158,6 +158,7 @@ export const Navbar: React.FC<{ cartCount: number }> = ({ cartCount }) => {
     { to: '/about', label: t('nav.about') },
     { to: '/calculator', label: 'Calculator' },
     { to: '/blog', label: 'Blog' },
+    { to: '/export-enquiry', label: 'Export' },
     { to: '/contact', label: 'Contact' },
   ];
 

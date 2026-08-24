@@ -852,13 +852,22 @@ export const HomePage: React.FC = () => {
             <p className="mt-4 text-slate-600">
               We support export documentation for international battery pack assembly, and our team works with OEMs, cell makers, and battery module builders.
             </p>
-            <Link
-              to="/blog/nickel-strips-lithium-batteries"
-              className="mt-5 inline-flex items-center gap-2 text-sm font-semibold text-brand hover:text-brand-dark"
-            >
-              Read more: Why Nickel Strips are Essential in Lithium Batteries
-              <ArrowRight size={14} />
-            </Link>
+            <div className="mt-5 flex flex-col gap-3">
+              <Link
+                to="/export-enquiry"
+                className="inline-flex items-center gap-2 text-sm font-semibold text-brand hover:text-brand-dark"
+              >
+                Nickel strip export enquiry: bulk supply PAN India and to 17+ countries
+                <ArrowRight size={14} />
+              </Link>
+              <Link
+                to="/blog/nickel-strips-lithium-batteries"
+                className="inline-flex items-center gap-2 text-sm font-semibold text-brand hover:text-brand-dark"
+              >
+                Read more: Why Nickel Strips are Essential in Lithium Batteries
+                <ArrowRight size={14} />
+              </Link>
+            </div>
           </div>
         </div>
       </section>

@@ -32,6 +32,7 @@ export const Footer: React.FC = () => {
               <li><Link to="/about">About Us</Link></li>
               <li><Link to="/calculator">Weight Calculator</Link></li>
               <li><Link to="/blog">Blog</Link></li>
+              <li><Link to="/export-enquiry">Export Enquiry</Link></li>
               <li><Link to="/contact">Contact</Link></li>
             </ul>
           </div>

@@ -19,12 +19,19 @@ A: Nickel strip is used to interconnect and weld battery cells (18650, 21700, 32
 Q: Is Ramani Steel House / NickelBusbar.com a nickel strip manufacturer or a distributor?
 A: Ramani Steel House / NickelBusbar.com is a manufacturer of nickel strips and nickel busbars, not a reseller or distributor, with in-house production, slitting, and quality control.
 
+Q: Do you export nickel strip and nickel busbar from India?
+A: Yes. Ramani Steel House manufactures nickel strip and nickel busbar in Mumbai, India and exports to 17+ countries, alongside PAN India supply. We are a manufacturer, not a reseller or distributor, so export orders ship from our own production and slitting lines.
+
+Q: What is the HS code for nickel strip exported from India?
+A: Pure nickel strip and busbar strip fall under HS 7506.10 (nickel, not alloyed - plates, sheets, strip and foil). Nickel alloy strip falls under 7506.20, and solid nickel bars, rods and profiles under 7505.11. Import tariff lines vary by destination, so confirm the exact line with your customs broker.
+
 ## Key Pages
 - [Home](https://www.nickelbusbar.com/): Company overview, product range, and certifications.
 - [Products](https://www.nickelbusbar.com/products): Full nickel strip and nickel busbar catalog.
 - [About](https://www.nickelbusbar.com/about): Company history, manufacturing capability, export markets.
 - [Weight Calculator](https://www.nickelbusbar.com/calculator): Nickel strip/busbar weight calculator by dimension.
 - [Contact](https://www.nickelbusbar.com/contact): Request a quote or speak with the technical team.
+- [Export Enquiry](https://www.nickelbusbar.com/export-enquiry): Bulk supply PAN India and export to 17+ countries - Incoterms, HS codes, export documentation, and the enquiry form.
 - [Blog](https://www.nickelbusbar.com/blog): Technical guides on nickel strip specification, welding, and battery pack design.
 
 ## Products

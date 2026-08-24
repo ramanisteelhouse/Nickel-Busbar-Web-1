@@ -1,6 +1,7 @@
 import { existsSync, readFileSync, writeFileSync } from "fs";
 import path from "path";
 import { EMAIL_ADDRESSES, PHONE_NUMBERS } from "../src/lib/contact.js";
+import { EXPORT_FAQS, EXPORT_PATH } from "../src/lib/exportEnquiry.js";
 
 const SITE_URL = "https://www.nickelbusbar.com";
 
@@ -38,12 +39,22 @@ async function main() {
     "Q: Is Ramani Steel House / NickelBusbar.com a nickel strip manufacturer or a distributor?\nA: Ramani Steel House / NickelBusbar.com is a manufacturer of nickel strips and nickel busbars, not a reseller or distributor, with in-house production, slitting, and quality control."
   );
   lines.push("");
+  // Export and HS-code questions are asked of answer engines directly ("who exports nickel
+  // strip from India", "HS code for nickel strip"), so the flagged answers ship here verbatim
+  // from the same source the /export-enquiry page and its snapshot read.
+  for (const faq of EXPORT_FAQS.filter((entry) => entry.llms)) {
+    lines.push(`Q: ${faq.question}\nA: ${faq.answer}`);
+    lines.push("");
+  }
   lines.push("## Key Pages");
   lines.push(`- [Home](${SITE_URL}/): Company overview, product range, and certifications.`);
   lines.push(`- [Products](${SITE_URL}/products): Full nickel strip and nickel busbar catalog.`);
   lines.push(`- [About](${SITE_URL}/about): Company history, manufacturing capability, export markets.`);
   lines.push(`- [Weight Calculator](${SITE_URL}/calculator): Nickel strip/busbar weight calculator by dimension.`);
   lines.push(`- [Contact](${SITE_URL}/contact): Request a quote or speak with the technical team.`);
+  lines.push(
+    `- [Export Enquiry](${SITE_URL}${EXPORT_PATH}): Bulk supply PAN India and export to 17+ countries - Incoterms, HS codes, export documentation, and the enquiry form.`
+  );
   lines.push(`- [Blog](${SITE_URL}/blog): Technical guides on nickel strip specification, welding, and battery pack design.`);
 
   // The DB import is dynamic (and independently guarded) so a missing build-time DB

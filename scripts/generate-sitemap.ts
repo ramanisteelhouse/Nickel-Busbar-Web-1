@@ -10,6 +10,9 @@ const staticPages: Array<{ path: string; changefreq: string; priority: string }>
   // canonicalises there, so submitting it would ask Google to index a known duplicate.
   { path: "/about", changefreq: "monthly", priority: "0.6" },
   { path: "/contact", changefreq: "monthly", priority: "0.5" },
+  // High priority: this is the conversion page for both PAN India bulk buyers and overseas
+  // importers, and the only URL carrying the export documentation / HS code / Incoterm content.
+  { path: "/export-enquiry", changefreq: "monthly", priority: "0.8" },
   { path: "/calculator", changefreq: "monthly", priority: "0.7" },
   { path: "/blog", changefreq: "weekly", priority: "0.7" },
   { path: "/blog/nickel-strips-lithium-batteries", changefreq: "monthly", priority: "0.7" },

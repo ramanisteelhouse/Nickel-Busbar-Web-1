@@ -27,6 +27,7 @@
     { "src": "/login/?", "dest": "/index.html" },
     { "src": "/about/?", "dest": "/api/render?path=/about" },
     { "src": "/contact/?", "dest": "/api/render?path=/contact" },
+    { "src": "/export-enquiry/?", "dest": "/api/render?path=/export-enquiry" },
     { "src": "/calculator/?", "dest": "/api/render?path=/calculator" },
     { "src": "/blog/?", "dest": "/api/render?path=/blog" },
     { "src": "/blog/[^/]+/?", "dest": "/api/render" },

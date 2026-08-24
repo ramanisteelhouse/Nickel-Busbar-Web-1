@@ -8,6 +8,23 @@
 import { query, queryOne } from "./db.js";
 import { EMAIL_ADDRESSES, PHONE_NUMBERS, PRIMARY_CALL, PRIMARY_EMAIL } from "./src/lib/contact.js";
 import { ANSWER_BLOCK, ANSWER_BLOCK_QUESTION } from "./src/lib/answerBlock.js";
+import {
+  EXPORT_DESCRIPTION,
+  EXPORT_DOCUMENTS,
+  EXPORT_FAQS,
+  EXPORT_H1,
+  EXPORT_HIGHLIGHTS,
+  EXPORT_LEAD,
+  EXPORT_PATH,
+  EXPORT_PRODUCT_FORMS,
+  EXPORT_REGIONS,
+  EXPORT_SPECS,
+  EXPORT_TITLE,
+  HS_CODES,
+  INCOTERMS,
+  INDIA_HIGHLIGHTS,
+  LOADING_PORTS,
+} from "./src/lib/exportEnquiry.js";
 
 const SITE_URL = "https://www.nickelbusbar.com";
 const SITE_NAME = "Ramani Steel House";
@@ -413,6 +430,102 @@ const STATIC_ROUTE_SEO: Record<string, { title: string; description: string; jso
     body: `<article>
     <h1>Nickel Alloy Weight Calculator</h1>
     <p>Instantly calculate weight for nickel strips, sheets, busbars, foil, wire and coil in mm or inches. Built for battery pack engineers, EV manufacturers and industrial metal buyers.</p>
+  </article>`,
+  },
+  // The export landing page targets two audiences on one URL - Indian bulk buyers and
+  // overseas importers - so both the copy and the structured data name India and worldwide
+  // supply. Unlike /contact, this route publishes its JSON-LD *only* here: injectHead writes
+  // these scripts outside #root, so React's mount does not remove them, and a second copy in
+  // the page's <Helmet> would leave a rendering crawler with the same FAQ marked up twice.
+  // Content comes from src/lib/exportEnquiry.ts, which the page component also reads.
+  [EXPORT_PATH]: {
+    title: EXPORT_TITLE,
+    description: EXPORT_DESCRIPTION,
+    jsonLd: [
+      {
+        "@context": "https://schema.org",
+        "@type": "ContactPage",
+        name: EXPORT_TITLE,
+        description: EXPORT_DESCRIPTION,
+        url: `${SITE_URL}${EXPORT_PATH}`,
+        // index.html already publishes a site-wide Organization, WebSite and LocalBusiness on
+        // every URL. A second top-level Organization node here would describe the same company
+        // a second time on one page; nesting it under `about` (as /contact does) attaches the
+        // export-specific areaServed and offer catalogue without splitting the entity.
+        about: {
+          "@type": "Organization",
+          name: SITE_NAME,
+          url: SITE_URL,
+          logo: SITE_LOGO_URL,
+          email: PRIMARY_EMAIL,
+          telephone: `+${PRIMARY_CALL.e164}`,
+          foundingDate: "1974",
+          areaServed: ["IN", "Worldwide"],
+          knowsAbout: [
+            "Nickel Strip Export",
+            "Nickel Busbar Manufacturing",
+            "Lithium-Ion Battery Components Export",
+          ],
+          contactPoint: PHONE_NUMBERS.map((number) => ({
+            "@type": "ContactPoint",
+            telephone: `+${number.e164}`,
+            email: PRIMARY_EMAIL,
+            contactType: "sales",
+            areaServed: ["IN", "Worldwide"],
+            availableLanguage: ["en", "hi"],
+          })),
+          hasOfferCatalog: {
+            "@type": "OfferCatalog",
+            name: "Nickel strip and nickel busbar for export and PAN India supply",
+            itemListElement: EXPORT_PRODUCT_FORMS.map((form) => ({
+              "@type": "Offer",
+              itemOffered: { "@type": "Product", name: form },
+              eligibleRegion: ["IN", "Worldwide"],
+            })),
+          },
+        },
+      },
+      {
+        "@context": "https://schema.org",
+        "@type": "FAQPage",
+        mainEntity: EXPORT_FAQS.map((faq) => ({
+          "@type": "Question",
+          name: faq.question,
+          acceptedAnswer: { "@type": "Answer", text: faq.answer },
+        })),
+      },
+      {
+        "@context": "https://schema.org",
+        "@type": "BreadcrumbList",
+        itemListElement: [
+          { "@type": "ListItem", position: 1, name: "Home", item: SITE_URL },
+          { "@type": "ListItem", position: 2, name: "Export Enquiry", item: `${SITE_URL}${EXPORT_PATH}` },
+        ],
+      },
+    ],
+    body: `<article>
+    <h1>${escapeHtml(EXPORT_H1)}</h1>
+    <p>${escapeHtml(EXPORT_LEAD)}</p>
+    <h2>Supply within India</h2>
+    <ul>${INDIA_HIGHLIGHTS.map((item) => `<li>${escapeHtml(item)}</li>`).join("")}</ul>
+    <h2>Export worldwide</h2>
+    <ul>${EXPORT_HIGHLIGHTS.map((item) => `<li>${escapeHtml(item)}</li>`).join("")}</ul>
+    <h2>Export markets we serve</h2>
+    <p>Exporting to 17+ countries from our Mumbai manufacturing unit, loading at ${escapeHtml(LOADING_PORTS)}.</p>
+    <ul>${EXPORT_REGIONS.map((market) => `<li>${escapeHtml(market.region)} - ${escapeHtml(market.detail)}</li>`).join("")}</ul>
+    <h2>Specification range</h2>
+    <ul>${EXPORT_SPECS.map((spec) => `<li>${escapeHtml(spec.label)}: ${escapeHtml(spec.value)}</li>`).join("")}</ul>
+    <h2>Export documentation</h2>
+    <ul>${EXPORT_DOCUMENTS.map((doc) => `<li>${escapeHtml(doc)}</li>`).join("")}</ul>
+    <h2>HS codes</h2>
+    <ul>${HS_CODES.map((entry) => `<li>${escapeHtml(entry.code)} - ${escapeHtml(entry.covers)}</li>`).join("")}</ul>
+    <p>Incoterms quoted: ${escapeHtml(INCOTERMS.join(", "))}.</p>
+    <h2>Export enquiry FAQs</h2>
+    ${EXPORT_FAQS.map((faq) => `<h3>${escapeHtml(faq.question)}</h3>\n    <p>${escapeHtml(faq.answer)}</p>`).join("\n    ")}
+    <h2>Send your enquiry</h2>
+    <p>Share the specification, quantity and destination and we respond with a quotation within 1 business day.</p>
+    <p>Email: ${EMAIL_ADDRESSES.join(" / ")}</p>
+    <p>Phone: ${PHONE_NUMBERS.map((n) => n.display).join(" / ")}</p>
   </article>`,
   },
 };

@@ -23,6 +23,7 @@ const CheckoutPage = React.lazy(() => import('./pages/CheckoutPage').then((m) =>
 const LoginPage = React.lazy(() => import('./pages/LoginPage').then((m) => ({ default: m.LoginPage })));
 const AboutPage = React.lazy(() => import('./pages/AboutPage').then((m) => ({ default: m.AboutPage })));
 const ContactPage = React.lazy(() => import('./pages/ContactPage').then((m) => ({ default: m.ContactPage })));
+const ExportEnquiryPage = React.lazy(() => import('./pages/ExportEnquiryPage').then((m) => ({ default: m.ExportEnquiryPage })));
 const BlogListingPage = React.lazy(() => import('./pages/BlogListingPage').then((m) => ({ default: m.BlogListingPage })));
 const BlogPostPage = React.lazy(() => import('./pages/BlogPostPage').then((m) => ({ default: m.BlogPostPage })));
 const BlogNickelStripsLithiumPage = React.lazy(() => import('./pages/BlogNickelStripsLithiumPage').then((m) => ({ default: m.BlogNickelStripsLithiumPage })));
@@ -247,6 +248,7 @@ export default function App() {
                 <Route path="/login" element={<LoginPage />} />
                 <Route path="/about" element={<AboutPage />} />
                 <Route path="/contact" element={<ContactPage />} />
+                <Route path="/export-enquiry" element={<ExportEnquiryPage />} />
                 <Route path="/blog" element={<BlogListingPage />} />
                 <Route path="/blog/nickel-strips-lithium-batteries" element={<BlogNickelStripsLithiumPage />} />
                 <Route path="/blog/:slug" element={<BlogPostPage />} />
