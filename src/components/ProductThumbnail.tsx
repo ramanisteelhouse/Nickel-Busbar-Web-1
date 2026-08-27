@@ -1,6 +1,7 @@
 import React from 'react';
 import { buildImageAlt } from '../lib/utils';
 import { PRODUCT_IMAGE_PLACEHOLDER, productImagePath } from '../lib/productImage';
+import { localProductImagePath } from '../lib/productImageLocal';
 import { productImageAltSubject } from '../lib/productSeo';
 
 /**
@@ -72,7 +73,10 @@ export const ProductThumbnail: React.FC<ProductThumbnailProps> = ({
       onError={(event) => {
         if (fellBackRef.current) return;
         fellBackRef.current = true;
-        event.currentTarget.src = PRODUCT_IMAGE_PLACEHOLDER;
+        // The product's own downloaded photo if we have one (scripts/sync-product-images.ts),
+        // and only then the generic mark. A buyer scanning a grid of H-type variants needs to
+        // tell them apart; a column of identical logos is barely better than broken images.
+        event.currentTarget.src = localProductImagePath(slug) ?? PRODUCT_IMAGE_PLACEHOLDER;
       }}
     />
   );

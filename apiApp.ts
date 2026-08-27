@@ -27,6 +27,7 @@ import {
   phoneListSentence,
 } from "./src/lib/contact.js";
 import { PRODUCT_IMAGE_PLACEHOLDER } from "./src/lib/productImage.js";
+import { localProductImagePath } from "./src/lib/productImageLocal.js";
 import dotenv from "dotenv";
 import nodemailer from "nodemailer";
 import twilio from "twilio";
@@ -710,35 +711,50 @@ export function createApiApp() {
         return res.redirect(302, PRODUCT_IMAGE_PLACEHOLDER);
       }
 
-      const product = await queryOne<{ image: string | null }>(
-        `SELECT image FROM products WHERE slug = $1`,
-        [slug]
-      );
+      // Every failure below lands here. The product's own downloaded photo
+      // (scripts/sync-product-images.ts) stands in before the generic mark, so a Supabase
+      // outage or a revoked signing token degrades to a slightly stale photo rather than to a
+      // grid of identical logos. Falls through to the placeholder for a product never synced.
+      const fallback = localProductImagePath(slug) ?? PRODUCT_IMAGE_PLACEHOLDER;
+
+      // Unguarded, a database outage propagates to asyncHandler and every thumbnail on the
+      // site becomes a 500 — the one failure mode the local copies exist to prevent, so the
+      // lookup that finds the upstream URL must not be the thing that stops us serving one.
+      let product: { image: string | null } | null = null;
+      try {
+        product = await queryOne<{ image: string | null }>(
+          `SELECT image FROM products WHERE slug = $1`,
+          [slug]
+        );
+      } catch (error) {
+        console.error(`[product-image] product lookup failed for ${slug}; serving local copy`, error);
+        return res.redirect(302, fallback);
+      }
       const source = product?.image?.trim();
 
       // No photo on record, or one already hosted by us: nothing to proxy. The redirect keeps
       // the URL usable either way rather than emitting a broken <img> on the page.
       if (!source) {
-        return res.redirect(302, PRODUCT_IMAGE_PLACEHOLDER);
+        return res.redirect(302, fallback);
       }
       if (!/^https?:\/\//i.test(source)) {
-        return res.redirect(302, source.startsWith("/") ? source : PRODUCT_IMAGE_PLACEHOLDER);
+        return res.redirect(302, source.startsWith("/") ? source : fallback);
       }
 
       let upstream: Response;
       try {
         upstream = await fetch(source, { redirect: "follow" });
       } catch (error) {
-        console.error(`[product-image] upstream fetch failed for ${slug}`, error);
-        return res.redirect(302, PRODUCT_IMAGE_PLACEHOLDER);
+        console.error(`[product-image] upstream fetch failed for ${slug}; serving local copy`, error);
+        return res.redirect(302, fallback);
       }
 
       const contentType = (upstream.headers.get("content-type") || "").split(";")[0].trim().toLowerCase();
       if (!upstream.ok || !PRODUCT_IMAGE_CONTENT_TYPES.has(contentType)) {
         console.error(
-          `[product-image] upstream returned ${upstream.status} ${contentType || "(no type)"} for ${slug}`
+          `[product-image] upstream returned ${upstream.status} ${contentType || "(no type)"} for ${slug}; serving local copy`
         );
-        return res.redirect(302, PRODUCT_IMAGE_PLACEHOLDER);
+        return res.redirect(302, fallback);
       }
 
       // A Vercel function response is capped at ~4.5MB. Falling back to the storage URL for an
