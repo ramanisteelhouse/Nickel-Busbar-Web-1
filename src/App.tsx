@@ -8,9 +8,11 @@ import { FloatingContact } from './components/FloatingContact';
 import { AdPopup } from './components/AdPopup';
 import { GoogleOneTap } from './components/GoogleOneTap';
 import { Footer } from './components/Footer';
+import { Analytics } from './components/Analytics';
 import { BackNavButton } from './components/BackNavButton';
 import { ToastContainer, showToast } from './components/Toast';
 import { getOrCreateSessionId } from './lib/utils';
+import { LANDING_PATHS } from './lib/landingPages';
 import { Product, CartItem } from './types';
 
 const FRESH_LOGIN_KEY = 'fresh-login';
@@ -29,6 +31,7 @@ const BlogPostPage = React.lazy(() => import('./pages/BlogPostPage').then((m) =>
 const BlogNickelStripsLithiumPage = React.lazy(() => import('./pages/BlogNickelStripsLithiumPage').then((m) => ({ default: m.BlogNickelStripsLithiumPage })));
 const CalculatorPage = React.lazy(() => import('./pages/CalculatorPage').then((m) => ({ default: m.CalculatorPage })));
 const NotFoundPage = React.lazy(() => import('./pages/NotFoundPage').then((m) => ({ default: m.NotFoundPage })));
+const LandingPage = React.lazy(() => import('./pages/LandingPage').then((m) => ({ default: m.LandingPage })));
 
 const RouteLoadingFallback: React.FC = () => (
   <div className="flex min-h-[60vh] items-center justify-center">
@@ -230,6 +233,7 @@ export default function App() {
       <LanguageProvider>
         <div className="min-h-screen bg-white font-sans text-[#304e58] selection:bg-[#304e58] selection:text-white">
           <ScrollToTop />
+          <Analytics />
           <GoogleOneTap />
           <Navbar cartCount={cart.reduce((acc, item) => acc + item.quantity, 0)} />
           <ToastContainer />
@@ -253,6 +257,12 @@ export default function App() {
                 <Route path="/blog/nickel-strips-lithium-batteries" element={<BlogNickelStripsLithiumPage />} />
                 <Route path="/blog/:slug" element={<BlogPostPage />} />
                 <Route path="/calculator" element={<CalculatorPage />} />
+                {/* Category and state landing pages. Enumerated from lib/landingPages rather
+                    than matched with a "/:slug" wildcard, which would swallow every unknown
+                    path and turn 404s into blank landing pages. */}
+                {LANDING_PATHS.map((path) => (
+                  <Route key={path} path={path} element={<LandingPage />} />
+                ))}
                 <Route path="*" element={<NotFoundPage />} />
               </Routes>
             </Suspense>

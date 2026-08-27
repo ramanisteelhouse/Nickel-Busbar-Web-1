@@ -5,7 +5,8 @@ import { Trash2, Plus, Minus, ArrowRight, ShoppingBag, Shield } from 'lucide-rea
 import { motion } from 'motion/react';
 import { CartItem } from '../types';
 import { useLanguage } from '../i18n/LanguageProvider';
-import { buildImageAlt, getProductUnitLabel, normalizeProductUnit, resolveImageSrc } from '../lib/utils';
+import { getProductUnitLabel, normalizeProductUnit } from '../lib/utils';
+import { ProductThumbnail } from '../components/ProductThumbnail';
 
 interface CartPageProps {
   cart: CartItem[];
@@ -25,6 +26,7 @@ export const CartPage: React.FC<CartPageProps> = ({ cart, updateQuantity, remove
         <Helmet>
           <title>Your Cart | Ramani Steel House</title>
           <meta name="robots" content="noindex,follow" />
+          <link rel="canonical" href="https://www.nickelbusbar.com/cart" />
         </Helmet>
         <div className="w-20 h-20 bg-zinc-100 rounded-full flex items-center justify-center mx-auto mb-6 text-zinc-400">
           <ShoppingBag size={32} />
@@ -43,6 +45,7 @@ export const CartPage: React.FC<CartPageProps> = ({ cart, updateQuantity, remove
       <Helmet>
         <title>Your Cart | Ramani Steel House</title>
         <meta name="robots" content="noindex,follow" />
+        <link rel="canonical" href="https://www.nickelbusbar.com/cart" />
       </Helmet>
       <h1 className="text-4xl font-bold text-zinc-900 tracking-tight mb-12">{t('cart.title')}</h1>
 
@@ -55,15 +58,12 @@ export const CartPage: React.FC<CartPageProps> = ({ cart, updateQuantity, remove
               className="flex gap-6 p-6 bg-white rounded-3xl border border-zinc-100 shadow-sm"
             >
               <div className="w-24 h-24 bg-zinc-100 rounded-2xl overflow-hidden flex-shrink-0">
-                <img
-                  src={resolveImageSrc(item.image)}
-                  alt={buildImageAlt(item.name)}
-                  width={96}
-                  height={96}
-                  loading="lazy"
-                  decoding="async"
+                <ProductThumbnail
+                  slug={item.slug}
+                  image={item.image}
+                  name={item.name}
+                  size={96}
                   className="w-full h-full object-cover"
-                  referrerPolicy="no-referrer"
                 />
               </div>
               <div className="flex-1 flex flex-col justify-between">

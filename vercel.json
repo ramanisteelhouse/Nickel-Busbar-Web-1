@@ -31,6 +31,8 @@
     { "src": "/calculator/?", "dest": "/api/render?path=/calculator" },
     { "src": "/blog/?", "dest": "/api/render?path=/blog" },
     { "src": "/blog/[^/]+/?", "dest": "/api/render" },
+    { "src": "/h-type-nickel-strip/?", "dest": "/api/render?path=/h-type-nickel-strip" },
+    { "src": "/nickel-strip-manufacturer-in-[a-z0-9-]+/?", "dest": "/api/render" },
     { "src": "/(.*)", "status": 404, "dest": "/404.html" }
   ]
 }

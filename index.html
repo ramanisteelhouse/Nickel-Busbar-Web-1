@@ -4,114 +4,143 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Nickel Strip Manufacturer India | Pure Nickel Strip &amp; Nickel Busbar Supplier</title>
-  <meta name="description"
-    content="Ramani Steel House is a Nickel Strip Manufacturer India trusted by battery makers, supplying Pure Nickel Strip, H Type Nickel Strip, and Nickel Busbar for 18650 battery packs. PAN India supply and export to 17+ countries." />
-  <meta name="keywords"
+  <!-- Title and description are capped at the lengths search engines actually render (50-60 and
+       120-160 characters). The same pair is repeated in HomePage's <Helmet> and in
+       STATIC_ROUTE_SEO["/"] in seoSnapshot.ts - all three change together or the SSR snapshot
+       and the hydrated page disagree about what the homepage is.
+
+       data-ssr-head marks a tag this document owns only until the app can speak for itself.
+       React 19 hoists page components' head tags without reconciling them against what was
+       already in the HTML, so each of these gained a second copy once a route mounted - the
+       duplicate-canonical finding in the SEO audit. src/lib/ssrHeadCleanup.ts drops a marked
+       tag once an unmarked replacement for it appears. Tags with no marker (og:site_name,
+       og:locale, twitter:site, robots, icons) are site-wide and no page overrides them. -->
+  <title data-ssr-head="true">Nickel Strip Manufacturer India | Nickel Busbar Supplier</title>
+  <meta name="description" data-ssr-head="true"
+    content="Nickel strip manufacturer in India supplying pure nickel strip, H type nickel strip and nickel busbar for 18650 battery packs. PAN India supply and export." />
+  <meta name="keywords" data-ssr-head="true"
     content="Nickel Strip Manufacturer India, Pure Nickel Strip, H Type Nickel Strip, Nickel Busbar, Nickel Strip for 18650 Battery, Battery Nickel Strip Supplier, Nickel Strip Exporter, Nickel Strip Supplier for Export, Nickel Busbar Wholesale Supplier, Bulk Nickel Strip Order" />
-  <meta name="robots" content="index, follow" />
+  <!-- Marked: /cart, /checkout, /login and the 404 branches declare their own noindex, and
+       React 19 would otherwise leave this "index, follow" sitting alongside it. -->
+  <meta name="robots" data-ssr-head="true" content="index, follow" />
   <meta name="google-site-verification" content="VkP4c3G6JYoWaVVw-BsxCq6yzMEhgvceC_LNecy30qM" />
   <meta name="theme-color" content="#0B1E2D" />
   <meta name="application-name" content="Nickel Strips Manufacturer" />
   <meta name="referrer" content="strict-origin-when-cross-origin" />
-  <link rel="canonical" href="https://www.nickelbusbar.com/" />
-  <link rel="icon" type="image/png" href="/img/icon-logo.jpg" />
-  <link rel="apple-touch-icon" href="/img/logo.png" />
+  <link rel="canonical" data-ssr-head="true" href="https://www.nickelbusbar.com/" />
+  <link rel="alternate" hreflang="en" href="https://www.nickelbusbar.com/" />
+  <link rel="alternate" hreflang="x-default" href="https://www.nickelbusbar.com/" />
+  <link rel="icon" type="image/png" sizes="32x32" href="/img/favicon-32.png" />
+  <link rel="icon" type="image/png" sizes="192x192" href="/img/favicon-192.png" />
+  <link rel="apple-touch-icon" href="/img/apple-touch-icon.png" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link rel="preconnect" href="https://fzrnezhbfyrpvudlsqny.supabase.co" crossorigin />
   <link rel="dns-prefetch" href="https://fzrnezhbfyrpvudlsqny.supabase.co" />
   <link rel="stylesheet"
     href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700;800;900&display=swap" />
-  <meta property="og:type" content="website" />
+  <meta property="og:type" data-ssr-head="true" content="website" />
   <meta property="og:site_name" content="Ramani Steel House" />
-  <meta property="og:title" content="Nickel Strip Manufacturer India | Pure Nickel Strip &amp; Nickel Busbar Supplier" />
-  <meta property="og:description"
+  <meta property="og:title" data-ssr-head="true" content="Nickel Strip Manufacturer India | Nickel Busbar Supplier" />
+  <meta property="og:description" data-ssr-head="true"
     content="Battery Nickel Strip Supplier manufacturing Pure Nickel Strip, H Type Nickel Strip, and Nickel Busbar for lithium-ion and EV battery packs. PAN India supply, exporting to 17+ countries worldwide." />
-  <meta property="og:url" content="https://www.nickelbusbar.com/" />
-  <meta property="og:image" content="https://www.nickelbusbar.com/img/logo.png" />
+  <meta property="og:url" data-ssr-head="true" content="https://www.nickelbusbar.com/" />
+  <!-- 1200x630. The bare wordmark is ~5:1, so every social card cropped it to an unreadable band. -->
+  <meta property="og:image" data-ssr-head="true" content="https://www.nickelbusbar.com/img/og-image.png" />
+  <meta property="og:image:width" content="1200" />
+  <meta property="og:image:height" content="630" />
   <meta property="og:locale" content="en_IN" />
-  <meta name="twitter:card" content="summary_large_image" />
-  <meta name="twitter:title" content="Nickel Strips Manufacturer in Mumbai, India | PAN India Supply & Export" />
-  <meta name="twitter:description"
+  <meta name="twitter:card" data-ssr-head="true" content="summary_large_image" />
+  <meta name="twitter:title" data-ssr-head="true" content="Nickel Strip Manufacturer India | Nickel Busbar Supplier" />
+  <meta name="twitter:description" data-ssr-head="true"
     content="Nickel strips manufacturer based in Mumbai, India, supplying lithium-ion battery and energy storage customers PAN India and exporting to 17+ countries worldwide." />
-  <meta name="twitter:image" content="https://www.nickelbusbar.com/img/logo.png" />
-  <meta name="twitter:site" content="@nickelbusbar" />
-  
+  <meta name="twitter:image" data-ssr-head="true" content="https://www.nickelbusbar.com/img/og-image.png" />
+  <!-- Matches the account the site actually links to. @nickelbusbar resolved to a profile that is
+       not ours, so the audit reported a X account we do not control as the site's. -->
+  <meta name="twitter:site" content="@SteelHouse69101" />
+
   <meta name="google-site-verification" content="fzIDhdkfVhWTXLDBPbGsKxHxqpZHDlQ0seDN64kOsqM" />
+  <!-- One @graph rather than three loose objects. The Organization and the LocalBusiness are the
+       same company, so they share an @id: published separately (and previously under two
+       different names, "Ramani Steel House" and "Ramani Nickel Strips") they read as two rival
+       entities, and the audit's Local SEO check reported no LocalBusiness at all. -->
   <script type="application/ld+json">
       {
         "@context": "https://schema.org",
-        "@type": "Organization",
-        "name": "Ramani Steel House",
-        "url": "https://www.nickelbusbar.com",
-        "logo": "https://www.nickelbusbar.com/img/logo.png",
-        "areaServed": "Worldwide",
-        "knowsAbout": ["Nickel Strip Manufacturing", "Nickel Busbar", "Lithium-Ion Battery Components Export"],
-        "sameAs": [
-          "https://www.linkedin.com/company/ramani-steel-house/posts/?feedView=all",
-          "https://www.facebook.com/profile.php?id=61550731232092",
-          "https://www.instagram.com/ramanisteelhouse/",
-          "https://in.pinterest.com/ramanisteel2023/",
-          "https://x.com/SteelHouse69101"
-        ]
-      }
-    </script>
-  <script type="application/ld+json">
-      {
-        "@context": "https://schema.org",
-        "@type": "WebSite",
-        "name": "Ramani Steel House",
-        "url": "https://www.nickelbusbar.com/",
-        "potentialAction": {
-          "@type": "SearchAction",
-          "target": "https://www.nickelbusbar.com/products?search={search_term_string}",
-          "query-input": "required name=search_term_string"
-        }
-      }
-    </script>
-  <script type="application/ld+json">
-      {
-        "@context": "https://schema.org",
-        "@type": "LocalBusiness",
-        "name": "Ramani Steel House",
-        "image": "https://www.nickelbusbar.com/img/logo.png",
-        "url": "https://www.nickelbusbar.com/",
-        "telephone": "+918369724730",
-        "email": "mayank@ramanisteel.com",
-        "contactPoint": [
-          { "@type": "ContactPoint", "telephone": "+918369724730", "contactType": "sales", "areaServed": "IN" },
-          { "@type": "ContactPoint", "telephone": "+918097653930", "contactType": "sales", "areaServed": "IN" },
-          { "@type": "ContactPoint", "telephone": "+918169182418", "contactType": "sales", "areaServed": "IN" }
-        ],
-        "address": {
-          "@type": "PostalAddress",
-          "streetAddress": "Marine Lines East",
-          "addressLocality": "Mumbai",
-          "addressRegion": "Maharashtra",
-          "postalCode": "400004",
-          "addressCountry": "IN"
-        },
-        "areaServed": "Worldwide",
-        "sameAs": [
-          "https://www.linkedin.com/company/ramani-steel-house/posts/?feedView=all",
-          "https://www.facebook.com/profile.php?id=61550731232092",
-          "https://www.instagram.com/ramanisteelhouse/",
-          "https://in.pinterest.com/ramanisteel2023/",
-          "https://x.com/SteelHouse69101"
-        ],
-        "openingHoursSpecification": [
+        "@graph": [
           {
-            "@type": "OpeningHoursSpecification",
-            "dayOfWeek": [
-              "Monday",
-              "Tuesday",
-              "Wednesday",
-              "Thursday",
-              "Friday"
+            "@type": ["Organization", "LocalBusiness"],
+            "@id": "https://www.nickelbusbar.com/#organization",
+            "name": "Ramani Steel House",
+            "alternateName": "Ramani Nickel Strips",
+            "description": "Nickel strip and nickel busbar manufacturer in Mumbai, India, supplying lithium-ion battery pack makers PAN India and exporting to 17+ countries.",
+            "url": "https://www.nickelbusbar.com/",
+            "logo": {
+              "@type": "ImageObject",
+              "url": "https://www.nickelbusbar.com/img/logo.png",
+              "width": 4560,
+              "height": 916
+            },
+            "image": "https://www.nickelbusbar.com/img/og-image.png",
+            "foundingDate": "1974",
+            "telephone": "+918369724730",
+            "email": "mayank@ramanisteel.com",
+            "priceRange": "$$",
+            "currenciesAccepted": "INR, USD",
+            "knowsAbout": ["Nickel Strip Manufacturing", "Nickel Busbar", "Lithium-Ion Battery Components Export"],
+            "contactPoint": [
+              { "@type": "ContactPoint", "telephone": "+918369724730", "contactType": "sales", "areaServed": "IN", "availableLanguage": ["en", "hi"] },
+              { "@type": "ContactPoint", "telephone": "+918097653930", "contactType": "sales", "areaServed": "IN", "availableLanguage": ["en", "hi"] },
+              { "@type": "ContactPoint", "telephone": "+918169182418", "contactType": "sales", "areaServed": "IN", "availableLanguage": ["en", "hi"] }
             ],
-            "opens": "09:00",
-            "closes": "18:00"
+            "address": {
+              "@type": "PostalAddress",
+              "streetAddress": "Marine Lines East",
+              "addressLocality": "Mumbai",
+              "addressRegion": "Maharashtra",
+              "postalCode": "400004",
+              "addressCountry": "IN"
+            },
+            "geo": {
+              "@type": "GeoCoordinates",
+              "latitude": 18.9435,
+              "longitude": 72.8234
+            },
+            "areaServed": "Worldwide",
+            "sameAs": [
+              "https://www.linkedin.com/company/ramani-steel-house/",
+              "https://www.facebook.com/profile.php?id=61550731232092",
+              "https://www.instagram.com/ramanisteelhouse/",
+              "https://in.pinterest.com/ramanisteel2023/",
+              "https://x.com/SteelHouse69101"
+            ],
+            "openingHoursSpecification": [
+              {
+                "@type": "OpeningHoursSpecification",
+                "dayOfWeek": [
+                  "Monday",
+                  "Tuesday",
+                  "Wednesday",
+                  "Thursday",
+                  "Friday"
+                ],
+                "opens": "09:00",
+                "closes": "18:00"
+              }
+            ]
+          },
+          {
+            "@type": "WebSite",
+            "@id": "https://www.nickelbusbar.com/#website",
+            "name": "Ramani Steel House",
+            "url": "https://www.nickelbusbar.com/",
+            "inLanguage": "en",
+            "publisher": { "@id": "https://www.nickelbusbar.com/#organization" },
+            "potentialAction": {
+              "@type": "SearchAction",
+              "target": "https://www.nickelbusbar.com/products?search={search_term_string}",
+              "query-input": "required name=search_term_string"
+            }
           }
         ]
       }

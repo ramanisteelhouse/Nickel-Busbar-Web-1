@@ -23,6 +23,28 @@ export const EMAIL_ADDRESSES = [
 ] as const;
 
 /**
+ * The registered office, in the field shape schema.org's PostalAddress expects.
+ *
+ * The SEO audit's Local SEO check reported the address as missing even though the footer
+ * printed it: it was one unlabelled sentence with no markup, so nothing identified it as an
+ * address. The footer now renders these fields with PostalAddress microdata, and the JSON-LD
+ * in index.html and seoSnapshot.ts reads the same values, so the address a crawler extracts
+ * from the page and the one it reads from the structured data cannot disagree.
+ */
+export const POSTAL_ADDRESS = {
+  streetAddress: 'Marine Lines East',
+  addressLocality: 'Mumbai',
+  addressRegion: 'Maharashtra',
+  postalCode: '400004',
+  addressCountry: 'IN',
+  countryName: 'India',
+  /** "Marine Lines East, Mumbai, Maharashtra 400004, India" - for prose and one-line rendering. */
+  get oneLine() {
+    return `${this.streetAddress}, ${this.addressLocality}, ${this.addressRegion} ${this.postalCode}, ${this.countryName}`;
+  },
+} as const;
+
+/**
  * The long-standing answered line. Kept as the target for click-to-call and for
  * the `telephone` field in structured data so search results stay stable.
  */

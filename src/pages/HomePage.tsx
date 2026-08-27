@@ -25,85 +25,64 @@ import type { Product, Category, BlogPost } from '../types';
 import { buildImageAlt, encodePathSegment, resolveImageSrc } from '../lib/utils';
 import { PHONE_NUMBERS, PRIMARY_CALL, PRIMARY_EMAIL } from '../lib/contact';
 import { ANSWER_BLOCK, ANSWER_BLOCK_QUESTION } from '../lib/answerBlock';
+import {
+  applications as applicationTitles,
+  faqItems,
+  industries as industryTitles,
+  productSpecifications,
+  productVariants,
+  qualityPoints,
+  whyChooseUs as whyChooseUsCopy,
+} from '../lib/homeContent';
 import { Tilt3D, Reveal } from '../components/Tilt3D';
+import { HeritageBadge, FOUNDED_YEAR } from '../components/HeritageBadge';
+import { ProductThumbnail } from '../components/ProductThumbnail';
 
-const fallbackShowcaseImage = '/img/icon-logo.jpg';
+// Derived, not typed in: "52+ years" stops being true in 2027, and the hero is the worst place
+// on the site for a number that quietly goes stale.
+const yearsInBusiness = new Date().getFullYear() - FOUNDED_YEAR;
 
-const fallbackVariants = [
-  {
-    title: 'Pure Nickel Strips',
-    spec: '99.8%+ purity | 0.10mm - 0.50mm',
-    note: 'High conductivity for battery tabs and precision welding.',
-    image: 'https://images.unsplash.com/photo-1504917595217-d4dc5ebe6122?auto=format&fit=crop&w=1200&q=80',
-    cta: '/products?search=pure%20nickel%20strip',
-  },
-  {
-    title: 'Nickel Plated Strips',
-    spec: 'Low resistance | 0.15mm x 8mm',
-    note: 'Cost-effective performance for high-volume manufacturing.',
-    image: 'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?auto=format&fit=crop&w=1200&q=80',
-    cta: '/products?search=nickel%20plated%20strip',
-  },
-  {
-    title: 'Custom Sizes & Coils',
-    spec: 'Width 2mm - 50mm | Custom slitting',
-    note: 'Built to your cell design, welding process, and load specs.',
-    image: '/img/icon-logo.jpg',
-    cta: '/products?search=custom%20nickel%20strip',
-  },
+// 9KB WebP rather than the 317KB 1737x1906 JPEG this used to point at. The original is
+// displayed in a 160x40 slot and as a favicon, so nothing on screen was ever using the pixels.
+const fallbackShowcaseImage = '/img/icon-logo.webp';
+
+// The copy lives in ../lib/homeContent so the SSR snapshot in seoSnapshot.ts can render the
+// same words for crawlers that never run this bundle. Icons stay here — that module is
+// imported by a Node serverless function and must not pull in React or lucide-react.
+const variantImages = [
+  'https://images.unsplash.com/photo-1504917595217-d4dc5ebe6122?auto=format&fit=crop&w=1200&q=80',
+  'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?auto=format&fit=crop&w=1200&q=80',
+  fallbackShowcaseImage,
 ];
 
-const applications = [
-  { title: 'Lithium-ion Batteries', icon: BatteryCharging },
-  { title: 'EV Battery Packs', icon: Zap },
-  { title: 'Power Tools', icon: Wrench },
-  { title: 'Energy Storage Systems', icon: Boxes },
-];
+/**
+ * A showcase card is either a real catalogue product (addressed by slug through the image
+ * proxy) or one of the hardcoded variants below, whose photo is a fixed URL with no product
+ * record behind it. `staticImage` is what distinguishes the second case.
+ */
+type ShowcaseItem = {
+  title: string;
+  spec: string;
+  note: string;
+  cta: string;
+  slug?: string;
+  image?: string | null;
+  staticImage?: string;
+};
 
-const whyChooseUs = [
-  { title: '52 Years Manufacturing Experience', icon: Factory, detail: 'Legacy of metallurgical excellence and precision engineering.' },
-  { title: 'Consistent Quality & Precision', icon: ShieldCheck, detail: 'Strict ISO processes and multi-stage QA for every batch.' },
-  { title: 'Bulk Supply Capability', icon: Layers, detail: 'Scalable production with ready export documentation.' },
-  { title: 'Custom Manufacturing Options', icon: Wrench, detail: 'Widths, thickness, and surface finishes tailored to spec.' },
-  { title: 'Fast Delivery & Global Shipping', icon: Truck, detail: 'Reliable lead times with worldwide logistics coverage.' },
-];
+const fallbackVariants: ShowcaseItem[] = productVariants.map((variant, index) => ({
+  ...variant,
+  staticImage: variantImages[index] ?? fallbackShowcaseImage,
+}));
 
-const industries = [
-  { title: 'Electric Vehicles (EV)', icon: Zap },
-  { title: 'Consumer Electronics', icon: Cpu },
-  { title: 'Renewable Energy', icon: Gauge },
-  { title: 'Industrial Battery Manufacturers', icon: BatteryCharging },
-];
+const applicationIcons = [BatteryCharging, Zap, Wrench, Boxes];
+const applications = applicationTitles.map((title, index) => ({ title, icon: applicationIcons[index] }));
 
-const qualityPoints = [
-  'ISO 9001 compliant manufacturing & traceability',
-  'High purity nickel with certified material reports',
-  'Automated slitting, edge conditioning, and surface inspection',
-  'Batch-wise conductivity and tensile testing',
-];
+const industryIcons = [Zap, Cpu, Gauge, BatteryCharging];
+const industries = industryTitles.map((title, index) => ({ title, icon: industryIcons[index] }));
 
-const productSpecifications = [
-  { label: 'Nickel Purity', value: '99.8%+' },
-  { label: 'Thickness Range', value: '0.10mm – 0.50mm' },
-  { label: 'Width Range', value: '2mm – 50mm' },
-  { label: 'Surface Finish', value: 'Bright, matte, nickel-plated' },
-  { label: 'Typical Use', value: 'Battery tabs, busbars, welding strips' },
-];
-
-const faqItems = [
-  {
-    question: 'What is nickel strip used for?',
-    answer: 'Nickel strip is used as a battery tab and connector in lithium-ion cells, EV packs, power tools, and energy storage systems because of its conductivity and weldability.',
-  },
-  {
-    question: 'How do I choose the right nickel strip thickness?',
-    answer: 'Choose thickness based on current rating, welding method, and cell design. Thin strips suit compact packs; thicker strip supports higher current and durability.',
-  },
-  {
-    question: 'Can you supply custom nickel strips for EV battery assembly?',
-    answer: 'Yes, we offer custom slitting, width, and surface preparation for nickel strips used in EV battery modules and high-performance battery systems.',
-  },
-];
+const whyChooseUsIcons = [Factory, ShieldCheck, Layers, Wrench, Truck];
+const whyChooseUs = whyChooseUsCopy.map((item, index) => ({ ...item, icon: whyChooseUsIcons[index] }));
 
 const heroVideoUrl = 'https://fzrnezhbfyrpvudlsqny.supabase.co/storage/v1/object/sign/video/Hero-section.mp4?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV84ODdiMWJmNC1hOWFhLTQ2N2QtYTAwYy0zYTRkZTVjOTFlNWIiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJ2aWRlby9IZXJvLXNlY3Rpb24ubXA0Iiwic2NvcGUiOiJkb3dubG9hZCIsImlhdCI6MTc4Mjk4Njk4OSwiZXhwIjozMDQ0NDI2OTg5fQ.cETIAf4A-l7iN7w3yBDVk5gAG6sM44Wui_VBav5-AVY';
 
@@ -161,6 +140,38 @@ export const HomePage: React.FC = () => {
   });
   const [isSubmitting, setIsSubmitting] = React.useState(false);
   const [submitMessage, setSubmitMessage] = React.useState('');
+  const [heroVideoSrc, setHeroVideoSrc] = React.useState('');
+
+  // The factory-tour clip is 10.8MB — on its own it was 70% of this page's 15.2MB transfer, and
+  // it downloaded during the initial load because the <video> carried a plain `src`. It is
+  // decoration sitting behind a poster, so nothing needs it before the page is usable: hold the
+  // src back until the load event has fired, then attach it during idle time. Visitors on a
+  // metered or slow connection never get it at all and keep the poster.
+  React.useEffect(() => {
+    const connection = (navigator as Navigator & {
+      connection?: { saveData?: boolean; effectiveType?: string };
+    }).connection;
+    if (connection?.saveData) return;
+    if (connection?.effectiveType && /(^|-)2g$/.test(connection.effectiveType)) return;
+    if (window.matchMedia('(prefers-reduced-data: reduce)').matches) return;
+
+    let idleHandle = 0;
+    const attach = () => {
+      const requestIdle = window.requestIdleCallback ?? ((cb: () => void) => window.setTimeout(cb, 200));
+      idleHandle = requestIdle(() => setHeroVideoSrc(heroVideoUrl)) as unknown as number;
+    };
+
+    if (document.readyState === 'complete') {
+      attach();
+      return () => window.clearTimeout(idleHandle);
+    }
+
+    window.addEventListener('load', attach, { once: true });
+    return () => {
+      window.removeEventListener('load', attach);
+      window.clearTimeout(idleHandle);
+    };
+  }, []);
 
   React.useEffect(() => {
     fetch('/api/products?search=nickel')
@@ -196,12 +207,16 @@ export const HomePage: React.FC = () => {
       });
   }, []);
 
-  const showcaseItems = dynamicProducts.length
+  // slug rather than a resolved URL: it lets the card render through /api/product-image, which
+  // serves the photo from our own domain (indexable, and it falls back to the placeholder when
+  // the stored Supabase URL will not fetch) instead of hotlinking a signed storage URL.
+  const showcaseItems: ShowcaseItem[] = dynamicProducts.length
     ? dynamicProducts.slice(0, 3).map((product) => ({
         title: product.name,
         spec: product.dimensions || 'Custom thickness x width',
         note: product.category_name || 'Nickel strip engineered for battery tabs.',
-        image: product.image ? resolveImageSrc(product.image) : fallbackShowcaseImage,
+        slug: product.slug,
+        image: product.image,
         cta: `/product/${product.slug}`,
       }))
     : fallbackVariants;
@@ -256,11 +271,22 @@ export const HomePage: React.FC = () => {
 
   return (
     <div className="pt-28">
+      {/*
+        Title and description are capped at the lengths search engines render (50-60 and
+        120-160 characters) and are repeated verbatim in index.html and in
+        STATIC_ROUTE_SEO["/"] in seoSnapshot.ts — all three change together.
+
+        No JSON-LD here. The Organization/LocalBusiness graph ships in index.html on every
+        route, and the homepage's FAQPage and Product entities come from the SSR snapshot in
+        seoSnapshot.ts. Publishing them again from here put two Organization entities (under
+        two different names) and two FAQPage entities on one URL, which is why the audit's
+        Local SEO check reported no LocalBusiness at all: nothing said which was authoritative.
+      */}
       <Helmet>
-        <title>Nickel Strip Manufacturer India | Pure Nickel Strip & Nickel Busbar Supplier</title>
+        <title>Nickel Strip Manufacturer India | Nickel Busbar Supplier</title>
         <meta
           name="description"
-          content="Ramani Steel House is a Nickel Strip Manufacturer India trusted by battery makers, supplying Pure Nickel Strip, H Type Nickel Strip, and Nickel Busbar for 18650 battery packs. PAN India supply and export to 17+ countries."
+          content="Nickel strip manufacturer in India supplying pure nickel strip, H type nickel strip and nickel busbar for 18650 battery packs. PAN India supply and export."
         />
         <meta
           name="keywords"
@@ -269,99 +295,14 @@ export const HomePage: React.FC = () => {
         <link rel="canonical" href="https://www.nickelbusbar.com/" />
         <meta property="og:type" content="website" />
         <meta property="og:site_name" content="Ramani Steel House" />
-        <meta property="og:title" content="Nickel Strip Manufacturer India | Pure Nickel Strip & Nickel Busbar Supplier" />
+        <meta property="og:title" content="Nickel Strip Manufacturer India | Nickel Busbar Supplier" />
         <meta property="og:description" content="Battery Nickel Strip Supplier manufacturing Pure Nickel Strip, H Type Nickel Strip, and Nickel Busbar for lithium-ion and EV battery packs. PAN India supply, exporting to 17+ countries worldwide." />
         <meta property="og:url" content="https://www.nickelbusbar.com/" />
-        <meta property="og:image" content="https://www.nickelbusbar.com/img/logo.png" />
+        <meta property="og:image" content="https://www.nickelbusbar.com/img/og-image.png" />
         <meta name="twitter:card" content="summary_large_image" />
-        <meta name="twitter:title" content="Nickel Strip Manufacturer India | Pure Nickel Strip Supplier" />
+        <meta name="twitter:title" content="Nickel Strip Manufacturer India | Nickel Busbar Supplier" />
         <meta name="twitter:description" content="Battery Nickel Strip Supplier manufacturing Pure Nickel Strip, H Type Nickel Strip, and Nickel Busbar for lithium-ion and EV battery packs." />
-        <meta name="twitter:image" content="https://www.nickelbusbar.com/img/logo.png" />
-        <script type="application/ld+json">
-          {JSON.stringify({
-            '@context': 'https://schema.org',
-            '@type': 'Organization',
-            name: 'Ramani Nickel Strips',
-            url: 'https://www.nickelbusbar.com/',
-            logo: 'https://www.nickelbusbar.com/img/logo.png',
-            areaServed: 'Worldwide',
-            sameAs: [
-              'https://www.linkedin.com/company/ramani-steel-house/',
-              'https://www.facebook.com/profile.php?id=61550731232092',
-              'https://www.instagram.com/ramanisteelhouse/',
-              'https://in.pinterest.com/ramanisteel2023/',
-              'https://x.com/SteelHouse69101'
-            ],
-          })}
-        </script>
-        <script type="application/ld+json">
-          {JSON.stringify({
-            '@context': 'https://schema.org',
-            '@type': 'Product',
-            name: 'Nickel Strips for Lithium-Ion Batteries',
-            description: 'High purity nickel strips for EV, electronics, and energy storage applications.',
-            brand: 'Ramani Nickel Strips',
-            url: 'https://www.nickelbusbar.com/products?search=nickel',
-          })}
-        </script>
-        <script type="application/ld+json">
-          {JSON.stringify({
-            '@context': 'https://schema.org',
-            '@type': 'LocalBusiness',
-            name: 'Ramani Steel House',
-            image: 'https://www.nickelbusbar.com/img/logo.png',
-            telephone: `+${PRIMARY_CALL.e164}`,
-            email: PRIMARY_EMAIL,
-            contactPoint: PHONE_NUMBERS.map((number) => ({
-              '@type': 'ContactPoint',
-              telephone: `+${number.e164}`,
-              contactType: 'sales',
-              areaServed: 'IN',
-            })),
-            address: {
-              '@type': 'PostalAddress',
-              streetAddress: 'Marine Lines East',
-              addressLocality: 'Mumbai',
-              addressRegion: 'Maharashtra',
-              postalCode: '400004',
-              addressCountry: 'IN',
-            },
-            areaServed: 'Worldwide',
-            sameAs: [
-              'https://www.linkedin.com/company/ramani-steel-house/posts/?feedView=all',
-              'https://www.facebook.com/profile.php?id=61550731232092',
-              'https://www.instagram.com/ramanisteelhouse/',
-              'https://in.pinterest.com/ramanisteel2023/',
-              'https://x.com/SteelHouse69101',
-            ],
-            openingHoursSpecification: [
-              {
-                '@type': 'OpeningHoursSpecification',
-                dayOfWeek: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'],
-                opens: '09:00',
-                closes: '18:00',
-              }
-            ],
-            // No aggregateRating here on purpose: reviewHighlights below is hardcoded
-            // placeholder copy attributed to anonymous job titles, and marking that up as a
-            // real rating is self-serving review markup — a manual-action risk that would
-            // cost rich results site-wide. It stays as plain on-page testimonial content.
-          })}
-        </script>
-        <script type="application/ld+json">
-          {JSON.stringify({
-            '@context': 'https://schema.org',
-            '@type': 'FAQPage',
-            mainEntity: faqItems.map((item) => ({
-              '@type': 'Question',
-              name: item.question,
-              acceptedAnswer: {
-                '@type': 'Answer',
-                text: item.answer,
-              },
-            })),
-          })}
-        </script>
+        <meta name="twitter:image" content="https://www.nickelbusbar.com/img/og-image.png" />
       </Helmet>
 
       <section className="relative overflow-hidden bg-gradient-to-br from-brand to-brand-light text-white">
@@ -403,13 +344,16 @@ export const HomePage: React.FC = () => {
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-24 lg:py-32">
           <div className="grid gap-12 lg:grid-cols-[1.5fr_1fr] items-start">
             <motion.div initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.8 }} className="max-w-2xl">
-              <p className="inline-flex items-center gap-2 rounded-full bg-white/10 px-4 py-2 text-xs font-semibold uppercase tracking-[0.2em] text-white/70">
-                <span className="relative flex h-2 w-2">
-                  <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-300 opacity-75" />
-                  <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-300" />
-                </span>
-                52+ Years of Industrial Excellence
-              </p>
+              <div className="flex items-center gap-5">
+                <HeritageBadge size={112} className="hidden sm:block" />
+                <p className="inline-flex items-center gap-2 rounded-full bg-white/10 px-4 py-2 text-xs font-semibold uppercase tracking-[0.2em] text-white/70">
+                  <span className="relative flex h-2 w-2">
+                    <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-300 opacity-75" />
+                    <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-300" />
+                  </span>
+                  {yearsInBusiness}+ Years of Industrial Excellence
+                </p>
+              </div>
               <h1 className="mt-6 text-4xl md:text-6xl font-display font-bold leading-[1.05] tracking-tight">
                 <motion.span initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.7, delay: 0.1 }} className="block">
                   India's Trusted
@@ -468,11 +412,14 @@ export const HomePage: React.FC = () => {
               <Tilt3D className="rounded-[2rem] border border-white/10 bg-white/10 p-4 shadow-2xl shadow-slate-950/20 backdrop-blur-xl" maxTilt={7} liftZ={16}>
                 <div className="relative overflow-hidden rounded-[1.8rem] border border-white/10 bg-slate-950" style={{ transform: 'translateZ(40px)' }}>
                   <video
-                    src={heroVideoUrl}
+                    src={heroVideoSrc || undefined}
+                    poster="/img/hero-poster.webp"
+                    preload="none"
                     autoPlay
                     muted
                     loop
                     playsInline
+                    aria-label="Factory tour: battery pack nickel strip production"
                     className="h-72 w-full object-cover"
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-slate-950/90 via-transparent to-transparent" />
@@ -532,6 +479,17 @@ export const HomePage: React.FC = () => {
           <div className="rounded-3xl border border-slate-200 bg-slate-50 px-6 py-8 md:px-10 md:py-10">
             <h2 className="text-2xl md:text-3xl font-display font-bold text-brand">{ANSWER_BLOCK_QUESTION}</h2>
             <p className="mt-4 max-w-4xl text-base md:text-lg leading-relaxed text-slate-700">{ANSWER_BLOCK}</p>
+            {/* Descriptive anchor text, pointing at the page that should own this phrase.
+                Until now the homepage was the only URL carrying both "H type nickel strip" and
+                "manufacturer India", so it is what Google returned for the query — this hands
+                the phrase to /h-type-nickel-strip, which answers it properly. */}
+            <p className="mt-5 text-base text-slate-600">
+              Looking for a specific pattern?{' '}
+              <Link to="/h-type-nickel-strip" className="font-semibold text-brand underline underline-offset-4">
+                H type nickel strip manufacturer in India
+              </Link>{' '}
+              — pure nickel H type strip for 18650, 21700, 32650 and 32700 packs in 2P, 3P and 4P layouts.
+            </p>
           </div>
         </div>
       </section>
@@ -578,7 +536,15 @@ export const HomePage: React.FC = () => {
                 <Tilt3D maxTilt={6} liftZ={20} className="group h-full rounded-3xl">
                   <div className="h-full rounded-3xl border border-slate-200 bg-white overflow-hidden shadow-sm transition-shadow hover:shadow-2xl hover:shadow-brand/10">
                     <div className="h-48 overflow-hidden">
-                      <img src={item.image} alt={buildImageAlt(item.title)} loading="lazy" width={640} height={360} className="h-full w-full object-cover group-hover:scale-105 transition-transform duration-500" referrerPolicy="no-referrer" />
+                      <ProductThumbnail
+                        slug={item.slug}
+                        image={item.image}
+                        src={item.staticImage}
+                        name={item.title}
+                        size={640}
+                        height={360}
+                        className="h-full w-full object-cover group-hover:scale-105 transition-transform duration-500"
+                      />
                     </div>
                     <div className="p-6" style={{ transform: 'translateZ(24px)' }}>
                       <h3 className="text-lg font-semibold text-brand">{item.title}</h3>
@@ -670,15 +636,21 @@ export const HomePage: React.FC = () => {
             <Reveal>
               <Tilt3D maxTilt={5} liftZ={18} className="rounded-3xl">
                 <div className="rounded-3xl overflow-hidden border border-slate-200 shadow-lg shadow-slate-200/60">
-                  <img
-                    src="/img/iso-9001.jpg"
-                    alt="Quality inspection"
-                    width={1200}
-                    height={800}
-                    loading="lazy"
-                    className="h-full w-full object-cover"
-                    referrerPolicy="no-referrer"
-                  />
+                  {/* The 1163x1650 source was 873KB for a box that never renders wider than
+                      900px. WebP at that width is 92KB; the JPEG is the fallback. */}
+                  <picture>
+                    <source srcSet="/img/iso-9001.webp" type="image/webp" />
+                    <img
+                      src="/img/iso-9001-900.jpg"
+                      alt="ISO 9001 certified nickel strip quality inspection at Ramani Steel House, Mumbai"
+                      width={900}
+                      height={1277}
+                      loading="lazy"
+                      decoding="async"
+                      className="h-full w-full object-cover"
+                      referrerPolicy="no-referrer"
+                    />
+                  </picture>
                 </div>
               </Tilt3D>
             </Reveal>

@@ -4,7 +4,8 @@ import { X } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Helmet } from 'react-helmet-async';
 import { Product, Category } from '../types';
-import { buildImageAlt, cn, getProductUnitLabel, getStrikePrice, resolveImageSrc } from '../lib/utils';
+import { cn, getProductUnitLabel, getStrikePrice } from '../lib/utils';
+import { ProductThumbnail } from '../components/ProductThumbnail';
 import { useLanguage } from '../i18n/LanguageProvider';
 
 type EnquiryFormData = {
@@ -285,15 +286,11 @@ export const ProductListingPage: React.FC = () => {
                     className="group bg-white rounded-2xl border border-white/20 overflow-hidden shadow-sm hover:shadow-xl transition-all"
                   >
                     <Link to={`/product/${product.slug}`} className="block relative aspect-square overflow-hidden bg-zinc-100">
-                      <img
-                        src={resolveImageSrc(product.image)}
-                        alt={buildImageAlt(product.name)}
-                        width={600}
-                        height={600}
-                        loading="lazy"
-                        decoding="async"
+                      <ProductThumbnail
+                        slug={product.slug}
+                        image={product.image}
+                        name={product.name}
                         className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
-                        referrerPolicy="no-referrer"
                       />
                     </Link>
                     <div className="p-6">

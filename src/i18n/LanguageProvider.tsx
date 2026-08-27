@@ -175,6 +175,22 @@ const persistPreference = (storageKey: string, legacyKey: string, value: string)
 
 const isRtlLanguage = (language: LanguageCode) => language === 'ar' || language === 'he';
 
+/**
+ * Countries whose auto-detected language is not the one `supportedCountryLocales` maps them to.
+ *
+ * India maps to `hi_IN` there, which is right for the language picker but wrong as a default:
+ * every page of this site is written in English, the buyers are B2B procurement teams who work
+ * in English, and `IN` is also the fallback country used before geolocation resolves. The SEO
+ * audit caught the result — the crawled homepage declared `lang="hi-IN"` while serving English
+ * copy, telling search engines the page was Hindi. Hindi stays selectable in the picker; it is
+ * only no longer chosen on the visitor's behalf.
+ */
+const autoLanguageCountryOverrides: Partial<Record<string, LanguageCode>> = { IN: 'en' };
+
+const autoLanguageForCountry = (countryCode: string): LanguageCode =>
+  autoLanguageCountryOverrides[countryCode.toUpperCase()] ??
+  resolveLanguageFromLocale(getLocaleForCountry(countryCode));
+
 export const LanguageProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [language, setLanguageState] = React.useState<LanguageCode>('en');
   const [country, setCountryState] = React.useState(defaultCountry);
@@ -342,8 +358,12 @@ export const LanguageProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         }
 
         if (!storedLanguage) {
-          const fallbackLocale = data.locale || (nextCountry ? getLocaleForCountry(nextCountry) : 'en_US');
-          setLanguageState(resolveLanguageFromLocale(fallbackLocale));
+          // The override is checked before `data.locale`: the geolocation service reports
+          // hi-IN for Indian IPs, which is exactly the guess this site should not act on.
+          const override = nextCountry ? autoLanguageCountryOverrides[nextCountry] : undefined;
+          setLanguageState(
+            override ?? resolveLanguageFromLocale(data.locale || (nextCountry ? getLocaleForCountry(nextCountry) : 'en_US'))
+          );
         }
 
         if (!storedPostal && (data.city || data.region || data.countryName)) {
@@ -373,9 +393,23 @@ export const LanguageProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     return map;
   }, [countries]);
 
+  // Follow the country only when the visitor changes it themselves, and only while they have
+  // not chosen a language of their own.
+  //
+  // This used to run on mount as well. `country` starts at the `IN` default, so every fresh
+  // load re-derived the language from it and pushed the result through `setLanguageState` —
+  // overwriting both the navigator-detected language and any stored preference before the
+  // visitor saw the page. Skipping the first run leaves the detection above in charge, and
+  // the stored-preference check keeps an explicit pick from being undone by a country change.
+  const countrySyncedRef = React.useRef(false);
   React.useEffect(() => {
     if (!country) return;
-    const mappedLanguage = resolveLanguageFromLocale(getLocaleForCountry(country));
+    if (!countrySyncedRef.current) {
+      countrySyncedRef.current = true;
+      return;
+    }
+    if (readStoredValue(storageKeys.language, 'language')) return;
+    const mappedLanguage = autoLanguageForCountry(country);
     setLanguageState((current) => (current === mappedLanguage ? current : mappedLanguage));
   }, [country]);
 

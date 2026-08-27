@@ -19,6 +19,13 @@ export const languageMaps = {
   zh_CN: 'chinese',
 } as const;
 
+/**
+ * The locale associated with each country — what the language picker offers for it.
+ *
+ * This is not the same question as "what language should a visitor from here be shown by
+ * default": see `autoLanguageCountryOverrides` in i18n/LanguageProvider.tsx, which overrides
+ * India to English because the site's content is English throughout.
+ */
 export const supportedCountryLocales = {
   US: 'en_US',
   DE: 'de_DE',

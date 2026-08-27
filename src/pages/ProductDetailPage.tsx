@@ -4,7 +4,14 @@ import { ShoppingCart, Shield, Truck, RotateCcw, ChevronRight, X, CheckCircle2 }
 import { motion } from 'motion/react';
 import { Helmet } from 'react-helmet-async';
 import { Product } from '../types';
-import { buildImageAlt, getProductUnitLabel, getStrikePrice, resolveImageSrc } from '../lib/utils';
+import { buildImageAlt, getProductUnitLabel, getStrikePrice } from '../lib/utils';
+import { productImagePath, productImageUrl } from '../lib/productImage';
+import {
+  fillKeywordParagraphs,
+  getProductKeywordBlock,
+  keywordMetaDescription,
+  productImageAltSubject,
+} from '../lib/productSeo';
 import { useLanguage } from '../i18n/LanguageProvider';
 
 export const ProductDetailPage: React.FC<{ onAddToCart: (p: Product) => void }> = ({ onAddToCart }) => {
@@ -131,19 +138,36 @@ export const ProductDetailPage: React.FC<{ onAddToCart: (p: Product) => void }> 
   }
 
   const canonicalUrl = `${siteUrl}/product/${product.slug}`;
-  const pageTitle = `${product.name} | Nickel Strips Manufacturer`;
-  const pageDescription = `${product.name} by Ramani Steel House. ${product.description || 'Industrial-grade nickel strip for lithium-ion battery and precision applications.'}`.slice(0, 160);
-  const imageUrl = resolveImageSrc(product.image || '/img/logo.png');
   // Enquiry-only products carry no price; publishing `price: 0` would advertise them as free
   // in structured data, so the Offer node is omitted instead. Mirrored in seoSnapshot.ts.
   const numericPrice = Number(product.price);
   const hasPrice = Number.isFinite(numericPrice) && numericPrice > 0;
+
+  // Head and copy below mirror renderProductSnapshot() in seoSnapshot.ts. They have to: this
+  // component's tags replace the SSR ones on mount, so anything the snapshot says and the
+  // mounted page does not is what Google's rendering pass throws away.
+  const keywordBlock = getProductKeywordBlock(product.slug);
+  const keywordValues = { name: product.name, price: hasPrice ? formatPrice(numericPrice) : null };
+  const keywordParagraphs = keywordBlock ? fillKeywordParagraphs(keywordBlock, keywordValues) : [];
+  const pageTitle = keywordBlock
+    ? `${product.name} | ${keywordBlock.heading}`
+    : `${product.name} | Nickel Strips Manufacturer`;
+  const pageDescription =
+    (keywordBlock && keywordMetaDescription(keywordBlock, keywordValues)) ||
+    `${product.name} by Ramani Steel House. ${product.description || 'Industrial-grade nickel strip for lithium-ion battery and precision applications.'}`.slice(0, 160);
+  // Not the raw product.image: that is a signed Supabase Storage URL, and Supabase serves
+  // every object with `X-Robots-Tag: none`, so Google Images may not index it and the page
+  // can never earn a search-result thumbnail. src/lib/productImage.ts has the details.
+  const imagePath = productImagePath(product.slug, product.image);
+  const imageUrl = productImageUrl(siteUrl, product.slug, product.image);
+  const imageAlt = buildImageAlt(productImageAltSubject(product.name, product.slug));
 
   return (
     <div className="pt-28 pb-24 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
       <Helmet>
         <title>{pageTitle}</title>
         <meta name="description" content={pageDescription} />
+        {keywordBlock && <meta name="keywords" content={keywordBlock.keywords.join(', ')} />}
         <link rel="canonical" href={canonicalUrl} />
         <meta property="og:type" content="product" />
         <meta property="og:title" content={pageTitle} />
@@ -207,14 +231,14 @@ export const ProductDetailPage: React.FC<{ onAddToCart: (p: Product) => void }> 
         >
           <div className="aspect-square rounded-3xl overflow-hidden bg-zinc-100 border border-zinc-200">
             <img
-              src={resolveImageSrc(product.image)}
-              alt={buildImageAlt(product.name)}
-              width={800}
-              height={800}
+              src={imagePath}
+              alt={imageAlt}
+              width={1000}
+              height={1000}
               loading="eager"
               decoding="async"
+              fetchPriority="high"
               className="w-full h-full object-cover"
-              referrerPolicy="no-referrer"
             />
           </div>
         </motion.div>
@@ -254,6 +278,19 @@ export const ProductDetailPage: React.FC<{ onAddToCart: (p: Product) => void }> 
               })()}
             </div>
             <p className="text-zinc-500 leading-relaxed mb-8">{product.description}</p>
+            {/* Target-phrase copy for this product (src/lib/productSeo.ts). Visible on purpose:
+                Google indexes the rendered page, so a phrase hidden from visitors counts for
+                nothing — and the SSR snapshot renders this same block. */}
+            {keywordBlock && (
+              <section className="mb-8">
+                <h2 className="text-base font-bold text-zinc-900 mb-2">{keywordBlock.heading}</h2>
+                {keywordParagraphs.map((paragraph) => (
+                  <p key={paragraph} className="text-sm text-zinc-500 leading-relaxed mb-2">
+                    {paragraph}
+                  </p>
+                ))}
+              </section>
+            )}
           </div>
 
           {/* Specifications Grid */}

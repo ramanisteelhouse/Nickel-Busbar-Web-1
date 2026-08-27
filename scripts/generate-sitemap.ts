@@ -1,5 +1,6 @@
 import { existsSync, readFileSync, writeFileSync } from "fs";
 import path from "path";
+import { LANDING_PATHS } from "../src/lib/landingPages.js";
 
 const SITE_URL = "https://www.nickelbusbar.com";
 
@@ -16,6 +17,14 @@ const staticPages: Array<{ path: string; changefreq: string; priority: string }>
   { path: "/calculator", changefreq: "monthly", priority: "0.7" },
   { path: "/blog", changefreq: "weekly", priority: "0.7" },
   { path: "/blog/nickel-strips-lithium-batteries", changefreq: "monthly", priority: "0.7" },
+  // Category and state landing pages. /h-type-nickel-strip is priority 0.9: it is the page
+  // that exists because "H type nickel strip manufacturer in India" was landing on the
+  // homepage, and it needs to be crawled before the state set.
+  ...LANDING_PATHS.map((path) => ({
+    path,
+    changefreq: "monthly",
+    priority: path === "/h-type-nickel-strip" ? "0.9" : "0.7",
+  })),
 ];
 
 type SitemapUrl = { loc: string; lastmod: string; changefreq: string; priority: string };

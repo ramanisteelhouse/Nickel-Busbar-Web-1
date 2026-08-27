@@ -6,8 +6,32 @@
 // the HTML response, before the client bundle ever runs. Real browsers still get the normal
 // SPA: React's createRoot().render() fully replaces this markup on mount.
 import { query, queryOne } from "./db.js";
-import { EMAIL_ADDRESSES, PHONE_NUMBERS, PRIMARY_CALL, PRIMARY_EMAIL } from "./src/lib/contact.js";
+import {
+  EMAIL_ADDRESSES,
+  PHONE_NUMBERS,
+  POSTAL_ADDRESS,
+  PRIMARY_CALL,
+  PRIMARY_EMAIL,
+} from "./src/lib/contact.js";
 import { ANSWER_BLOCK, ANSWER_BLOCK_QUESTION } from "./src/lib/answerBlock.js";
+import { getLandingPageByPathname, STATE_LANDING_PAGES } from "./src/lib/landingPages.js";
+import { productImageUrl } from "./src/lib/productImage.js";
+import {
+  fillKeywordParagraphs,
+  getProductKeywordBlock,
+  keywordMetaDescription,
+  productImageAltSubject,
+} from "./src/lib/productSeo.js";
+import { buildImageAlt } from "./src/lib/utils.js";
+import {
+  applications as HOME_APPLICATIONS,
+  faqItems as HOME_FAQ_ITEMS,
+  industries as HOME_INDUSTRIES,
+  productSpecifications as HOME_SPECIFICATIONS,
+  productVariants as HOME_VARIANTS,
+  qualityPoints as HOME_QUALITY_POINTS,
+  whyChooseUs as HOME_WHY_CHOOSE_US,
+} from "./src/lib/homeContent.js";
 import {
   EXPORT_DESCRIPTION,
   EXPORT_DOCUMENTS,
@@ -28,7 +52,12 @@ import {
 
 const SITE_URL = "https://www.nickelbusbar.com";
 const SITE_NAME = "Ramani Steel House";
+// The brand logo, for schema.org `logo` fields. Kept distinct from the social card below:
+// Google wants the real mark here, not a padded share image.
 const SITE_LOGO_URL = `${SITE_URL}/img/logo.png`;
+// The bare wordmark is 4560x916 (~5:1) and social cards crop to 1.91:1, so every share of this
+// site showed a sliver of the logo. og-image.png is the wordmark centred on a 1200x630 card.
+const SITE_OG_IMAGE_URL = `${SITE_URL}/img/og-image.png`;
 
 const escapeHtml = (value: string) =>
   String(value ?? "")
@@ -40,6 +69,15 @@ const escapeHtml = (value: string) =>
 
 const escapeAttr = (value: string) => escapeHtml(value);
 
+// Prices are stored and quoted in INR. The client localises them per visitor, but a snapshot
+// is rendered once for everyone, so it states the base currency.
+const inrFormatter = new Intl.NumberFormat("en-IN", {
+  style: "currency",
+  currency: "INR",
+  maximumFractionDigits: 0,
+});
+const formatInr = (amount: number) => inrFormatter.format(amount);
+
 type SnapshotResult = { status: number; html: string };
 
 type HeadInput = {
@@ -47,6 +85,8 @@ type HeadInput = {
   description: string;
   canonical: string;
   ogImage?: string;
+  /** Replaces index.html's site-wide keyword list when a page targets its own phrases. */
+  keywords?: string[];
   robots?: string;
   jsonLd: object[];
   snapshotBody: string;
@@ -63,28 +103,55 @@ const replaceOnce = (html: string, pattern: RegExp | string, replacement: string
 const injectHead = (template: string, head: HeadInput) => {
   let html = template;
 
-  // Replace the default <title>...</title>.
-  html = replaceOnce(html, /<title>[\s\S]*?<\/title>/, `<title>${escapeHtml(head.title)}</title>`);
+  // Every tag this function writes carries data-ssr-head, matching index.html. The marker is
+  // what src/lib/ssrHeadCleanup.ts looks for: React 19 hoists a page component's head tags
+  // alongside these rather than reconciling with them, so without it the mounted page ends up
+  // holding two canonicals and two descriptions - the duplicate-canonical audit finding. The
+  // marked copy is removed once the app has published its own replacement.
+  html = replaceOnce(
+    html,
+    /<title[^>]*>[\s\S]*?<\/title>/,
+    `<title data-ssr-head="true">${escapeHtml(head.title)}</title>`
+  );
 
-  // Replace the default meta description.
   html = replaceOnce(
     html,
     /<meta name="description"[^>]*>/,
-    `<meta name="description" content="${escapeAttr(head.description)}" />`
+    `<meta name="description" data-ssr-head="true" content="${escapeAttr(head.description)}" />`
   );
 
-  // Replace the default canonical link.
   html = replaceOnce(
     html,
     /<link rel="canonical"[^>]*>/,
-    `<link rel="canonical" href="${escapeAttr(head.canonical)}" />`
+    `<link rel="canonical" data-ssr-head="true" href="${escapeAttr(head.canonical)}" />`
+  );
+
+  // Self-referencing hreflang. The site publishes one language, so `en` plus `x-default`
+  // pointing at the same URL is the complete set - it tells search engines the URL is the
+  // canonical choice for every locale rather than leaving them to guess at an alternate.
+  html = replaceOnce(
+    html,
+    /<link rel="alternate" hreflang="en"[^>]*>\s*<link rel="alternate" hreflang="x-default"[^>]*>/,
+    `<link rel="alternate" hreflang="en" href="${escapeAttr(head.canonical)}" />\n  ` +
+      `<link rel="alternate" hreflang="x-default" href="${escapeAttr(head.canonical)}" />`
   );
 
   if (head.robots) {
     html = replaceOnce(
       html,
       /<meta name="robots"[^>]*>/,
-      `<meta name="robots" content="${escapeAttr(head.robots)}" />`
+      `<meta name="robots" data-ssr-head="true" content="${escapeAttr(head.robots)}" />`
+    );
+  }
+
+  // Google has ignored this tag since 2009, so it is never the reason a page ranks - but Bing,
+  // Yandex and several AI crawlers still read it, and leaving the homepage's list on a product
+  // page describes the wrong page to all of them.
+  if (head.keywords?.length) {
+    html = replaceOnce(
+      html,
+      /<meta name="keywords"[\s\S]*?>/,
+      `<meta name="keywords" data-ssr-head="true" content="${escapeAttr(head.keywords.join(", "))}" />`
     );
   }
 
@@ -99,13 +166,13 @@ const injectHead = (template: string, head: HeadInput) => {
   html = html.replace(/<meta name="twitter:image"[^>]*>/, "");
 
   const ogTags = [
-    `<meta property="og:title" content="${escapeAttr(head.title)}" />`,
-    `<meta property="og:description" content="${escapeAttr(head.description)}" />`,
-    `<meta property="og:url" content="${escapeAttr(head.canonical)}" />`,
-    head.ogImage ? `<meta property="og:image" content="${escapeAttr(head.ogImage)}" />` : "",
-    `<meta name="twitter:title" content="${escapeAttr(head.title)}" />`,
-    `<meta name="twitter:description" content="${escapeAttr(head.description)}" />`,
-    head.ogImage ? `<meta name="twitter:image" content="${escapeAttr(head.ogImage)}" />` : "",
+    `<meta property="og:title" data-ssr-head="true" content="${escapeAttr(head.title)}" />`,
+    `<meta property="og:description" data-ssr-head="true" content="${escapeAttr(head.description)}" />`,
+    `<meta property="og:url" data-ssr-head="true" content="${escapeAttr(head.canonical)}" />`,
+    head.ogImage ? `<meta property="og:image" data-ssr-head="true" content="${escapeAttr(head.ogImage)}" />` : "",
+    `<meta name="twitter:title" data-ssr-head="true" content="${escapeAttr(head.title)}" />`,
+    `<meta name="twitter:description" data-ssr-head="true" content="${escapeAttr(head.description)}" />`,
+    head.ogImage ? `<meta name="twitter:image" data-ssr-head="true" content="${escapeAttr(head.ogImage)}" />` : "",
   ]
     .filter(Boolean)
     .join("\n  ");
@@ -147,7 +214,7 @@ export function renderUnavailableShell(template: string, pathname: string): Snap
     description:
       "This page is temporarily unavailable while we restore service. Please try again shortly.",
     canonical: `${SITE_URL}${pathname === "/" ? "/" : pathname}`,
-    ogImage: SITE_LOGO_URL,
+    ogImage: SITE_OG_IMAGE_URL,
     jsonLd: [],
     snapshotBody: "",
   });
@@ -335,30 +402,90 @@ const STATIC_ROUTE_SEO: Record<string, { title: string; description: string; jso
   // whose body is an empty <div id="root">. Its head was already correct - what a crawler
   // that runs no JavaScript could not see was a single sentence of the answer. The title and
   // description below therefore mirror index.html's own head and HomePage's <Helmet> exactly;
-  // all three change together. The FAQPage carries only the answer-block question because
-  // HomePage's <Helmet> publishes the other three, and the same Q&A marked up twice on one
-  // URL is two competing copies of one claim.
+  // all three change together.
+  //
+  // The body carries the whole of the page's factual copy, not just the answer block. The SEO
+  // audit measured this URL's rendering ratio at 1272%: nearly everything a model could cite -
+  // the specification table, what the strip is used for, who buys it - existed only in the
+  // React tree. Both surfaces now read from src/lib/homeContent.ts, so a crawler that runs no
+  // JavaScript and a visitor who does are shown the same claims.
+  //
+  // The FAQPage carries all four questions and HomePage's <Helmet> no longer publishes its own.
+  // Previously each published a different subset, so a rendering crawler saw two FAQPage
+  // entities on one URL - two competing copies of the same claim.
   "/": {
-    title: "Nickel Strip Manufacturer India | Pure Nickel Strip & Nickel Busbar Supplier",
+    title: "Nickel Strip Manufacturer India | Nickel Busbar Supplier",
     description:
-      "Ramani Steel House is a Nickel Strip Manufacturer India trusted by battery makers, supplying Pure Nickel Strip, H Type Nickel Strip, and Nickel Busbar for 18650 battery packs. PAN India supply and export to 17+ countries.",
+      "Nickel strip manufacturer in India supplying pure nickel strip, H type nickel strip and nickel busbar for 18650 battery packs. PAN India supply and export.",
     jsonLd: [
       {
         "@context": "https://schema.org",
         "@type": "FAQPage",
+        "@id": `${SITE_URL}/#faq`,
         mainEntity: [
           {
             "@type": "Question",
             name: ANSWER_BLOCK_QUESTION,
             acceptedAnswer: { "@type": "Answer", text: ANSWER_BLOCK },
           },
+          ...HOME_FAQ_ITEMS.map((item) => ({
+            "@type": "Question",
+            name: item.question,
+            acceptedAnswer: { "@type": "Answer", text: item.answer },
+          })),
         ],
+      },
+      {
+        "@context": "https://schema.org",
+        "@type": "Product",
+        "@id": `${SITE_URL}/#nickel-strip`,
+        name: "Nickel Strips for Lithium-Ion Batteries",
+        description:
+          "High purity nickel strips for EV, electronics, and energy storage applications.",
+        brand: { "@id": `${SITE_URL}/#organization` },
+        url: `${SITE_URL}/products?search=nickel`,
+        additionalProperty: HOME_SPECIFICATIONS.map((spec) => ({
+          "@type": "PropertyValue",
+          name: spec.label,
+          value: spec.value,
+        })),
       },
     ],
     body: `<article>
     <h1>India's Trusted Nickel Strip Manufacturer</h1>
     <h2>${ANSWER_BLOCK_QUESTION}</h2>
     <p>${ANSWER_BLOCK}</p>
+    <p>Looking for a specific pattern? <a href="${SITE_URL}/h-type-nickel-strip">H type nickel strip manufacturer in India</a> — pure nickel H type strip for 18650, 21700, 32650 and 32700 packs in 2P, 3P and 4P layouts.</p>
+    <h2>Nickel strip specifications</h2>
+    <table>
+      <tbody>${HOME_SPECIFICATIONS.map(
+        (spec) => `<tr><th>${escapeHtml(spec.label)}</th><td>${escapeHtml(spec.value)}</td></tr>`
+      ).join("")}</tbody>
+    </table>
+    <h2>Product range</h2>
+    <ul>${HOME_VARIANTS.map(
+      (variant) =>
+        `<li><strong>${escapeHtml(variant.title)}</strong> — ${escapeHtml(variant.spec)}. ${escapeHtml(variant.note)}</li>`
+    ).join("")}</ul>
+    <h2>Applications</h2>
+    <ul>${HOME_APPLICATIONS.map((item) => `<li>${escapeHtml(item)}</li>`).join("")}</ul>
+    <h2>Industries served</h2>
+    <ul>${HOME_INDUSTRIES.map((item) => `<li>${escapeHtml(item)}</li>`).join("")}</ul>
+    <h2>Why buyers choose Ramani Steel House</h2>
+    <ul>${HOME_WHY_CHOOSE_US.map(
+      (item) => `<li><strong>${escapeHtml(item.title)}</strong> — ${escapeHtml(item.detail)}</li>`
+    ).join("")}</ul>
+    <h2>Quality and certifications</h2>
+    <ul>${HOME_QUALITY_POINTS.map((item) => `<li>${escapeHtml(item)}</li>`).join("")}</ul>
+    <h2>Frequently asked questions</h2>
+    ${HOME_FAQ_ITEMS.map(
+      (item) => `<h3>${escapeHtml(item.question)}</h3><p>${escapeHtml(item.answer)}</p>`
+    ).join("\n    ")}
+    <h2>Send your enquiry</h2>
+    <p>Share the specification, quantity and destination and we respond with a quotation within 1 business day.</p>
+    <p>Email: ${EMAIL_ADDRESSES.join(" / ")}</p>
+    <p>Phone: ${PHONE_NUMBERS.map((n) => n.display).join(" / ")}</p>
+    <p>Ramani Steel House, ${escapeHtml(POSTAL_ADDRESS.oneLine)}</p>
   </article>`,
   },
   "/about": {
@@ -530,6 +657,157 @@ const STATIC_ROUTE_SEO: Record<string, { title: string; description: string; jso
   },
 };
 
+/**
+ * The category and state landing pages from src/lib/landingPages.
+ *
+ * These are the pages that exist because "H type nickel strip manufacturer in India" returned
+ * the homepage: they need a crawlable snapshot more than any other route on the site, since a
+ * landing page whose copy only appears after React mounts gives a category query nothing to
+ * match on in the raw HTML.
+ */
+export function isLandingSnapshotRoute(pathname: string): boolean {
+  // The prefix is matched as well as the exact slugs so that an unrecognised state name is
+  // handled here — and answered with a real 404 — rather than falling through to the branch
+  // that serves the untouched homepage template with a 200.
+  return (
+    getLandingPageByPathname(pathname) !== null ||
+    /^\/nickel-strip-manufacturer-in-[a-z0-9-]+$/.test(pathname)
+  );
+}
+
+export async function renderLandingSnapshot(
+  template: string,
+  pathname: string
+): Promise<SnapshotResult> {
+  const page = getLandingPageByPathname(pathname);
+  // vercel.json routes the whole /nickel-strip-manufacturer-in-* prefix here, so an invented
+  // state name reaches this function. Answering 200 with the untouched template would leave a
+  // soft 404 at an indexable URL carrying the homepage's title and canonical.
+  if (!page) {
+    const html = injectHead(template, {
+      title: "404 | Page Not Found",
+      description: "This page does not exist. Browse the nickel strip range or contact us.",
+      canonical: `${SITE_URL}${pathname}`,
+      robots: "noindex,follow,noarchive",
+      jsonLd: [],
+      snapshotBody: "",
+    });
+    return { status: 404, html };
+  }
+
+  const canonical = `${SITE_URL}/${page.slug}`;
+
+  // The product grid is best-effort: it is supporting content, and a database hiccup should
+  // leave the page's own copy — which is what it ranks on — intact rather than 503 the URL.
+  let products: Array<Record<string, unknown>> = [];
+  if (page.productSearch) {
+    try {
+      const tokens = page.productSearch.toLowerCase().split(/[^a-z0-9]+/).filter(Boolean);
+      products = await query<Record<string, unknown>>(
+        `SELECT p.name, p.slug, p.dimensions
+           FROM products p
+          WHERE (
+            SELECT bool_and(
+              regexp_replace(lower(coalesce(p.name, '')), '[^a-z0-9]+', ' ', 'g') LIKE '%' || token || '%'
+            )
+            FROM unnest($1::text[]) AS token
+          )
+          ORDER BY p.name
+          LIMIT 6`,
+        [tokens]
+      );
+    } catch (error) {
+      console.warn(`[snapshot] Product list unavailable for ${pathname}; rendering copy only.`, error);
+    }
+  }
+
+  const sectionsHtml = page.sections
+    .map((section) => {
+      const body = section.body ? `<p>${escapeHtml(section.body)}</p>` : "";
+      const bullets = section.bullets?.length
+        ? `<ul>${section.bullets.map((item) => `<li>${escapeHtml(item)}</li>`).join("")}</ul>`
+        : "";
+      return `<h2>${escapeHtml(section.heading)}</h2>${body}${bullets}`;
+    })
+    .join("\n    ");
+
+  const productsHtml = products.length
+    ? `<h2>Products</h2>
+    <ul>${products
+      .map(
+        (product) =>
+          `<li><a href="${SITE_URL}/product/${encodeURIComponent(String(product.slug))}">${escapeHtml(
+            String(product.name)
+          )}</a>${product.dimensions ? ` — ${escapeHtml(String(product.dimensions))}` : ""}</li>`
+      )
+      .join("")}</ul>`
+    : "";
+
+  const faqHtml = `<h2>Frequently asked questions</h2>
+    ${page.faqs
+      .map((faq) => `<h3>${escapeHtml(faq.question)}</h3><p>${escapeHtml(faq.answer)}</p>`)
+      .join("\n    ")}`;
+
+  const crossLinksHtml = `<h2>Also supplying</h2>
+    <ul>${STATE_LANDING_PAGES.filter((state) => state.path !== `/${page.slug}`)
+      .map((state) => `<li><a href="${SITE_URL}${state.path}">${escapeHtml(state.name)}</a></li>`)
+      .join("")}</ul>`;
+
+  const html = injectHead(template, {
+    title: page.title,
+    description: page.description,
+    canonical,
+    ogImage: SITE_OG_IMAGE_URL,
+    keywords: [...page.keywords],
+    jsonLd: [
+      {
+        "@context": "https://schema.org",
+        "@type": "CollectionPage",
+        "@id": `${canonical}#page`,
+        name: page.title,
+        description: page.description,
+        url: canonical,
+        inLanguage: "en",
+        isPartOf: { "@id": `${SITE_URL}/#website` },
+        about: { "@id": `${SITE_URL}/#organization` },
+        provider: { "@id": `${SITE_URL}/#organization` },
+      },
+      {
+        "@context": "https://schema.org",
+        "@type": "BreadcrumbList",
+        itemListElement: [
+          { "@type": "ListItem", position: 1, name: "Home", item: `${SITE_URL}/` },
+          { "@type": "ListItem", position: 2, name: page.breadcrumbName, item: canonical },
+        ],
+      },
+      {
+        "@context": "https://schema.org",
+        "@type": "FAQPage",
+        "@id": `${canonical}#faq`,
+        mainEntity: page.faqs.map((faq) => ({
+          "@type": "Question",
+          name: faq.question,
+          acceptedAnswer: { "@type": "Answer", text: faq.answer },
+        })),
+      },
+    ],
+    snapshotBody: `<article>
+    <h1>${escapeHtml(page.h1)}</h1>
+    <p>${escapeHtml(page.intro)}</p>
+    ${sectionsHtml}
+    ${productsHtml}
+    ${faqHtml}
+    ${crossLinksHtml}
+    <h2>Contact</h2>
+    <p>Ramani Steel House, ${escapeHtml(POSTAL_ADDRESS.oneLine)}</p>
+    <p>Email: ${EMAIL_ADDRESSES.join(" / ")}</p>
+    <p>Phone: ${PHONE_NUMBERS.map((n) => n.display).join(" / ")}</p>
+  </article>`,
+  });
+
+  return { status: 200, html };
+}
+
 export function isStaticSnapshotRoute(pathname: string): boolean {
   return Object.prototype.hasOwnProperty.call(STATIC_ROUTE_SEO, pathname);
 }
@@ -546,7 +824,7 @@ export async function renderStaticRouteSnapshot(template: string, pathname: stri
     title: route.title,
     description: route.description,
     canonical: `${SITE_URL}${pathname}`,
-    ogImage: SITE_LOGO_URL,
+    ogImage: SITE_OG_IMAGE_URL,
     jsonLd: route.jsonLd,
     snapshotBody: route.body,
   });
@@ -615,7 +893,7 @@ export async function renderBlogListSnapshot(template: string): Promise<Snapshot
     title,
     description,
     canonical,
-    ogImage: SITE_LOGO_URL,
+    ogImage: SITE_OG_IMAGE_URL,
     jsonLd,
     snapshotBody: `<article>
     <h1>Latest Blog Articles</h1>
@@ -649,13 +927,19 @@ export async function renderProductSnapshot(template: string, slug: string): Pro
   }
 
   const name = product.name as string;
-  const title = `${name} | Nickel Strips Manufacturer`;
+  const productSlug = product.slug as string;
+  const keywordBlock = getProductKeywordBlock(productSlug);
+  const title = keywordBlock
+    ? `${name} | ${keywordBlock.heading}`
+    : `${name} | Nickel Strips Manufacturer`;
   const rawDescription = `${name} by ${SITE_NAME}. ${
     (product.description as string) || "Industrial-grade nickel strip for lithium-ion battery and precision applications."
   }`;
-  const description = rawDescription.slice(0, 160);
-  const canonical = `${SITE_URL}/product/${encodeURIComponent(product.slug as string)}`;
-  const imageUrl = (product.image as string) || `${SITE_URL}/img/logo.png`;
+  const canonical = `${SITE_URL}/product/${encodeURIComponent(productSlug)}`;
+  // Never the raw `product.image`: that is a signed Supabase Storage URL served with
+  // `X-Robots-Tag: none`, which is exactly why these pages have a price in their search result
+  // but no thumbnail. See src/lib/productImage.ts.
+  const imageUrl = productImageUrl(SITE_URL, productSlug, product.image as string | null);
 
   const applications = Array.isArray(product.applications) ? (product.applications as string[]) : [];
 
@@ -664,6 +948,11 @@ export async function renderProductSnapshot(template: string, slug: string): Pro
   // absent price means "no offer to advertise", so the Offer node is omitted entirely.
   const numericPrice = Number(product.price);
   const hasPrice = Number.isFinite(numericPrice) && numericPrice > 0;
+
+  const keywordValues = { name, price: hasPrice ? formatInr(numericPrice) : null };
+  const description =
+    (keywordBlock && keywordMetaDescription(keywordBlock, keywordValues)) ||
+    rawDescription.slice(0, 160);
 
   const productJsonLd = {
     "@context": "https://schema.org",
@@ -706,9 +995,26 @@ export async function renderProductSnapshot(template: string, slug: string): Pro
     .filter(Boolean)
     .join("");
 
+  // Google only ever considered indexing this photo through the JSON-LD `image` field before,
+  // because the snapshot carried no <img> at all and the tag the React page renders does not
+  // exist until the bundle runs. An image crawler wants a real element, with real dimensions
+  // and real alt text, in the HTML it is handed.
+  const imageAlt = buildImageAlt(productImageAltSubject(name, productSlug));
+  const imageTag =
+    `<img src="${escapeAttr(imageUrl)}" alt="${escapeAttr(imageAlt)}" ` +
+    `width="1000" height="1000" fetchpriority="high" />`;
+
+  const keywordSection = keywordBlock
+    ? `<h2>${escapeHtml(keywordBlock.heading)}</h2>${fillKeywordParagraphs(keywordBlock, keywordValues)
+        .map((paragraph) => `<p>${escapeHtml(paragraph)}</p>`)
+        .join("")}`
+    : "";
+
   const snapshotBody = `<article>
     <h1>${escapeHtml(name)}</h1>
+    ${imageTag}
     <p>${escapeHtml((product.description as string) || "")}</p>
+    ${keywordSection}
     ${specRows ? `<h2>Specifications</h2><ul>${specRows}</ul>` : ""}
     ${
       applications.length
@@ -722,6 +1028,7 @@ export async function renderProductSnapshot(template: string, slug: string): Pro
     description,
     canonical,
     ogImage: imageUrl,
+    keywords: keywordBlock?.keywords,
     jsonLd: [productJsonLd, breadcrumbJsonLd],
     snapshotBody,
   });

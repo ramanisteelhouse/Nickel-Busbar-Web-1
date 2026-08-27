@@ -8,8 +8,10 @@ import {
   renderProductListSnapshot,
   renderNickelStripsLithiumSnapshot,
   renderStaticRouteSnapshot,
+  renderLandingSnapshot,
   renderUnavailableShell,
   isStaticSnapshotRoute,
+  isLandingSnapshotRoute,
 } from "../seoSnapshot.js";
 
 // On Vercel, vercel.json's filesystem routing serves the static dist/index.html shell
@@ -54,6 +56,8 @@ export default async function handler(req: IncomingMessage, res: ServerResponse)
       result = await renderBlogListSnapshot(template);
     } else if (isStaticSnapshotRoute(pathname)) {
       result = await renderStaticRouteSnapshot(template, pathname);
+    } else if (isLandingSnapshotRoute(pathname)) {
+      result = await renderLandingSnapshot(template, pathname);
     } else {
       const blogMatch = pathname.match(/^\/blog\/([^/]+)$/);
       const productMatch = pathname.match(/^\/product\/([^/]+)$/);

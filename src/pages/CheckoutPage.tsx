@@ -227,6 +227,7 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({ cart }) => {
         <Helmet>
           <title>Checkout | Ramani Steel House</title>
           <meta name="robots" content="noindex,follow" />
+          <link rel="canonical" href="https://www.nickelbusbar.com/checkout" />
         </Helmet>
         <h1 className="text-3xl font-bold text-zinc-900 mb-4">{t('checkout.emptyTitle')}</h1>
         <p className="text-zinc-500 mb-8">{t('checkout.emptyDesc')}</p>
@@ -242,6 +243,7 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({ cart }) => {
       <Helmet>
         <title>Checkout | Ramani Steel House</title>
         <meta name="robots" content="noindex,follow" />
+        <link rel="canonical" href="https://www.nickelbusbar.com/checkout" />
       </Helmet>
       <div className="flex items-center gap-4 mb-10">
         <Link to="/cart" className="inline-flex items-center gap-2 text-sm font-semibold text-brand hover:text-brand-dark">

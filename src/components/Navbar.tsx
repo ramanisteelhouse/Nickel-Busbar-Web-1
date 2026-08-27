@@ -1,5 +1,6 @@
 import React from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { ProductThumbnail } from './ProductThumbnail';
 import { Search, ShoppingCart, User, Menu, X, MapPin, ChevronDown } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { cn } from '../lib/utils';
@@ -12,7 +13,7 @@ export const Navbar: React.FC<{ cartCount: number }> = ({ cartCount }) => {
   const [isMenuOpen, setIsMenuOpen] = React.useState(false);
   const [isScrolled, setIsScrolled] = React.useState(false);
   const [searchInput, setSearchInput] = React.useState('');
-  const [searchSuggestions, setSearchSuggestions] = React.useState<Array<{ id: number; slug: string; name: string; category_name?: string }>>([]);
+  const [searchSuggestions, setSearchSuggestions] = React.useState<Array<{ id: number; slug: string; name: string; image?: string | null; category_name?: string }>>([]);
   const [showSearchSuggestions, setShowSearchSuggestions] = React.useState(false);
   const [isLocaleOpen, setIsLocaleOpen] = React.useState(false);
   const [isCategoriesOpen, setIsCategoriesOpen] = React.useState(false);
@@ -174,14 +175,17 @@ export const Navbar: React.FC<{ cartCount: number }> = ({ cartCount }) => {
       )}>
         <div className="flex items-center justify-between gap-4">
           <Link to="/" className="flex shrink-0 items-center gap-2">
+            {/* 9KB WebP, not the 317KB 1737x1906 JPEG: this mark renders at most 160x40. */}
             <img
-              src="/img/icon-logo.jpg"
+              src="/img/icon-logo.webp"
               title="Ramani Steel House"
               alt="Ramani Steel House"
               width="165"
               height="50"
               className="h-9 sm:h-10 w-auto max-w-[160px] object-contain"
               loading="eager"
+              fetchPriority="high"
+              decoding="async"
             />
           </Link>
 
@@ -250,12 +254,21 @@ export const Navbar: React.FC<{ cartCount: number }> = ({ cartCount }) => {
                       key={item.id}
                       type="button"
                       onMouseDown={() => selectSuggestion(item.slug, item.name)}
-                      className="w-full border-b border-slate-100 px-3 py-2 text-left text-xs text-brand hover:bg-slate-50 last:border-b-0"
+                      className="flex w-full items-center gap-3 border-b border-slate-100 px-3 py-2 text-left text-xs text-brand hover:bg-slate-50 last:border-b-0"
                     >
-                      <span className="block font-semibold">{item.name}</span>
-                      {item.category_name ? (
-                        <span className="text-[10px] text-slate-500">{item.category_name}</span>
-                      ) : null}
+                      <ProductThumbnail
+                        slug={item.slug}
+                        image={item.image}
+                        name={item.name}
+                        size={40}
+                        className="h-10 w-10 shrink-0 rounded-lg border border-slate-100 object-cover"
+                      />
+                      <span className="min-w-0">
+                        <span className="block truncate font-semibold">{item.name}</span>
+                        {item.category_name ? (
+                          <span className="text-[10px] text-slate-500">{item.category_name}</span>
+                        ) : null}
+                      </span>
                     </button>
                   ))}
                 </div>
@@ -348,12 +361,21 @@ export const Navbar: React.FC<{ cartCount: number }> = ({ cartCount }) => {
                         key={item.id}
                         type="button"
                         onMouseDown={() => selectSuggestion(item.slug, item.name)}
-                        className="w-full border-b border-slate-100 px-4 py-3 text-left text-sm text-brand hover:bg-slate-50 last:border-b-0"
+                        className="flex w-full items-center gap-3 border-b border-slate-100 px-4 py-3 text-left text-sm text-brand hover:bg-slate-50 last:border-b-0"
                       >
-                        <span className="block font-semibold">{item.name}</span>
-                        {item.category_name ? (
-                          <span className="text-xs text-slate-500">{item.category_name}</span>
-                        ) : null}
+                        <ProductThumbnail
+                          slug={item.slug}
+                          image={item.image}
+                          name={item.name}
+                          size={44}
+                          className="h-11 w-11 shrink-0 rounded-lg border border-slate-100 object-cover"
+                        />
+                        <span className="min-w-0">
+                          <span className="block truncate font-semibold">{item.name}</span>
+                          {item.category_name ? (
+                            <span className="text-xs text-slate-500">{item.category_name}</span>
+                          ) : null}
+                        </span>
                       </button>
                     ))}
                   </div>

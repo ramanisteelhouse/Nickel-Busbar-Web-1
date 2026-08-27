@@ -26,6 +26,7 @@ import {
   emailListSentence,
   phoneListSentence,
 } from "./src/lib/contact.js";
+import { PRODUCT_IMAGE_PLACEHOLDER } from "./src/lib/productImage.js";
 import dotenv from "dotenv";
 import nodemailer from "nodemailer";
 import twilio from "twilio";
@@ -66,6 +67,18 @@ const MAX_QUOTE_ITEMS = 200;
 const MAX_CART_ITEMS = 200;
 const MAX_CART_QUANTITY = 1_000_000;
 const MAX_PREFERENCES_BYTES = 16 * 1024;
+// Product-image proxy (see the /api/product-image route). The extension in the request path
+// is cosmetic, so it is stripped back off to recover the slug; the allow-list keeps the route
+// from being turned into an open proxy for arbitrary non-image responses.
+const PRODUCT_IMAGE_EXTENSION = /\.(jpe?g|png|webp|avif|gif)$/i;
+const PRODUCT_IMAGE_CONTENT_TYPES = new Set([
+  "image/jpeg",
+  "image/png",
+  "image/webp",
+  "image/avif",
+  "image/gif",
+]);
+const PRODUCT_IMAGE_MAX_BYTES = 4 * 1024 * 1024;
 
 const emailTransporter =
   SMTP_HOST && SMTP_USER && SMTP_PASS
@@ -347,6 +360,30 @@ const normalizeProductRow = (row: Record<string, unknown>) => ({
   image: normalizeImageSource(row.image),
   applications: normalizeStringArray(row.applications),
 });
+
+/**
+ * Product search matched a single contiguous `ILIKE '%<raw query>%'`, so the separator a
+ * buyer happened to type decided whether they got results: every H-Type product is named
+ * with a hyphen ("Ni 18650 2P H-Type Nickel Strip"), so "H-Type Nickel Strip" returned three
+ * products and "H Type Nickel Strip" returned none. Word order was just as brittle —
+ * "nickel strip h type" matched nothing either.
+ *
+ * Both sides are now flattened to lowercase alphanumeric words and every word has to appear
+ * somewhere in the row, in any order. "H Type", "H-Type" and "h_type" all reduce to the same
+ * two tokens, and a longer phrase narrows the result set instead of emptying it.
+ */
+const SEARCH_TOKEN_SEPARATORS = /[^a-z0-9]+/g;
+
+const toSearchTokens = (value: string) =>
+  value.toLowerCase().replace(SEARCH_TOKEN_SEPARATORS, " ").trim().split(" ").filter(Boolean);
+
+/**
+ * The same flattening applied to the row, as a SQL expression. `columns` are concatenated
+ * before normalizing so a phrase spanning two fields ("nickel strip" in `name` plus "ASTM" in
+ * `astm_value`) still matches.
+ */
+const searchHaystackSql = (columns: string[]) =>
+  `regexp_replace(lower(${columns.map((column) => `coalesce(${column}::text, '')`).join(" || ' ' || ")}), '[^a-z0-9]+', ' ', 'g')`;
 
 const normalizeAdRow = (row: Record<string, unknown>) => ({
   ...row,
@@ -655,6 +692,87 @@ export function createApiApp() {
       timestamp: new Date().toISOString(),
     });
   });
+
+  // Same-origin, indexable proxy for product photos. Supabase Storage stamps every object
+  // with `X-Robots-Tag: none`, so a photo served straight from its signed storage URL can
+  // never be indexed by Google Images and the product page can never earn a search-result
+  // thumbnail - see src/lib/productImage.ts for the full reasoning. This route re-serves the
+  // same bytes from our own domain under headers we control.
+  //
+  // Registered above the session-cookie middleware deliberately: a Set-Cookie header makes a
+  // response uncacheable at the CDN edge, which would send every product-photo request back
+  // through this function instead of being answered by Vercel's cache.
+  app.get(
+    "/api/product-image/:file",
+    asyncHandler(async (req, res) => {
+      const slug = String(req.params.file || "").replace(PRODUCT_IMAGE_EXTENSION, "");
+      if (!slug) {
+        return res.redirect(302, PRODUCT_IMAGE_PLACEHOLDER);
+      }
+
+      const product = await queryOne<{ image: string | null }>(
+        `SELECT image FROM products WHERE slug = $1`,
+        [slug]
+      );
+      const source = product?.image?.trim();
+
+      // No photo on record, or one already hosted by us: nothing to proxy. The redirect keeps
+      // the URL usable either way rather than emitting a broken <img> on the page.
+      if (!source) {
+        return res.redirect(302, PRODUCT_IMAGE_PLACEHOLDER);
+      }
+      if (!/^https?:\/\//i.test(source)) {
+        return res.redirect(302, source.startsWith("/") ? source : PRODUCT_IMAGE_PLACEHOLDER);
+      }
+
+      let upstream: Response;
+      try {
+        upstream = await fetch(source, { redirect: "follow" });
+      } catch (error) {
+        console.error(`[product-image] upstream fetch failed for ${slug}`, error);
+        return res.redirect(302, PRODUCT_IMAGE_PLACEHOLDER);
+      }
+
+      const contentType = (upstream.headers.get("content-type") || "").split(";")[0].trim().toLowerCase();
+      if (!upstream.ok || !PRODUCT_IMAGE_CONTENT_TYPES.has(contentType)) {
+        console.error(
+          `[product-image] upstream returned ${upstream.status} ${contentType || "(no type)"} for ${slug}`
+        );
+        return res.redirect(302, PRODUCT_IMAGE_PLACEHOLDER);
+      }
+
+      // A Vercel function response is capped at ~4.5MB. Falling back to the storage URL for an
+      // oversized file loses the indexing benefit for that one product, which beats a 500.
+      const declaredLength = Number(upstream.headers.get("content-length"));
+      if (Number.isFinite(declaredLength) && declaredLength > PRODUCT_IMAGE_MAX_BYTES) {
+        console.warn(`[product-image] ${slug} is ${declaredLength} bytes; serving upstream directly`);
+        return res.redirect(302, source);
+      }
+
+      const body = Buffer.from(await upstream.arrayBuffer());
+      if (body.length > PRODUCT_IMAGE_MAX_BYTES) {
+        console.warn(`[product-image] ${slug} is ${body.length} bytes; serving upstream directly`);
+        return res.redirect(302, source);
+      }
+
+      res.setHeader("Content-Type", contentType);
+      res.setHeader("Content-Length", String(body.length));
+      // The entire point of the route: the explicit opposite of Supabase's `none`.
+      res.setHeader("X-Robots-Tag", "all");
+      // A product photo changes only when someone re-uploads it, and the URL is keyed by slug
+      // rather than by content, so browsers get a day and the CDN holds it for a year with a
+      // week of stale-while-revalidate to absorb re-uploads.
+      res.setHeader(
+        "Cache-Control",
+        "public, max-age=86400, s-maxage=31536000, stale-while-revalidate=604800"
+      );
+      // helmet defaults this to same-origin, which would block og:image previews and any
+      // legitimate hotlink of a photo we are publishing on purpose.
+      res.setHeader("Cross-Origin-Resource-Policy", "cross-origin");
+      return res.end(body);
+    })
+  );
+
   app.use((req, res, next) => {
     const sessionId = readCookie(req.headers.cookie, "site_session_id");
     if (!sessionId) {
@@ -1154,18 +1272,26 @@ export function createApiApp() {
       sql += " AND p.is_featured = true";
     }
     if (typeof search === "string" && search.trim()) {
-      const searchPattern = `%${search.trim()}%`;
-      params.push(searchPattern);
-      const searchParam = `$${params.length}`;
-      sql += ` AND (
-        p.name ILIKE ${searchParam}
-        OR p.description ILIKE ${searchParam}
-        OR p.astm_value ILIKE ${searchParam}
-        OR p.uns_value ILIKE ${searchParam}
-        OR p.dimensions ILIKE ${searchParam}
-        OR CAST(p.price AS TEXT) ILIKE ${searchParam}
-        OR c.name ILIKE ${searchParam}
-      )`;
+      const tokens = toSearchTokens(search);
+      // A query of only punctuation normalizes to zero tokens. bool_and over an empty set is
+      // NULL rather than true, so without this guard "---" would filter every product out.
+      if (tokens.length) {
+        params.push(tokens);
+        const tokensParam = `$${params.length}`;
+        const haystack = searchHaystackSql([
+          "p.name",
+          "p.description",
+          "p.astm_value",
+          "p.uns_value",
+          "p.dimensions",
+          "p.price",
+          "c.name",
+        ]);
+        sql += ` AND (
+          SELECT bool_and(${haystack} LIKE '%' || token || '%')
+          FROM unnest(${tokensParam}::text[]) AS token
+        )`;
+      }
     }
 
     try {
@@ -1185,23 +1311,38 @@ export function createApiApp() {
       return res.json([]);
     }
 
+    // Same separator-insensitive matching as /api/products, so the dropdown cannot go empty
+    // on a phrase the results page would have matched. Tokens match as substrings, which is
+    // what a typeahead needs: it fires mid-word, and a half-typed word is a prefix of the
+    // real one. Names that *start* with what was typed still sort first.
+    const tokens = toSearchTokens(rawQuery);
+    if (!tokens.length) {
+      return res.json([]);
+    }
+
     try {
-      const searchPattern = `${rawQuery}%`;
-      const containsPattern = `%${rawQuery}%`;
+      const nameHaystack = searchHaystackSql(["p.name"]);
+      const prefixPattern = `${tokens.join(" ")}%`;
       const suggestions = await query(
+        // `image` is selected only so the client can pick the file extension for the
+        // /api/product-image path; the URL itself is never rendered.
         `SELECT
           p.id,
           p.slug,
           p.name,
+          p.image,
           c.name AS category_name
          FROM products p
          LEFT JOIN categories c ON c.id = p.category_id
-         WHERE p.name ILIKE $1 OR p.name ILIKE $2
+         WHERE (
+           SELECT bool_and(${nameHaystack} LIKE '%' || token || '%')
+           FROM unnest($1::text[]) AS token
+         )
          ORDER BY
-           CASE WHEN p.name ILIKE $1 THEN 0 ELSE 1 END,
+           CASE WHEN ${nameHaystack} LIKE $2 THEN 0 ELSE 1 END,
            p.name ASC
          LIMIT $3`,
-        [searchPattern, containsPattern, limit],
+        [tokens, prefixPattern, limit],
       );
       res.json(suggestions);
     } catch (error) {

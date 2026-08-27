@@ -157,6 +157,7 @@ export const LoginPage: React.FC = () => {
       <Helmet>
         <title>Login | Ramani Steel House</title>
         <meta name="robots" content="noindex,follow" />
+        <link rel="canonical" href="https://www.nickelbusbar.com/login" />
       </Helmet>
       <motion.div
         initial={{ opacity: 0, scale: 0.95 }}
