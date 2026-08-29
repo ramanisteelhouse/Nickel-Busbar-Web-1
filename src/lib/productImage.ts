@@ -11,6 +11,8 @@
 // same domain as the page the photo belongs to - behind a URL that is stable, readable and
 // carries the product slug where an image crawler can read it.
 
+import { localProductImagePath } from './productImageLocal';
+
 /** Path prefix of the proxy route in apiApp.ts. The two must stay in step. */
 export const PRODUCT_IMAGE_ROUTE = '/api/product-image';
 
@@ -37,11 +39,29 @@ function imageExtension(sourceUrl?: string | null): string {
   return extension === 'jpeg' ? 'jpg' : extension;
 }
 
-/** Root-relative URL, for `<img src>` on one of our own pages. */
+/**
+ * Root-relative URL, for `<img src>` on one of our own pages.
+ *
+ * Prefers the copy downloaded by scripts/sync-product-images.ts, and falls back to the proxy
+ * route for anything not synced yet.
+ *
+ * The proxy streams whatever is in storage, at whatever size it was uploaded — which is
+ * originals of 0.5MB to 2.3MB each, rendered into slots no wider than 600px. Twelve of those
+ * on one search-results page is roughly 15MB of images, on a site whose SEO audit already
+ * flagged total page weight. The synced copies are the same photos at 900px WebP, 44KB to
+ * 229KB, served as static assets straight from the CDN rather than through a function.
+ *
+ * The trade-off is freshness: a photo replaced in the CMS keeps showing the synced copy until
+ * `npx tsx scripts/sync-product-images.ts` is run again. Products added since the last sync are
+ * unaffected — they have no local copy, so they go through the proxy and are current.
+ */
 export function productImagePath(slug?: string | null, sourceUrl?: string | null): string {
   const cleanSlug = slug?.trim();
   if (!cleanSlug) return PRODUCT_IMAGE_PLACEHOLDER;
-  return `${PRODUCT_IMAGE_ROUTE}/${encodeURIComponent(cleanSlug)}.${imageExtension(sourceUrl)}`;
+  return (
+    localProductImagePath(cleanSlug) ??
+    `${PRODUCT_IMAGE_ROUTE}/${encodeURIComponent(cleanSlug)}.${imageExtension(sourceUrl)}`
+  );
 }
 
 /**

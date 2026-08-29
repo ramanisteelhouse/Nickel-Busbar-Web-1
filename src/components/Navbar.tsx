@@ -256,11 +256,16 @@ export const Navbar: React.FC<{ cartCount: number }> = ({ cartCount }) => {
                       onMouseDown={() => selectSuggestion(item.slug, item.name)}
                       className="flex w-full items-center gap-3 border-b border-slate-100 px-3 py-2 text-left text-xs text-brand hover:bg-slate-50 last:border-b-0"
                     >
+                      {/* Eager: the dropdown only exists while it is on screen, so there is
+                          nothing to defer — and a lazy image mounted inside a freshly inserted
+                          fixed-position panel is not reliably triggered at all, which left
+                          every suggestion thumbnail permanently pending. */}
                       <ProductThumbnail
                         slug={item.slug}
                         image={item.image}
                         name={item.name}
                         size={40}
+                        loading="eager"
                         className="h-10 w-10 shrink-0 rounded-lg border border-slate-100 object-cover"
                       />
                       <span className="min-w-0">
@@ -368,6 +373,7 @@ export const Navbar: React.FC<{ cartCount: number }> = ({ cartCount }) => {
                           image={item.image}
                           name={item.name}
                           size={44}
+                          loading="eager"
                           className="h-11 w-11 shrink-0 rounded-lg border border-slate-100 object-cover"
                         />
                         <span className="min-w-0">
