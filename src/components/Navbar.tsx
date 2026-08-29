@@ -7,6 +7,7 @@ import { cn } from '../lib/utils';
 import { useLanguage } from '../i18n/LanguageProvider';
 import { languageMeta, LanguageCode } from '../i18n/languages';
 import { AdBar } from './AdBar';
+import { HeritageBadge } from './HeritageBadge';
 import type { Category } from '../types';
 
 export const Navbar: React.FC<{ cartCount: number }> = ({ cartCount }) => {
@@ -174,19 +175,16 @@ export const Navbar: React.FC<{ cartCount: number }> = ({ cartCount }) => {
         isScrolled ? 'py-3' : 'py-4'
       )}>
         <div className="flex items-center justify-between gap-4">
-          <Link to="/" className="flex shrink-0 items-center gap-2">
-            {/* 9KB WebP, not the 317KB 1737x1906 JPEG: this mark renders at most 160x40. */}
-            <img
-              src="/img/icon-logo.webp"
-              title="Ramani Steel House"
-              alt="Ramani Steel House"
-              width="165"
-              height="50"
-              className="h-9 sm:h-10 w-auto max-w-[160px] object-contain"
-              loading="eager"
-              fetchPriority="high"
-              decoding="async"
-            />
+          {/* The flipping heritage badge is the header logo, not an ornament beside it: its
+              front face is the same monogram this slot already showed, so pairing the two would
+              put the mark on screen twice. aria-label on the link rather than relying on the
+              badge's own — a home link should be named "Home", not read out the tagline. */}
+          <Link
+            to="/"
+            aria-label="Ramani Steel House — Home"
+            className="flex shrink-0 items-center gap-2"
+          >
+            <HeritageBadge size={40} compact priority />
           </Link>
 
           <div className="hidden lg:flex items-center gap-6 flex-1 justify-center">

@@ -115,6 +115,24 @@
   color: rgba(255, 255, 255, 0.82);
 }
 
+/* Header-sized badge (see the `compact` prop). At ~40px the ring is thinner, the number carries
+   the whole message, and the 0.28em tracking that centres "Years" at hero size is wide enough
+   to push a three-letter word out of a circle this small. */
+.heritage-badge--compact .heritage-badge__face {
+  border-width: 1px;
+  box-shadow: 0 4px 12px -6px rgba(34, 58, 65, 0.5);
+}
+
+.heritage-badge--compact .heritage-badge__years {
+  font-size: 0.95em;
+}
+
+.heritage-badge--compact .heritage-badge__label {
+  font-size: 0.36em;
+  letter-spacing: 0.1em;
+  text-indent: 0.1em;
+}
+
 /* Holds each face still for most of the cycle and spends only the gaps turning, so it reads as
    a badge that flips rather than something continuously spinning. */
 @keyframes heritage-flip {
