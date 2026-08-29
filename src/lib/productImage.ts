@@ -11,7 +11,13 @@
 // same domain as the page the photo belongs to - behind a URL that is stable, readable and
 // carries the product slug where an image crawler can read it.
 
-import { localProductImagePath } from './productImageLocal';
+// The .js extension is required, not optional: package.json sets "type": "module", and this
+// file is loaded directly by Node (apiApp.ts and seoSnapshot.ts import it as
+// ./src/lib/productImage.js) as well as by Vite. Node's ESM resolver does not add extensions,
+// so an extensionless specifier here throws ERR_MODULE_NOT_FOUND at import time and takes the
+// entire API function down with it. tsc and the Vite build both resolve it either way, so
+// neither catches the mistake.
+import { localProductImagePath } from './productImageLocal.js';
 
 /** Path prefix of the proxy route in apiApp.ts. The two must stay in step. */
 export const PRODUCT_IMAGE_ROUTE = '/api/product-image';
