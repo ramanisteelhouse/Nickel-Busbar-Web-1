@@ -101,3 +101,38 @@ Two values in the structured data were derived rather than supplied, and should 
   is a locality rather than a full street address. A building name and number would help both
   the Local SEO check and buyers trying to find you. Update it there and it propagates to the
   footer, the JSON-LD and the crawler snapshots at once.
+
+## 8. Point Merchant Center at the generated product feed
+
+Merchant Center reported `Missing value: gtin` and `Missing value: brand` on every item in the
+**PRODUCTS SOURCE 2** feed. Neither was a fault on the website — the product pages already
+publish `brand` in their Product structured data — so the errors came from the uploaded feed
+file, which is maintained inside Merchant Center and had no such columns.
+
+The site now generates a correct feed from the live catalogue:
+
+```
+https://www.nickelbusbar.com/merchant-feed.xml
+```
+
+In Merchant Center: **Data sources → Add product source → Scheduled fetch**, give it that URL,
+and set a daily fetch. Then **delete or disable PRODUCTS SOURCE 2** — leaving both active means
+two sources fighting over the same `id` values.
+
+What the feed fixes, and why:
+
+- **`g:brand`** — `Ramani Steel House`. These are own-manufactured goods, so the brand is ours.
+- **`g:identifier_exists`** — `no`. This is what clears the GTIN error. Nickel strip is slit to
+  order and carries no GS1 barcode, and Google's rule for a manufacturer that has never been
+  assigned a GTIN is to declare that rather than invent a number. **If GS1 barcodes are ever
+  purchased, add `g:gtin` and remove this** — see `src/lib/merchantFeed.ts`.
+- **`g:mpn`** — the product slug, already used as `sku` in the structured data and in the URL.
+
+Two things the feed deliberately does not do:
+
+- **Enquiry-only products are omitted.** Merchant Center rejects a row with a missing or zero
+  price, so a product with no rate is left out rather than sent at zero.
+- **No `g:shipping`.** Freight on industrial coil is quoted per order. Set shipping at account
+  level in Merchant Center (**Shipping and returns**); India requires shipping to be configured
+  somewhere, and the account setting is the honest place for it.
+

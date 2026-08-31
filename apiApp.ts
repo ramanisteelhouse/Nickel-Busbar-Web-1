@@ -26,7 +26,11 @@ import {
   emailListSentence,
   phoneListSentence,
 } from "./src/lib/contact.js";
-import { PRODUCT_IMAGE_PLACEHOLDER } from "./src/lib/productImage.js";
+import { PRODUCT_IMAGE_PLACEHOLDER, productImageUrl } from "./src/lib/productImage.js";
+import {
+  buildMerchantFeed,
+  type MerchantFeedProduct,
+} from "./src/lib/merchantFeed.js";
 import { localProductImagePath } from "./src/lib/productImageLocal.js";
 import dotenv from "dotenv";
 import nodemailer from "nodemailer";
@@ -1269,6 +1273,35 @@ export function createApiApp() {
     } finally {
       client.release();
     }
+  }));
+
+  // --- Google Merchant Center ---
+  // Point the Merchant Center feed at https://www.nickelbusbar.com/merchant-feed.xml as a
+  // scheduled fetch. Built from the catalogue so `brand` and `identifier_exists` are always
+  // present — the two attributes whose absence failed every item in the uploaded feed. See
+  // src/lib/merchantFeed.ts for why identifier_exists is `no` rather than a fabricated GTIN.
+  app.get(["/merchant-feed.xml", "/api/merchant-feed.xml"], asyncHandler(async (_req, res) => {
+    const products = await query<MerchantFeedProduct>(
+      `SELECT p.slug, p.name, p.description, p.price, p.stock, p.image, p.seo_meta_description,
+              c.name as category_name
+         FROM products p
+         LEFT JOIN categories c ON p.category_id = c.id
+        ORDER BY p.id`
+    );
+
+    // Absolute, canonical and www — Merchant Center rejects a relative link, and a link that
+    // redirects to the canonical host costs a crawl on every item.
+    const siteUrl = "https://www.nickelbusbar.com";
+    const xml = buildMerchantFeed(products, {
+      siteUrl,
+      imageUrl: (product) => productImageUrl(siteUrl, product.slug, product.image),
+    });
+
+    res.setHeader("Content-Type", "application/xml; charset=utf-8");
+    // Merchant Center refetches on its own schedule; an hour of cache spares the database a
+    // rebuild for every crawler that happens across the URL.
+    res.setHeader("Cache-Control", "public, max-age=3600");
+    res.send(xml);
   }));
 
   // --- Product Routes ---

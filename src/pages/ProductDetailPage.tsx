@@ -197,7 +197,10 @@ export const ProductDetailPage: React.FC<{ onAddToCart: (p: Product) => void }> 
             image: [imageUrl],
             brand: { '@type': 'Brand', name: 'Ramani Steel House' },
             category: product.category_name || 'Nickel Strips',
+            // mpn alongside sku: own-manufactured goods with no GS1 barcode, so brand + mpn
+            // is the identifier pair Google looks for when gtin is absent.
             sku: product.slug,
+            mpn: product.slug,
             countryOfOrigin: 'IN',
             // Mirrors seoSnapshot.ts: the export terms as machine-readable attributes, matching
             // the visible Export supply table rendered further down this page.

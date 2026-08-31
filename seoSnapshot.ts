@@ -1030,7 +1030,10 @@ export async function renderProductSnapshot(template: string, slug: string): Pro
     image: [imageUrl],
     brand: { "@type": "Brand", name: SITE_NAME },
     category: (product.category_name as string) || "Nickel Strips",
+    // mpn alongside sku: these are own-manufactured goods with no GS1 barcode, so brand +
+    // mpn is the identifier pair Google looks for when gtin is absent.
     sku: product.slug,
+    mpn: product.slug,
     countryOfOrigin: "IN",
     // The export terms as machine-readable attributes, matching the visible table below.
     // additionalProperty is the field Google and answer engines read specifications out of, so
