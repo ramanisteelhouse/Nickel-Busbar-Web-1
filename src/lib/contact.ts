@@ -32,7 +32,10 @@ export const EMAIL_ADDRESSES = [
  * from the page and the one it reads from the structured data cannot disagree.
  */
 export const POSTAL_ADDRESS = {
-  streetAddress: 'Marine Lines East',
+  // From the company's own 4-page brochure ("65/73, C.P. Tank Road, Mumbai - 400 004,
+  // Maharashtra, India"). This was "Marine Lines East" — a locality, not a street address,
+  // which is why the SEO audit's Local SEO check could not identify an address on the page.
+  streetAddress: '65/73, C.P. Tank Road',
   addressLocality: 'Mumbai',
   addressRegion: 'Maharashtra',
   postalCode: '400004',

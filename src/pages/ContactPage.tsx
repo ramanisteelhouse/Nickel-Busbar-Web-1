@@ -1,5 +1,7 @@
 import React from 'react';
 import { Helmet } from 'react-helmet-async';
+import { FileText } from 'lucide-react';
+import { BROCHURE } from '../lib/brochure';
 import { logCallClick } from '../lib/utils';
 import { EMAIL_ADDRESSES, PHONE_NUMBERS, PRIMARY_CALL, PRIMARY_EMAIL, telHref } from '../lib/contact';
 
@@ -80,7 +82,7 @@ export const ContactPage: React.FC = () => {
   return (
     <div className="pt-28 pb-20 bg-[#f6f8f9] text-brand">
       <Helmet>
-        <title>Contact Us | Ramani Steel House</title>
+        <title>Contact Nickel Strip Manufacturer Mumbai | Ramani Steel</title>
         <meta
           name="description"
           content="Contact Ramani Steel House, nickel strip manufacturer and exporter in Mumbai, India, for nickel strip and nickel busbar enquiries and quotations."
@@ -134,6 +136,20 @@ export const ContactPage: React.FC = () => {
                 className="inline-flex rounded-full bg-brand px-4 py-2 text-xs font-semibold text-white hover:bg-brand-dark"
               >
                 Open in Google Maps
+              </a>
+            </div>
+            {/* The document procurement teams ask for before they enquire. */}
+            <div className="pt-1">
+              <a
+                href={BROCHURE.path}
+                target="_blank"
+                rel="noreferrer"
+                title={BROCHURE.description}
+                className="inline-flex items-center gap-2 whitespace-nowrap rounded-full border border-brand px-4 py-2 text-xs font-semibold text-brand hover:bg-brand hover:text-white transition-colors"
+              >
+                <FileText size={14} />
+                Download brochure
+                <span className="font-normal opacity-70">({BROCHURE.sizeLabel})</span>
               </a>
             </div>
           </div>

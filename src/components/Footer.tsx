@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { logCallClick } from '../lib/utils';
 import { EMAIL_ADDRESSES, PHONE_NUMBERS, POSTAL_ADDRESS, telHref } from '../lib/contact';
 import { STATE_LANDING_PAGES } from '../lib/landingPages';
+import { BROCHURE } from '../lib/brochure';
 
 export const Footer: React.FC = () => {
   return (
@@ -51,6 +52,16 @@ export const Footer: React.FC = () => {
               <li><Link className="inline-block py-1" to="/blog">Blog</Link></li>
               <li><Link className="inline-block py-1" to="/export-enquiry">Export Enquiry</Link></li>
               <li><Link className="inline-block py-1" to="/contact">Contact</Link></li>
+              <li>
+                <a
+                  href={BROCHURE.path}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="inline-block py-1 hover:text-brand"
+                >
+                  {BROCHURE.label} <span className="text-xs text-slate-400">({BROCHURE.sizeLabel})</span>
+                </a>
+              </li>
             </ul>
           </div>
           <div>

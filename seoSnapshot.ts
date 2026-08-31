@@ -32,6 +32,7 @@ import {
 } from "./src/lib/productSeo.js";
 import { buildImageAlt } from "./src/lib/utils.js";
 import { buildProductSpecs, NICKEL_PURITY_RANGE } from "./src/lib/productSpecs.js";
+import { BROCHURE } from "./src/lib/brochure.js";
 import {
   applications as HOME_APPLICATIONS,
   faqItems as HOME_FAQ_ITEMS,
@@ -518,7 +519,7 @@ const STATIC_ROUTE_SEO: Record<string, { title: string; description: string; jso
   </article>`,
   },
   "/contact": {
-    title: "Contact Us | Ramani Steel House",
+    title: "Contact Nickel Strip Manufacturer Mumbai | Ramani Steel",
     description:
       "Contact Ramani Steel House, nickel strip manufacturer and exporter in Mumbai, India, for nickel strip and nickel busbar enquiries and quotations.",
     jsonLd: [
@@ -544,8 +545,10 @@ const STATIC_ROUTE_SEO: Record<string, { title: string; description: string; jso
     body: `<article>
     <h1>Contact Us</h1>
     <p>For product enquiries, custom requirements, and bulk orders.</p>
+    <p>Ramani Steel House, ${escapeHtml(POSTAL_ADDRESS.oneLine)}</p>
     <p>Email: ${EMAIL_ADDRESSES.join(" / ")}</p>
     <p>Phone: ${PHONE_NUMBERS.map((n) => n.display).join(" / ")}</p>
+    <p><a href="${SITE_URL}${BROCHURE.path}">${escapeHtml(BROCHURE.label)}</a> (${escapeHtml(BROCHURE.sizeLabel)})</p>
   </article>`,
   },
   "/calculator": {
@@ -664,6 +667,7 @@ const STATIC_ROUTE_SEO: Record<string, { title: string; description: string; jso
     <p>Share the specification, quantity and destination and we respond with a quotation within 1 business day.</p>
     <p>Email: ${EMAIL_ADDRESSES.join(" / ")}</p>
     <p>Phone: ${PHONE_NUMBERS.map((n) => n.display).join(" / ")}</p>
+    <p><a href="${SITE_URL}${BROCHURE.path}">${escapeHtml(BROCHURE.label)}</a> (${escapeHtml(BROCHURE.sizeLabel)})</p>
   </article>`,
   },
 };

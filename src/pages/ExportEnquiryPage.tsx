@@ -1,7 +1,8 @@
 import React from 'react';
 import { Helmet } from 'react-helmet-async';
 import { Link } from 'react-router-dom';
-import { Globe, MapPin, FileCheck, Ship, Factory, ArrowRight } from 'lucide-react';
+import { Globe, MapPin, FileCheck, Ship, Factory, ArrowRight, FileText } from 'lucide-react';
+import { BROCHURE } from '../lib/brochure';
 import { logCallClick } from '../lib/utils';
 import { EMAIL_ADDRESSES, PHONE_NUMBERS, telHref } from '../lib/contact';
 import {
@@ -149,6 +150,19 @@ export const ExportEnquiryPage: React.FC = () => {
         </p>
         <h1 className="mt-3 text-3xl md:text-4xl font-display font-bold">{EXPORT_H1}</h1>
         <p className="mt-4 max-w-3xl text-slate-600">{EXPORT_LEAD}</p>
+        {/* Overseas buyers almost always want the company profile before they send a spec —
+            it is what gets forwarded for internal approval. */}
+        <a
+          href={BROCHURE.path}
+          target="_blank"
+          rel="noreferrer"
+          title={BROCHURE.description}
+          className="mt-5 inline-flex items-center gap-2 whitespace-nowrap rounded-full border border-brand px-5 py-2.5 text-sm font-semibold text-brand hover:bg-brand hover:text-white transition-colors"
+        >
+          <FileText size={16} />
+          Download brochure
+          <span className="font-normal opacity-70">({BROCHURE.sizeLabel})</span>
+        </a>
 
         <div className="mt-8 grid grid-cols-1 lg:grid-cols-2 gap-6">
           <section className="rounded-2xl border border-slate-200 bg-white p-6">
