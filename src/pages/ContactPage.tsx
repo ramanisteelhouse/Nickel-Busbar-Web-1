@@ -83,7 +83,7 @@ export const ContactPage: React.FC = () => {
         <title>Contact Us | Ramani Steel House</title>
         <meta
           name="description"
-          content="Contact Ramani Steel House, a nickel strip manufacturer in India, for nickel strip and nickel busbar enquiries. Request a quote for lithium-ion battery manufacturing applications."
+          content="Contact Ramani Steel House, nickel strip manufacturer and exporter in Mumbai, India, for nickel strip and nickel busbar enquiries and quotations."
         />
         <link rel="canonical" href="https://www.nickelbusbar.com/contact" />
         <script type="application/ld+json">{JSON.stringify(contactPageJsonLd)}</script>
@@ -144,6 +144,8 @@ export const ContactPage: React.FC = () => {
               value={formState.name}
               onChange={handleChange('name')}
               placeholder="Name"
+              aria-label="Name"
+              autoComplete="name"
               className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm"
               required
             />
@@ -151,6 +153,8 @@ export const ContactPage: React.FC = () => {
               value={formState.email}
               onChange={handleChange('email')}
               placeholder="Email"
+              aria-label="Email address"
+              autoComplete="email"
               type="email"
               className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm"
               required
@@ -159,6 +163,9 @@ export const ContactPage: React.FC = () => {
               value={formState.phone}
               onChange={handleChange('phone')}
               placeholder="Phone"
+              aria-label="Phone number"
+              autoComplete="tel"
+              type="tel"
               className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm"
               required
             />
@@ -166,12 +173,15 @@ export const ContactPage: React.FC = () => {
               value={formState.company}
               onChange={handleChange('company')}
               placeholder="Company (optional)"
+              aria-label="Company (optional)"
+              autoComplete="organization"
               className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm"
             />
             <textarea
               value={formState.message}
               onChange={handleChange('message')}
               placeholder="Tell us about your requirement (product, dimensions, quantity)"
+              aria-label="Your requirement — product, dimensions and quantity"
               className="sm:col-span-2 min-h-[110px] rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm"
               required
             />

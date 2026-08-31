@@ -371,8 +371,8 @@ export async function renderProductListSnapshot(template: string, isCategoriesRo
   // self-canonicalising. Two indexable URLs for identical content split their own ranking.
   const canonical = `${SITE_URL}/products`;
   const title = isCategoriesRoute
-    ? "Nickel Strip Categories | Pure Nickel, Nickel Plated & Battery Tabs"
-    : "Nickel Strip Products | Pure Nickel & Nickel Plated Strips - Ramani Steel House";
+    ? "Nickel Strip Categories | Pure Nickel & Plated Strips"
+    : "Nickel Strip Products | Manufacturer & Exporter India";
   const description = isCategoriesRoute
     ? "Browse nickel strip categories from Ramani Steel House: pure nickel, nickel-plated strips, battery tabs, busbars and custom coils. Manufactured in Mumbai, supplied PAN India and exported worldwide."
     : "Shop nickel strips, nickel-plated strips, and battery tabs manufactured in Mumbai, India. PAN India supply and export to 17+ countries. Request bulk and custom quotes.";
@@ -520,7 +520,7 @@ const STATIC_ROUTE_SEO: Record<string, { title: string; description: string; jso
   "/contact": {
     title: "Contact Us | Ramani Steel House",
     description:
-      "Contact Ramani Steel House, a nickel strip manufacturer in India, for nickel strip and nickel busbar enquiries. Request a quote for lithium-ion battery manufacturing applications.",
+      "Contact Ramani Steel House, nickel strip manufacturer and exporter in Mumbai, India, for nickel strip and nickel busbar enquiries and quotations.",
     jsonLd: [
       {
         "@context": "https://schema.org",
@@ -676,6 +676,55 @@ const STATIC_ROUTE_SEO: Record<string, { title: string; description: string; jso
  * landing page whose copy only appears after React mounts gives a category query nothing to
  * match on in the raw HTML.
  */
+/**
+ * The routes that must never be indexed: the cart, the checkout and the sign-in page.
+ *
+ * These were the only routes vercel.json sent straight to the static dist/index.html, which
+ * meant their raw HTML - the version Googlebot reads on its first pass - carried the
+ * *homepage's* title, `<meta name="robots" content="index, follow">` and
+ * `<link rel="canonical" href="https://www.nickelbusbar.com/">`. Three URLs each announcing
+ * that they are the homepage and asking to be indexed. The pages do set noindex through their
+ * own <Helmet>, but only once the bundle has run, and a crawler is under no obligation to wait.
+ *
+ * A self-referencing canonical rather than a homepage one: pointing a noindex page at the
+ * homepage asks Google to consolidate the two, which is the opposite of excluding it.
+ */
+const NOINDEX_ROUTES: Record<string, { title: string; description: string }> = {
+  "/cart": {
+    title: "Your Cart | Ramani Steel House",
+    description: "Review the nickel strip and busbar items in your quote request.",
+  },
+  "/checkout": {
+    title: "Checkout | Ramani Steel House",
+    description: "Complete your nickel strip and busbar quote request.",
+  },
+  "/login": {
+    title: "Sign In | Ramani Steel House",
+    description: "Sign in to your Ramani Steel House account.",
+  },
+};
+
+export function isNoindexSnapshotRoute(pathname: string): boolean {
+  return Object.prototype.hasOwnProperty.call(NOINDEX_ROUTES, pathname);
+}
+
+export function renderNoindexSnapshot(template: string, pathname: string): SnapshotResult {
+  const route = isNoindexSnapshotRoute(pathname) ? NOINDEX_ROUTES[pathname] : undefined;
+  if (!route) return { status: 200, html: template };
+
+  const html = injectHead(template, {
+    title: route.title,
+    description: route.description,
+    canonical: `${SITE_URL}${pathname}`,
+    robots: "noindex,follow",
+    jsonLd: [],
+    // No body snapshot: there is nothing here worth crawling, and the app renders the real
+    // page on mount either way.
+    snapshotBody: "",
+  });
+  return { status: 200, html };
+}
+
 export function isLandingSnapshotRoute(pathname: string): boolean {
   // The prefix is matched as well as the exact slugs so that an unrecognised state name is
   // handled here — and answered with a real 404 — rather than falling through to the branch
@@ -845,7 +894,7 @@ export async function renderStaticRouteSnapshot(template: string, pathname: stri
 
 export async function renderBlogListSnapshot(template: string): Promise<SnapshotResult> {
   const canonical = `${SITE_URL}/blog`;
-  const title = "Blog | Nickel Strips, Battery Materials & Manufacturing Guides";
+  const title = "Nickel Strip Blog | Battery Material Guides & Specs";
   const description =
     "Read technical guides and industry insights from Ramani Steel House on nickel strips, battery tabs, and lithium manufacturing.";
 

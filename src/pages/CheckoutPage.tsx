@@ -5,6 +5,7 @@ import { ArrowLeft, MessageCircle, Shield } from 'lucide-react';
 import { CartItem, Country } from '../types';
 import { useLanguage } from '../i18n/LanguageProvider';
 import { getCountryOptions } from '../lib/countryCodes';
+import { calculateOrderTotals } from '../lib/tax';
 import { getProductUnitLabel, normalizeProductUnit } from '../lib/utils';
 import { PRIMARY_WHATSAPP } from '../lib/contact';
 
@@ -16,8 +17,9 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({ cart }) => {
   const navigate = useNavigate();
   const { t, locale, currency, country, postalCode, formatPrice, exchangeRate } = useLanguage();
   const subtotal = cart.reduce((acc, item) => acc + item.price * item.quantity, 0);
-  const gst = subtotal * 0.18;
-  const total = subtotal + gst;
+  // Destination-based: exports out of India are zero-rated, so an overseas order carries no GST.
+  // Previously an unconditional 18%, which inflated every export total. See src/lib/tax.ts.
+  const { gst, total, gstApplicable, gstLabel } = calculateOrderTotals(subtotal, country);
   const convertAmount = (amount: number) => Number((amount * exchangeRate).toFixed(2));
   const totalItems = useMemo(
     () => cart.reduce((acc, item) => acc + item.quantity, 0),
@@ -389,6 +391,12 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({ cart }) => {
               <div className="flex justify-between text-zinc-500">
                 <span>{t('checkout.itemsCount', { count: totalItems })}</span>
                 <span className="font-medium text-zinc-900">{formatPrice(subtotal)}</span>
+              </div>
+              {/* Shown explicitly so the subtotal and the total visibly reconcile — and so an
+                  export buyer can see the zero-rating rather than wondering where 18% went. */}
+              <div className="flex justify-between text-zinc-500">
+                <span>{gstApplicable ? t('cart.gst') : gstLabel}</span>
+                <span className="font-medium text-zinc-900">{formatPrice(gst)}</span>
               </div>
               <div className="flex justify-between text-zinc-500">
                 <span>{t('checkout.shippingCharges')}</span>

@@ -8,9 +8,11 @@ import {
   renderProductListSnapshot,
   renderNickelStripsLithiumSnapshot,
   renderStaticRouteSnapshot,
+  renderNoindexSnapshot,
   renderLandingSnapshot,
   renderUnavailableShell,
   isStaticSnapshotRoute,
+  isNoindexSnapshotRoute,
   isLandingSnapshotRoute,
 } from "../seoSnapshot.js";
 
@@ -48,7 +50,9 @@ export default async function handler(req: IncomingMessage, res: ServerResponse)
   try {
     let result: { status: number; html: string };
 
-    if (pathname === "/blog/nickel-strips-lithium-batteries") {
+    if (isNoindexSnapshotRoute(pathname)) {
+      result = renderNoindexSnapshot(template, pathname);
+    } else if (pathname === "/blog/nickel-strips-lithium-batteries") {
       result = await renderNickelStripsLithiumSnapshot(template);
     } else if (pathname === "/products" || pathname === "/categories") {
       result = await renderProductListSnapshot(template, pathname === "/categories");

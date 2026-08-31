@@ -189,16 +189,16 @@ export const ProductListingPage: React.FC = () => {
     <>
       <Helmet>
         {isCategoriesRoute ? (
-          <title>Nickel Strip Categories | Pure Nickel, Nickel Plated & Battery Tabs</title>
+          <title>Nickel Strip Categories | Pure Nickel & Plated Strips</title>
         ) : (
-          <title>Nickel Strip Products | Pure Nickel &amp; Nickel Plated Strips - Ramani Steel House</title>
+          <title>Nickel Strip Products | Manufacturer &amp; Exporter India</title>
         )}
         <meta
           name="description"
           content={
             isCategoriesRoute
-              ? 'Browse nickel strip categories from Ramani Steel House: pure nickel, nickel-plated strips, battery tabs, busbars and custom coils. Manufactured in Mumbai, supplied PAN India and exported worldwide.'
-              : 'Shop nickel strips, nickel-plated strips, and battery tabs manufactured in Mumbai, India. PAN India supply and export to 17+ countries. Request bulk and custom quotes.'
+              ? 'Browse nickel strip categories: pure nickel, nickel-plated strips, battery tabs, busbars and custom coils. Made in Mumbai, supplied PAN India and exported.'
+              : 'Nickel strips, nickel-plated strips and battery tabs made in Mumbai, India. PAN India supply, export to 17+ countries. Bulk and custom quotes.'
           }
         />
         {/* /categories renders this same component with the same product grid, so it

@@ -7,6 +7,7 @@ import { CartItem } from '../types';
 import { useLanguage } from '../i18n/LanguageProvider';
 import { getProductUnitLabel, normalizeProductUnit } from '../lib/utils';
 import { ProductThumbnail } from '../components/ProductThumbnail';
+import { calculateOrderTotals } from '../lib/tax';
 
 interface CartPageProps {
   cart: CartItem[];
@@ -15,10 +16,11 @@ interface CartPageProps {
 }
 
 export const CartPage: React.FC<CartPageProps> = ({ cart, updateQuantity, removeItem }) => {
+  const { t, formatPrice, country } = useLanguage();
   const subtotal = cart.reduce((acc, item) => acc + item.price * item.quantity, 0);
-  const gst = subtotal * 0.18;
-  const total = subtotal + gst;
-  const { t, formatPrice } = useLanguage();
+  // Destination-based: exports out of India are zero-rated, so an overseas quote carries no GST
+  // line. Previously this was an unconditional 18%, inflating every export total. See lib/tax.
+  const { gst, total, gstApplicable, gstLabel } = calculateOrderTotals(subtotal, country);
 
   if (cart.length === 0) {
     return (
@@ -106,7 +108,7 @@ export const CartPage: React.FC<CartPageProps> = ({ cart, updateQuantity, remove
                 <span className="font-medium text-zinc-900">{formatPrice(subtotal)}</span>
               </div>
               <div className="flex justify-between text-zinc-500">
-                <span>{t('cart.gst')}</span>
+                <span>{gstApplicable ? t('cart.gst') : gstLabel}</span>
                 <span className="font-medium text-zinc-900">{formatPrice(gst)}</span>
               </div>
               <div className="flex justify-between text-zinc-500">

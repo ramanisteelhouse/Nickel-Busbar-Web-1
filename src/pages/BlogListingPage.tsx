@@ -40,7 +40,7 @@ export const BlogListingPage: React.FC = () => {
   return (
     <div className="pt-28 pb-24 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
       <Helmet>
-        <title>Blog | Nickel Strips, Battery Materials & Manufacturing Guides</title>
+        <title>Nickel Strip Blog | Battery Material Guides & Specs</title>
         <meta
           name="description"
           content="Read technical guides and industry insights from Ramani Steel House on nickel strips, battery tabs, and lithium manufacturing."

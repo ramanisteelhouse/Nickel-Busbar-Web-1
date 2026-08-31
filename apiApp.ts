@@ -1289,9 +1289,15 @@ export function createApiApp() {
     }
     if (typeof search === "string" && search.trim()) {
       const tokens = toSearchTokens(search);
-      // A query of only punctuation normalizes to zero tokens. bool_and over an empty set is
-      // NULL rather than true, so without this guard "---" would filter every product out.
-      if (tokens.length) {
+      // A non-empty query that normalizes to nothing has no match, and must not fall through
+      // to "no filter". `toSearchTokens` keeps only [a-z0-9], so a query written in Chinese,
+      // Arabic or Devanagari - or one that is pure punctuation - produces zero tokens. Skipping
+      // the clause in that case returned the *entire catalogue*, telling a buyer searching in
+      // their own script that all 17 products matched. Zero results is the honest answer.
+      if (!tokens.length) {
+        return res.json([]);
+      }
+      {
         params.push(tokens);
         const tokensParam = `$${params.length}`;
         const haystack = searchHaystackSql([

@@ -32,25 +32,25 @@ export const Footer: React.FC = () => {
               <span itemProp="addressCountry">{POSTAL_ADDRESS.countryName}</span>
             </address>
             <div className="flex flex-wrap items-center gap-3 pt-3">
-              <a href="https://www.linkedin.com/company/ramani-steel-house/" target="_blank" rel="noopener noreferrer" className="text-sm text-slate-600 hover:text-brand">LinkedIn</a>
-              <a href="https://www.facebook.com/profile.php?id=61550731232092" target="_blank" rel="noopener noreferrer" className="text-sm text-slate-600 hover:text-brand">Facebook</a>
-              <a href="https://www.instagram.com/ramanisteelhouse/" target="_blank" rel="noopener noreferrer" className="text-sm text-slate-600 hover:text-brand">Instagram</a>
-              <a href="https://in.pinterest.com/ramanisteel2023/" target="_blank" rel="noopener noreferrer" className="text-sm text-slate-600 hover:text-brand">Pinterest</a>
-              <a href="https://x.com/SteelHouse69101" target="_blank" rel="noopener noreferrer" className="text-sm text-slate-600 hover:text-brand">X</a>
+              <a href="https://www.linkedin.com/company/ramani-steel-house/" target="_blank" rel="noopener noreferrer" className="inline-block py-1 text-sm text-slate-600 hover:text-brand">LinkedIn</a>
+              <a href="https://www.facebook.com/profile.php?id=61550731232092" target="_blank" rel="noopener noreferrer" className="inline-block py-1 text-sm text-slate-600 hover:text-brand">Facebook</a>
+              <a href="https://www.instagram.com/ramanisteelhouse/" target="_blank" rel="noopener noreferrer" className="inline-block py-1 text-sm text-slate-600 hover:text-brand">Instagram</a>
+              <a href="https://in.pinterest.com/ramanisteel2023/" target="_blank" rel="noopener noreferrer" className="inline-block py-1 text-sm text-slate-600 hover:text-brand">Pinterest</a>
+              <a href="https://x.com/SteelHouse69101" target="_blank" rel="noopener noreferrer" className="inline-block py-1 text-sm text-slate-600 hover:text-brand">X</a>
             </div>
           </div>
           <div>
             <p className="text-xs uppercase tracking-[0.3em] text-slate-400 mb-4">Quick Links</p>
             <ul className="space-y-3 text-sm text-slate-600">
-              <li><Link to="/">Home</Link></li>
-              <li><Link to="/products?search=nickel">Nickel Strips</Link></li>
-              <li><Link to="/h-type-nickel-strip">H Type Nickel Strip</Link></li>
-              <li><Link to="/products">Products</Link></li>
-              <li><Link to="/about">About Us</Link></li>
-              <li><Link to="/calculator">Weight Calculator</Link></li>
-              <li><Link to="/blog">Blog</Link></li>
-              <li><Link to="/export-enquiry">Export Enquiry</Link></li>
-              <li><Link to="/contact">Contact</Link></li>
+              <li><Link className="inline-block py-1" to="/">Home</Link></li>
+              <li><Link className="inline-block py-1" to="/products?search=nickel">Nickel Strips</Link></li>
+              <li><Link className="inline-block py-1" to="/h-type-nickel-strip">H Type Nickel Strip</Link></li>
+              <li><Link className="inline-block py-1" to="/products">Products</Link></li>
+              <li><Link className="inline-block py-1" to="/about">About Us</Link></li>
+              <li><Link className="inline-block py-1" to="/calculator">Weight Calculator</Link></li>
+              <li><Link className="inline-block py-1" to="/blog">Blog</Link></li>
+              <li><Link className="inline-block py-1" to="/export-enquiry">Export Enquiry</Link></li>
+              <li><Link className="inline-block py-1" to="/contact">Contact</Link></li>
             </ul>
           </div>
           <div>
@@ -61,7 +61,7 @@ export const Footer: React.FC = () => {
                   <a
                     href={`mailto:${email}`}
                     onClick={() => logCallClick(email, 'footer_email')}
-                    className="hover:text-brand"
+                    className="inline-block py-1 hover:text-brand"
                   >
                     {email}
                   </a>
@@ -72,7 +72,7 @@ export const Footer: React.FC = () => {
                   <a
                     href={telHref(number)}
                     onClick={() => logCallClick(`+${number.e164}`, 'footer')}
-                    className="hover:text-brand"
+                    className="inline-block py-1 hover:text-brand"
                   >
                     {number.display}
                   </a>
@@ -90,7 +90,7 @@ export const Footer: React.FC = () => {
           <ul className="flex flex-wrap gap-x-4 gap-y-2 text-sm text-slate-600">
             {STATE_LANDING_PAGES.map((state) => (
               <li key={state.path}>
-                <Link to={state.path} className="hover:text-brand">{state.name}</Link>
+                <Link to={state.path} className="inline-block py-1 hover:text-brand">{state.name}</Link>
               </li>
             ))}
           </ul>

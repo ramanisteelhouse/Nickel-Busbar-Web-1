@@ -255,11 +255,20 @@ export const ProductDetailPage: React.FC<{ onAddToCart: (p: Product) => void }> 
       </nav>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-16">
-        {/* Image Gallery */}
+        {/* Image Gallery.
+            Sticky from `lg` up, where the grid splits in two. The photo is a fixed square while
+            the details column runs to specifications, applications and returns, so the image
+            column ran out of content two thirds of the way down and left roughly 1000px of
+            blank white beside the specifications table. Sticky keeps the product in view while
+            those are read instead.
+
+            `self-start` matters: a grid item stretches to fill its track by default, which
+            gives this one the full height of the row and leaves sticky nothing to travel
+            within. `top-28` clears the fixed navbar, matching the page's own pt-28. */}
         <motion.div
           initial={{ opacity: 0, x: -20 }}
           animate={{ opacity: 1, x: 0 }}
-          className="space-y-4"
+          className="space-y-4 lg:sticky lg:top-28 lg:self-start"
         >
           <div className="aspect-square rounded-3xl overflow-hidden bg-zinc-100 border border-zinc-200">
             <img

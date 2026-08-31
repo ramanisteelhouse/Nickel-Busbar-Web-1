@@ -68,6 +68,44 @@ type SessionUser = {
   role?: string;
 };
 
+/**
+ * Local cart persistence, for visitors who are not signed in.
+ *
+ * Deliberately localStorage and not the consent-gated cookie helpers: this is the visitor's own
+ * basket held on their own device, not analytics or tracking, and it is what makes a refresh
+ * non-destructive. Reads are defensive because a quota-full or privacy-mode browser throws
+ * rather than returning null, and a corrupt entry must not take the whole app down on boot.
+ */
+const CART_STORAGE_KEY = 'cart_items';
+
+const readStoredCart = (): CartItem[] => {
+  if (typeof window === 'undefined') return [];
+  try {
+    const raw = window.localStorage.getItem(CART_STORAGE_KEY);
+    if (!raw) return [];
+    const parsed = JSON.parse(raw);
+    if (!Array.isArray(parsed)) return [];
+    // Guard the fields the cart actually reads, so a stale or hand-edited entry cannot render
+    // NaN prices or crash the totals.
+    return parsed.filter(
+      (item): item is CartItem =>
+        item && typeof item.id === 'number' && typeof item.name === 'string' &&
+        Number.isFinite(Number(item.price)) && Number.isFinite(Number(item.quantity))
+    );
+  } catch {
+    return [];
+  }
+};
+
+const writeStoredCart = (items: CartItem[]) => {
+  if (typeof window === 'undefined') return;
+  try {
+    window.localStorage.setItem(CART_STORAGE_KEY, JSON.stringify(items));
+  } catch {
+    // Quota exceeded or storage blocked — the in-memory cart still works for this page view.
+  }
+};
+
 const mergeCartItems = (localItems: CartItem[], remoteItems: CartItem[]) => {
   const merged = new Map<number, CartItem>();
 
@@ -88,7 +126,11 @@ const mergeCartItems = (localItems: CartItem[], remoteItems: CartItem[]) => {
 };
 
 export default function App() {
-  const [cart, setCart] = useState<CartItem[]>([]);
+  // Seeded from localStorage, not empty. The cart is synced to the server only for signed-in
+  // users, so for everyone else it lived purely in React state and a page refresh silently
+  // emptied it — on a site where a buyer assembles a multi-item quote list over a session, and
+  // where most visitors never sign in at all.
+  const [cart, setCart] = useState<CartItem[]>(readStoredCart);
   const [sessionUser, setSessionUser] = useState<SessionUser | null>(null);
   const [cartLoaded, setCartLoaded] = useState(false);
   const lastUserIdRef = useRef<number | null>(null);
@@ -157,6 +199,12 @@ export default function App() {
       window.removeEventListener('auth-changed', handleAuthChange);
     };
   }, []);
+
+  // Mirror every cart change back to localStorage. Runs for signed-in users too: it keeps the
+  // basket intact if their session expires mid-visit.
+  useEffect(() => {
+    writeStoredCart(cart);
+  }, [cart]);
 
   useEffect(() => {
     let isActive = true;

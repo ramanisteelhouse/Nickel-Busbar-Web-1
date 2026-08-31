@@ -195,8 +195,8 @@ export const EXPORT_FAQS: ReadonlyArray<{ question: string; answer: string; llms
   {
     question: 'Do you supply nickel strip within India as well?',
     answer:
-      'Yes. We dispatch PAN India from our Mumbai unit with GST invoicing and material test ' +
-      'certificates on every lot, and offer bulk and repeat-order pricing to Indian battery pack ' +
+      'Yes. We dispatch PAN India from our Mumbai unit with GST invoicing, issue material test ' +
+      'certificates on request, and offer bulk and repeat-order pricing to Indian battery pack ' +
       'manufacturers. Use the same form and select supply within India.',
   },
   {
