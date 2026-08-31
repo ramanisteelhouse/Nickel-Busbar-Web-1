@@ -14,15 +14,24 @@ import {
   PRIMARY_EMAIL,
 } from "./src/lib/contact.js";
 import { ANSWER_BLOCK, ANSWER_BLOCK_QUESTION } from "./src/lib/answerBlock.js";
+import {
+  RETURN_POLICY_HEADING,
+  RETURN_POLICY_LINES,
+  RETURN_POLICY_SCHEMA,
+} from "./src/lib/returnPolicy.js";
 import { getLandingPageByPathname, STATE_LANDING_PAGES } from "./src/lib/landingPages.js";
 import { productImageUrl } from "./src/lib/productImage.js";
 import {
   fillKeywordParagraphs,
-  getProductKeywordBlock,
+  resolveProductKeywordBlock,
   keywordMetaDescription,
   productImageAltSubject,
+  productPageTitle,
+  BUYER_ROLE_KEYWORDS,
+  type ProductSeoColumns,
 } from "./src/lib/productSeo.js";
 import { buildImageAlt } from "./src/lib/utils.js";
+import { buildProductSpecs, NICKEL_PURITY_RANGE } from "./src/lib/productSpecs.js";
 import {
   applications as HOME_APPLICATIONS,
   faqItems as HOME_FAQ_ITEMS,
@@ -48,6 +57,8 @@ import {
   INCOTERMS,
   INDIA_HIGHLIGHTS,
   LOADING_PORTS,
+  PRODUCT_EXPORT_LEAD,
+  PRODUCT_EXPORT_TERMS,
 } from "./src/lib/exportEnquiry.js";
 
 const SITE_URL = "https://www.nickelbusbar.com";
@@ -184,7 +195,7 @@ const injectHead = (template: string, head: HeadInput) => {
   const jsonLdScripts = head.jsonLd
     .map(
       (entry) =>
-        `<script type="application/ld+json">${JSON.stringify(entry).replace(/</g, "\\u003c")}</script>`
+        `<script type="application/ld+json" data-ssr-head="true">${JSON.stringify(entry).replace(/</g, "\\u003c")}</script>`
     )
     .join("\n  ");
 
@@ -928,10 +939,8 @@ export async function renderProductSnapshot(template: string, slug: string): Pro
 
   const name = product.name as string;
   const productSlug = product.slug as string;
-  const keywordBlock = getProductKeywordBlock(productSlug);
-  const title = keywordBlock
-    ? `${name} | ${keywordBlock.heading}`
-    : `${name} | Nickel Strips Manufacturer`;
+  const keywordBlock = resolveProductKeywordBlock(product as ProductSeoColumns);
+  const title = productPageTitle(name, keywordBlock);
   const rawDescription = `${name} by ${SITE_NAME}. ${
     (product.description as string) || "Industrial-grade nickel strip for lithium-ion battery and precision applications."
   }`;
@@ -954,6 +963,12 @@ export async function renderProductSnapshot(template: string, slug: string): Pro
     (keywordBlock && keywordMetaDescription(keywordBlock, keywordValues)) ||
     rawDescription.slice(0, 160);
 
+  // Material, purity, thickness, width, cell format, configuration and pattern, derived from
+  // the product's own columns and name - see src/lib/productSpecs.ts. Purity is applied only to
+  // nickel items: the catalogue also carries a copper busbar, and a nickel purity on that page
+  // would be a false material claim exactly where a buyer checks it.
+  const productSpecs = buildProductSpecs(product as Record<string, string | null>);
+
   const productJsonLd = {
     "@context": "https://schema.org",
     "@type": "Product",
@@ -963,6 +978,18 @@ export async function renderProductSnapshot(template: string, slug: string): Pro
     brand: { "@type": "Brand", name: SITE_NAME },
     category: (product.category_name as string) || "Nickel Strips",
     sku: product.slug,
+    countryOfOrigin: "IN",
+    // The export terms as machine-readable attributes, matching the visible table below.
+    // additionalProperty is the field Google and answer engines read specifications out of, so
+    // an "HS code for nickel strip" or "what Incoterms" question can be answered from the
+    // product page itself rather than only from /export-enquiry.
+    // Exactly the rows the visible table renders, so the markup and the page agree - Google
+    // discounts structured data that states attributes the page does not show.
+    additionalProperty: [...productSpecs, ...PRODUCT_EXPORT_TERMS].map((row) => ({
+      "@type": "PropertyValue",
+      name: row.label,
+      value: row.value,
+    })),
     ...(hasPrice
       ? {
           offers: {
@@ -972,6 +999,19 @@ export async function renderProductSnapshot(template: string, slug: string): Pro
             availability:
               Number(product.stock) > 0 ? "https://schema.org/InStock" : "https://schema.org/OutOfStock",
             url: canonical,
+            // Answers Search Console's "Missing field hasMerchantReturnPolicy (in offers)".
+            // The copy backing this claim is rendered below, in the snapshot body.
+            hasMerchantReturnPolicy: RETURN_POLICY_SCHEMA,
+            // Points at the Organization @id published in index.html rather than repeating the
+            // company as a second, rival entity.
+            seller: { "@id": `${SITE_URL}/#organization` },
+            // IN, not Worldwide. This price is in INR and the return policy above is scoped to
+            // India, because export is quoted separately in USD against an Incoterm. Marking
+            // the offer valid worldwide would advertise the domestic rupee price to overseas
+            // buyers and contradict its own return policy. The worldwide supply claim belongs
+            // on the entity that is true of - the Organization, which already carries
+            // areaServed: Worldwide - and on the product's export terms below.
+            eligibleRegion: { "@type": "Country", name: "IN" },
           },
         }
       : {}),
@@ -987,19 +1027,22 @@ export async function renderProductSnapshot(template: string, slug: string): Pro
     ],
   };
 
-  const specRows = [
-    product.astm_value ? `<li>ASTM: ${escapeHtml(product.astm_value as string)}</li>` : "",
-    product.uns_value ? `<li>UNS: ${escapeHtml(product.uns_value as string)}</li>` : "",
-    product.dimensions ? `<li>Dimensions: ${escapeHtml(product.dimensions as string)}</li>` : "",
-  ]
-    .filter(Boolean)
+  // A key-value table rather than the bullet list this used to be. Both render, but a <table>
+  // with a <th> label against a <td> value is what Google and answer engines lift specifications
+  // out of - it is the shape every B2B marketplace listing uses, and it is the format a model
+  // can quote a single attribute from without re-parsing prose.
+  const specRows = [...productSpecs, ...PRODUCT_EXPORT_TERMS]
+    .map(
+      (row) =>
+        `<tr><th>${escapeHtml(row.label)}</th><td>${escapeHtml(row.value)}</td></tr>`
+    )
     .join("");
 
   // Google only ever considered indexing this photo through the JSON-LD `image` field before,
   // because the snapshot carried no <img> at all and the tag the React page renders does not
   // exist until the bundle runs. An image crawler wants a real element, with real dimensions
   // and real alt text, in the HTML it is handed.
-  const imageAlt = buildImageAlt(productImageAltSubject(name, productSlug));
+  const imageAlt = buildImageAlt(productImageAltSubject(name, keywordBlock));
   const imageTag =
     `<img src="${escapeAttr(imageUrl)}" alt="${escapeAttr(imageAlt)}" ` +
     `width="1000" height="1000" fetchpriority="high" />`;
@@ -1015,12 +1058,17 @@ export async function renderProductSnapshot(template: string, slug: string): Pro
     ${imageTag}
     <p>${escapeHtml((product.description as string) || "")}</p>
     ${keywordSection}
-    ${specRows ? `<h2>Specifications</h2><ul>${specRows}</ul>` : ""}
+    ${specRows ? `<h2>Specifications and export terms</h2><table><tbody>${specRows}</tbody></table>` : ""}
     ${
       applications.length
         ? `<h2>Applications</h2><ul>${applications.map((app) => `<li>${escapeHtml(app)}</li>`).join("")}</ul>`
         : ""
     }
+    <h2>Export supply</h2>
+    <p>${escapeHtml(PRODUCT_EXPORT_LEAD)}</p>
+    <p><a href="${SITE_URL}${EXPORT_PATH}">Nickel strip and busbar export enquiry</a> &mdash; send your specification, quantity and destination port for a quotation.</p>
+    <h2>${escapeHtml(RETURN_POLICY_HEADING)}</h2>
+    ${RETURN_POLICY_LINES.map((line) => `<p>${escapeHtml(line)}</p>`).join("")}
   </article>`;
 
   const html = injectHead(template, {
@@ -1028,7 +1076,7 @@ export async function renderProductSnapshot(template: string, slug: string): Pro
     description,
     canonical,
     ogImage: imageUrl,
-    keywords: keywordBlock?.keywords,
+    keywords: [...(keywordBlock?.keywords ?? []), ...BUYER_ROLE_KEYWORDS],
     jsonLd: [productJsonLd, breadcrumbJsonLd],
     snapshotBody,
   });

@@ -582,7 +582,22 @@ export const LanguageProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   const resolvedLocale = meta.locale || 'en-US';
   const selectedCountry = countries.find((option) => option.code === country);
   const resolvedCurrency = currency || selectedCountry?.currency || meta.currency || 'USD';
-  const exchangeRate = resolvedCurrency === 'INR' ? 1 : exchangeRates[resolvedCurrency] ?? 1;
+  // Prices are stored in INR and converted for display. `exchangeRates[resolvedCurrency] ?? 1`
+  // used to supply the rate, and a rate of 1 against a foreign currency is not a missing
+  // conversion - it is a wrong price. Rates arrive from /api/localization/exchange-rates after
+  // first paint, so every first-time overseas visitor was briefly shown the rupee number
+  // formatted as their own currency: a 4,100 INR strip rendered as "$4,100.00" instead of about
+  // $46. If the request failed, or EXCHANGE_RATE_API_KEY was unset, it stayed that way.
+  //
+  // Until a rate is known the site quotes in INR - the currency the price is actually held in.
+  // Falling back on the currency as well as the rate keeps every consumer consistent: the
+  // formatter, the checkout totals and the currency label all describe the same money, so
+  // nothing can render a rupee amount under a dollar sign.
+  const rateForCurrency = resolvedCurrency === 'INR' ? 1 : exchangeRates[resolvedCurrency];
+  const hasRate = typeof rateForCurrency === 'number' && Number.isFinite(rateForCurrency) && rateForCurrency > 0;
+  const effectiveCurrency = hasRate ? resolvedCurrency : 'INR';
+  const effectiveLocale = hasRate ? resolvedLocale : 'en-IN';
+  const exchangeRate = hasRate ? (rateForCurrency as number) : 1;
   const countryName = selectedCountry?.name ?? getCountryLabel(country, resolvedLocale);
   const countryFlag = selectedCountry?.flag ?? (country ? toFlagEmoji(country) : '');
 
@@ -590,9 +605,9 @@ export const LanguageProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     (amountInInr: number) => {
       const safeAmount = Number.isFinite(amountInInr) ? amountInInr : 0;
       const converted = safeAmount * exchangeRate;
-      return formatCurrency(converted, resolvedLocale, resolvedCurrency);
+      return formatCurrency(converted, effectiveLocale, effectiveCurrency);
     },
-    [exchangeRate, resolvedLocale, resolvedCurrency]
+    [exchangeRate, effectiveLocale, effectiveCurrency]
   );
 
   React.useEffect(() => {
@@ -605,8 +620,11 @@ export const LanguageProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       language,
       setLanguage,
       t,
-      locale: resolvedLocale,
-      currency: resolvedCurrency,
+      // The *effective* pair, not the requested one: these have to describe the money
+      // formatPrice actually produces, or CheckoutPage labels an INR total as USD while
+      // exchangeRate is still 1.
+      locale: effectiveLocale,
+      currency: effectiveCurrency,
       country,
       countryName,
       countryFlag,
@@ -623,8 +641,8 @@ export const LanguageProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       language,
       setLanguage,
       t,
-      resolvedLocale,
-      resolvedCurrency,
+      effectiveLocale,
+      effectiveCurrency,
       country,
       countryName,
       countryFlag,

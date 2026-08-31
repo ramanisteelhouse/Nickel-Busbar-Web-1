@@ -30,6 +30,15 @@ export interface Product {
   stock: number;
   is_featured: boolean;
   created_at: string;
+  /**
+   * Per-product SEO copy. Optional throughout: a product need not target a phrase, and these
+   * columns are absent entirely on a database that has not run the add_product_seo_columns
+   * migration. src/lib/productSeo.ts falls back to PRODUCT_KEYWORD_BLOCKS when they are empty.
+   */
+  seo_heading?: string | null;
+  seo_meta_description?: string | null;
+  seo_paragraphs?: string[] | null;
+  seo_keywords?: string[] | null;
 }
 
 export interface CartItem extends Product {

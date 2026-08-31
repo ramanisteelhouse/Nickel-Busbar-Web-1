@@ -2,7 +2,7 @@ import React from 'react';
 import { buildImageAlt } from '../lib/utils';
 import { PRODUCT_IMAGE_PLACEHOLDER, productImagePath } from '../lib/productImage';
 import { localProductImagePath } from '../lib/productImageLocal';
-import { productImageAltSubject } from '../lib/productSeo';
+import { getProductKeywordBlock, productImageAltSubject } from '../lib/productSeo';
 
 /**
  * A product photo, addressed through our own domain, with a placeholder for when it does not
@@ -55,6 +55,12 @@ export const ProductThumbnail: React.FC<ProductThumbnailProps> = ({
   const src = explicitSrc || productImagePath(slug, image);
   const fellBackRef = React.useRef(false);
 
+  // Slug lookup rather than the database-backed block: a grid thumbnail is handed only a slug
+  // and a name, not the product row. The alt text that matters for Google Images is the detail
+  // page's hero, which does resolve the product's own seo_heading; this falls back to the
+  // bare product name, as it did for every product without a keyword block before.
+  const altText = buildImageAlt(productImageAltSubject(name, getProductKeywordBlock(slug)));
+
   // A different product means a different src, so a previous failure must not suppress the
   // new image's own error handling.
   React.useEffect(() => {
@@ -64,7 +70,7 @@ export const ProductThumbnail: React.FC<ProductThumbnailProps> = ({
   return (
     <img
       src={src}
-      alt={buildImageAlt(productImageAltSubject(name, slug))}
+      alt={altText}
       width={size}
       height={height ?? size}
       loading={loading}

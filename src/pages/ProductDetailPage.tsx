@@ -1,17 +1,26 @@
 import React from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import { ShoppingCart, Shield, Truck, RotateCcw, ChevronRight, X, CheckCircle2 } from 'lucide-react';
+import { ShoppingCart, Shield, Truck, RotateCcw, ChevronRight, X, CheckCircle2, Globe } from 'lucide-react';
 import { motion } from 'motion/react';
 import { Helmet } from 'react-helmet-async';
 import { Product } from '../types';
 import { buildImageAlt, getProductUnitLabel, getStrikePrice } from '../lib/utils';
 import { productImagePath, productImageUrl } from '../lib/productImage';
 import {
+  RETURN_POLICY_HEADING,
+  RETURN_POLICY_LINES,
+  RETURN_POLICY_SCHEMA,
+} from '../lib/returnPolicy';
+import {
   fillKeywordParagraphs,
-  getProductKeywordBlock,
+  resolveProductKeywordBlock,
   keywordMetaDescription,
   productImageAltSubject,
+  productPageTitle,
+  BUYER_ROLE_KEYWORDS,
 } from '../lib/productSeo';
+import { EXPORT_PATH, PRODUCT_EXPORT_LEAD, PRODUCT_EXPORT_TERMS } from '../lib/exportEnquiry';
+import { buildProductSpecs, NICKEL_PURITY_RANGE } from '../lib/productSpecs';
 import { useLanguage } from '../i18n/LanguageProvider';
 
 export const ProductDetailPage: React.FC<{ onAddToCart: (p: Product) => void }> = ({ onAddToCart }) => {
@@ -146,12 +155,10 @@ export const ProductDetailPage: React.FC<{ onAddToCart: (p: Product) => void }> 
   // Head and copy below mirror renderProductSnapshot() in seoSnapshot.ts. They have to: this
   // component's tags replace the SSR ones on mount, so anything the snapshot says and the
   // mounted page does not is what Google's rendering pass throws away.
-  const keywordBlock = getProductKeywordBlock(product.slug);
+  const keywordBlock = resolveProductKeywordBlock(product);
   const keywordValues = { name: product.name, price: hasPrice ? formatPrice(numericPrice) : null };
   const keywordParagraphs = keywordBlock ? fillKeywordParagraphs(keywordBlock, keywordValues) : [];
-  const pageTitle = keywordBlock
-    ? `${product.name} | ${keywordBlock.heading}`
-    : `${product.name} | Nickel Strips Manufacturer`;
+  const pageTitle = productPageTitle(product.name, keywordBlock);
   const pageDescription =
     (keywordBlock && keywordMetaDescription(keywordBlock, keywordValues)) ||
     `${product.name} by Ramani Steel House. ${product.description || 'Industrial-grade nickel strip for lithium-ion battery and precision applications.'}`.slice(0, 160);
@@ -160,14 +167,17 @@ export const ProductDetailPage: React.FC<{ onAddToCart: (p: Product) => void }> 
   // can never earn a search-result thumbnail. src/lib/productImage.ts has the details.
   const imagePath = productImagePath(product.slug, product.image);
   const imageUrl = productImageUrl(siteUrl, product.slug, product.image);
-  const imageAlt = buildImageAlt(productImageAltSubject(product.name, product.slug));
+  const imageAlt = buildImageAlt(productImageAltSubject(product.name, keywordBlock));
+  // Purity is applied only to nickel items: the catalogue also carries a copper busbar, and a
+  // nickel purity there would be a false material claim. See src/lib/productSpecs.ts.
+  const productSpecs = buildProductSpecs(product);
 
   return (
     <div className="pt-28 pb-24 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
       <Helmet>
         <title>{pageTitle}</title>
         <meta name="description" content={pageDescription} />
-        {keywordBlock && <meta name="keywords" content={keywordBlock.keywords.join(', ')} />}
+        <meta name="keywords" content={[...(keywordBlock?.keywords ?? []), ...BUYER_ROLE_KEYWORDS].join(', ')} />
         <link rel="canonical" href={canonicalUrl} />
         <meta property="og:type" content="product" />
         <meta property="og:title" content={pageTitle} />
@@ -188,6 +198,16 @@ export const ProductDetailPage: React.FC<{ onAddToCart: (p: Product) => void }> 
             brand: { '@type': 'Brand', name: 'Ramani Steel House' },
             category: product.category_name || 'Nickel Strips',
             sku: product.slug,
+            countryOfOrigin: 'IN',
+            // Mirrors seoSnapshot.ts: the export terms as machine-readable attributes, matching
+            // the visible Export supply table rendered further down this page.
+            // Exactly the rows the visible spec table renders — Google discounts structured
+            // data that states attributes the page itself does not show.
+            additionalProperty: [...productSpecs, ...PRODUCT_EXPORT_TERMS].map((row) => ({
+              '@type': 'PropertyValue',
+              name: row.label,
+              value: row.value,
+            })),
             ...(hasPrice
               ? {
                   offers: {
@@ -196,6 +216,18 @@ export const ProductDetailPage: React.FC<{ onAddToCart: (p: Product) => void }> 
                     price: numericPrice,
                     availability: product.stock > 0 ? 'https://schema.org/InStock' : 'https://schema.org/OutOfStock',
                     url: canonicalUrl,
+                    // Answers Search Console's "Missing field hasMerchantReturnPolicy (in
+                    // offers)". Mirrored in seoSnapshot.ts, and backed by the returns copy
+                    // rendered further down this page.
+                    hasMerchantReturnPolicy: RETURN_POLICY_SCHEMA,
+                    // An Offer with no stated region reads as domestic-only. These say the
+                    // catalogue ships worldwide, and point `seller` at the Organization @id
+                    // from index.html rather than declaring a second, rival company entity.
+                    seller: { '@id': `${siteUrl}/#organization` },
+                    // IN, not Worldwide: this price is INR and the return policy above is
+                    // India-scoped, because export is quoted separately in USD against an
+                    // Incoterm. See the note in seoSnapshot.ts.
+                    eligibleRegion: { '@type': 'Country', name: 'IN' },
                   },
                 }
               : {}),
@@ -313,6 +345,51 @@ export const ProductDetailPage: React.FC<{ onAddToCart: (p: Product) => void }> 
             </div>
           </div>
 
+          {/* Full specification table, in the label/value shape marketplace listings use and
+              Google lifts single attributes from. Built from the product's own columns plus
+              pattern and cell format derived from its name — see src/lib/productSpecs.ts. */}
+          <section className="mb-10">
+            <h2 className="text-sm font-bold text-zinc-900 mb-3">Specifications</h2>
+            <table className="w-full text-left border border-zinc-100 rounded-2xl overflow-hidden">
+              <tbody>
+                {productSpecs.map((row, index) => (
+                  <tr key={row.label} className={index % 2 ? 'bg-white' : 'bg-zinc-50'}>
+                    <th scope="row" className="w-2/5 px-4 py-2.5 text-[11px] uppercase font-bold tracking-wide text-zinc-400 align-top">
+                      {row.label}
+                    </th>
+                    <td className="px-4 py-2.5 text-xs font-semibold text-zinc-800">{row.value}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </section>
+
+          {/* Export trade terms. Rendered here, on the page an overseas buyer actually lands on
+              from a product search, rather than only on /export-enquiry — the HS code, Incoterms
+              and port are the details that decide whether they enquire at all. Mirrored in the
+              crawler snapshot in seoSnapshot.ts; both read from lib/exportEnquiry. */}
+          <section className="mb-10 rounded-2xl border border-zinc-100 bg-zinc-50 p-5">
+            <div className="flex items-center gap-2 mb-3">
+              <Globe size={16} className="text-brand" />
+              <h2 className="text-sm font-bold text-zinc-900">Export supply</h2>
+            </div>
+            <p className="text-xs text-zinc-600 mb-4">{PRODUCT_EXPORT_LEAD}</p>
+            <dl className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-2">
+              {PRODUCT_EXPORT_TERMS.map((term) => (
+                <div key={term.label} className="flex justify-between gap-3 border-b border-zinc-200/70 py-1.5">
+                  <dt className="text-[11px] uppercase font-bold tracking-wide text-zinc-400 shrink-0">{term.label}</dt>
+                  <dd className="text-xs font-semibold text-zinc-800 text-right">{term.value}</dd>
+                </div>
+              ))}
+            </dl>
+            <Link
+              to={EXPORT_PATH}
+              className="mt-4 inline-flex items-center gap-1 text-xs font-bold text-brand hover:underline"
+            >
+              Send an export enquiry <ChevronRight size={14} />
+            </Link>
+          </section>
+
           {/* Actions */}
           <div className="flex flex-col sm:flex-row gap-4 mb-12">
             <button
@@ -420,12 +497,25 @@ export const ProductDetailPage: React.FC<{ onAddToCart: (p: Product) => void }> 
         {activeTab === 'shipping' && (
           <div className="prose prose-zinc max-w-none">
             <p className="text-zinc-600 leading-relaxed">
-              Orders are dispatched with full material test certificates and export-ready documentation. Domestic PAN-India
+              Material test certificates are issued on request, and export-ready documentation is prepared in-house. Domestic PAN-India
               delivery and international shipping are available, with lead times confirmed at the time of quotation based on
               quantity and custom specification requirements.
             </p>
           </div>
         )}
+      </section>
+
+      {/* Always rendered, deliberately not a tab. Google requires the content behind a
+          structured-data claim to be on the page, and the tab panels above only enter the DOM
+          when their tab is selected — so a returns panel would be absent for a crawler that
+          never clicks. This backs hasMerchantReturnPolicy in the Product markup. */}
+      <section className="mt-16 rounded-3xl border border-zinc-100 bg-zinc-50 p-8">
+        <h2 className="text-lg font-bold text-zinc-900">{RETURN_POLICY_HEADING}</h2>
+        {RETURN_POLICY_LINES.map((line) => (
+          <p key={line} className="mt-3 text-sm leading-relaxed text-zinc-600">
+            {line}
+          </p>
+        ))}
       </section>
 
       {showCartToast && (

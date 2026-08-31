@@ -453,7 +453,7 @@ export const HomePage: React.FC = () => {
               { label: '52+ Years Experience', value: 'Since 1974', icon: Factory },
               { label: 'ISO Certified', value: 'Quality assured', icon: ShieldCheck },
               { label: 'Global Exporter', value: '17+ countries', icon: Globe },
-              { label: 'High Purity Nickel', value: '99.8%+', icon: BadgeCheck },
+              { label: 'High Purity Nickel', value: '99.6% - 99.8%', icon: BadgeCheck },
             ].map((item, index) => (
               <Reveal key={item.label} delay={index * 0.08}>
                 <Tilt3D maxTilt={8} liftZ={12} className="h-full rounded-2xl">
@@ -657,7 +657,7 @@ export const HomePage: React.FC = () => {
             <Reveal delay={0.1}>
               <p className="text-xs font-semibold uppercase tracking-[0.3em] text-brand">Quality & Certifications</p>
               <h2 className="mt-3 text-3xl md:text-4xl font-display font-bold text-brand">Precision You Can Audit</h2>
-              <p className="mt-3 text-slate-500">Every shipment includes material test certificates, traceability, and compliance documentation.</p>
+              <p className="mt-3 text-slate-500">Material test certificates, traceability records and compliance documentation are issued on request.</p>
               <div className="mt-6 space-y-3">
                 {qualityPoints.map((point) => (
                   <div key={point} className="flex items-start gap-3 text-sm text-slate-600">

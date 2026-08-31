@@ -296,7 +296,10 @@ const enTranslations: Record<TranslationKey, string> = {
     'productDetail.requestQuote': 'Request Bulk Quote',
     'productDetail.quality': 'Quality Guaranteed',
     'productDetail.shipping': 'Global Shipping',
-    'productDetail.returns': 'Easy Returns',
+    // Not "Easy Returns": strip is slit to order and change-of-mind returns are not accepted,
+    // so that badge promised something the business does not offer — and contradicted the
+    // MerchantReturnNotPermitted markup on the same page. See src/lib/returnPolicy.ts.
+    'productDetail.returns': 'Material Guarantee',
     'productDetail.addedToCart': 'Added to cart',
     'productDetail.viewCart': 'View cart',
     'productDetail.closeToast': 'Close',

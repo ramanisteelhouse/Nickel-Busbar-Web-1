@@ -14,6 +14,8 @@
  * ProductDetailPage. Nothing here asserts a capability the site does not already claim.
  */
 
+import { MINIMUM_ORDER_QUANTITY, MTC_AVAILABILITY } from './productSpecs.js';
+
 export const EXPORT_PATH = '/export-enquiry';
 
 /** 56 chars - stays inside the ~60 Google renders, and keeps both geo targets in view. */
@@ -50,7 +52,7 @@ export const EXPORT_REGIONS: ReadonlyArray<{ region: string; detail: string }> =
 /** What we supply into the Indian market - this page serves domestic bulk buyers too. */
 export const INDIA_HIGHLIGHTS: ReadonlyArray<string> = [
   'PAN India dispatch from our Mumbai manufacturing unit',
-  'GST invoicing with material test certificates on every lot',
+  'GST invoicing, with material test certificates issued on request',
   'Bulk and repeat-order pricing for Indian battery pack manufacturers',
   'Custom widths and thicknesses slit to your drawing',
 ];
@@ -78,7 +80,7 @@ export const EXPORT_PRODUCT_FORMS: ReadonlyArray<string> = [
 
 /** Specification range - mirrors the homepage specification table. */
 export const EXPORT_SPECS: ReadonlyArray<{ label: string; value: string }> = [
-  { label: 'Purity', value: '99.8%+ pure nickel' },
+  { label: 'Purity', value: '99.6% - 99.8% pure nickel' },
   { label: 'Thickness', value: '0.10 - 0.50 mm' },
   { label: 'Width', value: '2 - 50 mm (custom slitting available)' },
   { label: 'Standards', value: 'ASTM B16 / UNS N02201 / DIN 2.4068' },
@@ -115,6 +117,34 @@ export const INCOTERMS: ReadonlyArray<string> = ['EXW', 'FOB', 'CIF', 'CIP'];
 
 /** Port of loading for sea freight; air freight is used for samples and urgent lots. */
 export const LOADING_PORTS = 'Nhava Sheva (JNPT) and Mumbai';
+
+/**
+ * The export trade terms, rendered on every product page.
+ *
+ * All of this already existed on /export-enquiry, and only there. That is the wrong place for
+ * it: an overseas buyer does not search for an enquiry form, they search for the product, so
+ * they land on a product page — which carried no HS code, no Incoterm, no port and no
+ * indication the item ships outside India at all. Every export-qualifying signal sat one click
+ * away on a page they had no reason to open.
+ *
+ * These are the terms that are true of every item in the catalogue. Anything that varies by
+ * product (price, exact HS line, MOQ) is deliberately not stated as a fixed value here.
+ */
+export const PRODUCT_EXPORT_TERMS: ReadonlyArray<{ label: string; value: string }> = [
+  { label: 'HS code', value: `${HS_CODES[0].code} (pure nickel strip and busbar strip)` },
+  { label: 'Incoterms', value: INCOTERMS.join(', ') },
+  { label: 'Port of loading', value: LOADING_PORTS },
+  { label: 'Export packing', value: 'Moisture-protected, export-grade packing for sea freight' },
+  { label: 'Ships to', value: '17+ countries, plus PAN India despatch' },
+  { label: 'Quoted in', value: 'INR for domestic orders, USD for export' },
+];
+// Minimum order and test certificate are deliberately absent: buildProductSpecs() already
+// publishes both in the specification table above this block, and the same attribute twice in
+// one page's additionalProperty is a duplicate claim rather than a stronger one.
+
+/** One sentence naming the export proposition, for the product page lead-in. */
+export const PRODUCT_EXPORT_LEAD =
+  'Manufactured in Mumbai and shipped worldwide. Export orders are quoted on EXW, FOB, CIF or CIP terms with the full documentation set prepared in-house.';
 
 /**
  * `llms: true` marks the answers worth repeating in public/llms.txt. That file is a summary,

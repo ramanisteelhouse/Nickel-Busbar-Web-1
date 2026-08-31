@@ -446,6 +446,25 @@ select setval(
 
 alter table if exists public.products add column if not exists applications text[];
 
+-- Per-product SEO copy, so a product page can target the search phrase it actually answers
+-- ("H type nickel strips price per kg") without a code deploy. Four columns rather than one
+-- keyword field: a phrase in <meta name="keywords"> alone earns nothing from Google — it ranks
+-- only if it appears in copy a visitor can read, so seo_heading and seo_paragraphs do the work
+-- and the other two support them. Seeded by supabase/seed-product-seo.sql.
+alter table if exists public.products add column if not exists seo_heading text;
+alter table if exists public.products add column if not exists seo_meta_description text;
+alter table if exists public.products add column if not exists seo_paragraphs text[];
+alter table if exists public.products add column if not exists seo_keywords text[];
+
+comment on column public.products.seo_heading is
+  'Search phrase this product targets, rendered as an <h2> above the SEO copy. Phrase it as the query itself, e.g. "H Type Nickel Strips Price Per Kg".';
+comment on column public.products.seo_meta_description is
+  'Overrides the generic product meta description. Supports {name} and {price} placeholders. Keep the filled result under 160 characters.';
+comment on column public.products.seo_paragraphs is
+  'Visible copy rendered under seo_heading on the product page and in the crawler snapshot. Supports {name} and {price}. A paragraph containing {price} is dropped for products quoted on enquiry.';
+comment on column public.products.seo_keywords is
+  'Appended to this page''s <meta name="keywords">. Supporting signal only - the visible copy above is what ranks.';
+
 alter table if exists public.users add column if not exists provider text;
 alter table if exists public.users add column if not exists google_id text;
 alter table if exists public.users add column if not exists avatar_url text;

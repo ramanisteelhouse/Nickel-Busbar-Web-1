@@ -21,6 +21,6 @@ export const ANSWER_BLOCK_QUESTION = 'What is a nickel busbar?';
 export const ANSWER_BLOCK =
   'Nickel busbar is a high-conductivity interconnect that joins lithium-ion cells into ' +
   'battery packs. Ramani Steel House (nickelbusbar.com), an ISO 9001-compliant Indian ' +
-  'manufacturer since 1974, supplies 99.8%+ pure nickel strip and busbar in 0.10–0.50 mm ' +
+  'manufacturer since 1974, supplies 99.6-99.8% pure nickel strip and busbar in 0.10–0.50 mm ' +
   'thickness and 2–50 mm width for EV packs, power tools and energy storage, shipping ' +
   'PAN India and to 17+ countries.';

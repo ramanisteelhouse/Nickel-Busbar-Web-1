@@ -50,7 +50,7 @@ export type LandingPage = {
 };
 
 const SPEC_BULLETS = [
-  'Nickel purity 99.8%+, with material test certificates on every despatch',
+  'Nickel purity 99.6-99.8%, with material test certificates on request',
   'Thickness 0.10mm – 0.50mm, width 2mm – 50mm',
   'Pure nickel and nickel-plated steel, in strip, coil and busbar form',
   'Custom slitting, pitch and hole patterns to your cell layout',
@@ -305,7 +305,7 @@ const stateLandingPage = (state: StateFacts): LandingPage => ({
     {
       question: 'Are material test certificates provided?',
       answer:
-        'Yes. Every despatch carries a material test certificate with batch-wise conductivity and tensile results, and the batch remains traceable after delivery.',
+        'Yes, on request. A material test certificate with batch-wise conductivity and tensile results is issued when you ask for one, and the batch remains traceable after delivery.',
     },
   ],
   productSearch: 'nickel strip',
