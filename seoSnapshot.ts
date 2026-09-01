@@ -210,6 +210,56 @@ const injectHead = (template: string, head: HeadInput) => {
   return html;
 };
 
+/** The columns every product-card renderer below needs. `image` only picks the file extension. */
+export type ProductCardRow = {
+  slug?: unknown;
+  name?: unknown;
+  image?: unknown;
+  dimensions?: unknown;
+  seo_heading?: unknown;
+};
+
+/**
+ * One product as a linked card: thumbnail, link, and a describing line.
+ *
+ * Two things this exists for, both measured against IndiaMART's category pages, which ship 91
+ * internal links and 58 images (all with alt text) in their raw HTML:
+ *
+ *   Links. Our snapshots carried one link per page. Googlebot runs the bundle and sees the
+ *   React nav, but GPTBot, ClaudeBot and PerplexityBot never do — and this module exists for
+ *   exactly those crawlers. Anchor text is the product's own name, so it describes where it
+ *   goes rather than repeating boilerplate navigation.
+ *
+ *   Images. The listing snapshots rendered no <img> at all, so a non-rendering crawler saw a
+ *   catalogue with no pictures. `loading="lazy"` and explicit dimensions keep a grid of these
+ *   from competing with the page's own content for bandwidth.
+ */
+const productCardHtml = (product: ProductCardRow): string => {
+  const slug = String(product.slug ?? "");
+  const name = String(product.name ?? "");
+  if (!slug || !name) return "";
+
+  const href = `${SITE_URL}/product/${encodeURIComponent(slug)}`;
+  const src = productImageUrl(SITE_URL, slug, (product.image as string | null) ?? null);
+  // The product's own target phrase when it has one, so the alt text says what the picture
+  // shows in the words a buyer would search for. buildImageAlt adds the brand/location suffix.
+  // Same shape productImageAltSubject produces, without needing the whole keyword block here.
+  const alt = buildImageAlt(
+    product.seo_heading ? `${name} - ${String(product.seo_heading)}` : name
+  );
+  const detail = product.dimensions ? ` &mdash; ${escapeHtml(String(product.dimensions))}` : "";
+
+  return (
+    `<li>` +
+    `<a href="${escapeAttr(href)}">` +
+    `<img src="${escapeAttr(src)}" alt="${escapeAttr(alt)}" width="600" height="600" loading="lazy" decoding="async" />` +
+    `${escapeHtml(name)}</a>${detail}</li>`
+  );
+};
+
+export const productListHtml = (products: ProductCardRow[]): string =>
+  products.map(productCardHtml).filter(Boolean).join("");
+
 // Every renderer below reads the database, so any of them can throw when it is unreachable.
 // Answering that with the untouched template returns 200 carrying the *homepage's* title and
 // <link rel="canonical" href="https://www.nickelbusbar.com/">, so during an outage every
@@ -378,25 +428,63 @@ export async function renderProductListSnapshot(template: string, isCategoriesRo
     ? "Browse nickel strip categories from Ramani Steel House: pure nickel, nickel-plated strips, battery tabs, busbars and custom coils. Manufactured in Mumbai, supplied PAN India and exported worldwide."
     : "Shop nickel strips, nickel-plated strips, and battery tabs manufactured in Mumbai, India. PAN India supply and export to 17+ countries. Request bulk and custom quotes.";
 
+  // The catalogue hub shipped an h1 and one sentence — no products, no links, no images. It is
+  // the page every product URL should be reachable from, so for a crawler that does not run the
+  // bundle the whole catalogue was invisible from here. Best-effort like the landing pages: a
+  // database hiccup leaves the copy intact rather than 503-ing the hub.
+  let products: ProductCardRow[] = [];
+  try {
+    products = await query<ProductCardRow>(
+      `SELECT p.slug, p.name, p.image, p.dimensions, p.seo_heading
+         FROM products p
+        ORDER BY p.is_featured DESC, p.name`
+    );
+  } catch (error) {
+    console.warn("[snapshot] Product list unavailable for /products; rendering copy only.", error);
+  }
+
   const collectionJsonLd = {
     "@context": "https://schema.org",
     "@type": "CollectionPage",
     name: title,
     description,
     url: canonical,
+    ...(products.length
+      ? {
+          mainEntity: {
+            "@type": "ItemList",
+            numberOfItems: products.length,
+            itemListElement: products.map((product, index) => ({
+              "@type": "ListItem",
+              position: index + 1,
+              name: String(product.name ?? ""),
+              url: `${SITE_URL}/product/${encodeURIComponent(String(product.slug ?? ""))}`,
+            })),
+          },
+        }
+      : {}),
   };
 
-  const snapshotBody = `<article>
-    <h1>${escapeHtml(isCategoriesRoute ? "Nickel Strip Categories" : "Nickel Strip Products")}</h1>
-    <p>${escapeHtml(description)}</p>
-  </article>`;
+  const productsHtml = products.length
+    ? `<h2>Nickel strip and busbar products</h2><ul>${productListHtml(products)}</ul>`
+    : "";
 
   const html = injectHead(template, {
     title,
     description,
     canonical,
     jsonLd: [collectionJsonLd],
-    snapshotBody,
+    snapshotBody: `<article>
+    <h1>${escapeHtml(isCategoriesRoute ? "Nickel Strip Categories" : "Nickel Strip Products")}</h1>
+    <p>${escapeHtml(description)}</p>
+    ${productsHtml}
+    <h2>Browse by type</h2>
+    <ul>
+      <li><a href="${SITE_URL}/h-type-nickel-strip">H type nickel strip manufacturer in India</a></li>
+      <li><a href="${SITE_URL}/calculator">Nickel strip weight calculator</a></li>
+      <li><a href="${SITE_URL}${EXPORT_PATH}">Nickel strip and busbar export enquiry</a></li>
+    </ul>
+  </article>`,
   });
 
   return { status: 200, html };
@@ -477,7 +565,8 @@ const STATIC_ROUTE_SEO: Record<string, { title: string; description: string; jso
     <h2>Product range</h2>
     <ul>${HOME_VARIANTS.map(
       (variant) =>
-        `<li><strong>${escapeHtml(variant.title)}</strong> — ${escapeHtml(variant.spec)}. ${escapeHtml(variant.note)}</li>`
+        `<li><a href="${SITE_URL}${escapeAttr(variant.cta)}"><strong>${escapeHtml(variant.title)}</strong></a>` +
+        ` — ${escapeHtml(variant.spec)}. ${escapeHtml(variant.note)}</li>`
     ).join("")}</ul>
     <h2>Applications</h2>
     <ul>${HOME_APPLICATIONS.map((item) => `<li>${escapeHtml(item)}</li>`).join("")}</ul>
@@ -498,6 +587,19 @@ const STATIC_ROUTE_SEO: Record<string, { title: string; description: string; jso
     <p>Email: ${EMAIL_ADDRESSES.join(" / ")}</p>
     <p>Phone: ${PHONE_NUMBERS.map((n) => n.display).join(" / ")}</p>
     <p>Ramani Steel House, ${escapeHtml(POSTAL_ADDRESS.oneLine)}</p>
+    <h2>More from Ramani Steel House</h2>
+    <ul>
+      <li><a href="${SITE_URL}/products">Nickel strip and busbar products</a></li>
+      <!-- /h-type-nickel-strip is deliberately absent: it is already linked from the product
+           range copy above, where the surrounding sentence gives the anchor context. Google
+           attributes the first anchor for a URL on a page, so a second link here would only
+           repeat it with weaker placement. -->
+      <li><a href="${SITE_URL}${EXPORT_PATH}">Nickel strip and busbar export enquiry</a></li>
+      <li><a href="${SITE_URL}/calculator">Nickel strip weight calculator</a></li>
+      <li><a href="${SITE_URL}/blog">Nickel strip guides and technical articles</a></li>
+      <li><a href="${SITE_URL}/about">About Ramani Steel House</a></li>
+      <li><a href="${SITE_URL}/contact">Contact the sales team</a></li>
+    </ul>
   </article>`,
   },
   "/about": {
@@ -768,7 +870,7 @@ export async function renderLandingSnapshot(
     try {
       const tokens = page.productSearch.toLowerCase().split(/[^a-z0-9]+/).filter(Boolean);
       products = await query<Record<string, unknown>>(
-        `SELECT p.name, p.slug, p.dimensions
+        `SELECT p.name, p.slug, p.dimensions, p.image, p.seo_heading
            FROM products p
           WHERE (
             SELECT bool_and(
@@ -797,14 +899,7 @@ export async function renderLandingSnapshot(
 
   const productsHtml = products.length
     ? `<h2>Products</h2>
-    <ul>${products
-      .map(
-        (product) =>
-          `<li><a href="${SITE_URL}/product/${encodeURIComponent(String(product.slug))}">${escapeHtml(
-            String(product.name)
-          )}</a>${product.dimensions ? ` — ${escapeHtml(String(product.dimensions))}` : ""}</li>`
-      )
-      .join("")}</ul>`
+    <ul>${productListHtml(products)}</ul>`
     : "";
 
   const faqHtml = `<h2>Frequently asked questions</h2>
@@ -1109,6 +1204,30 @@ export async function renderProductSnapshot(template: string, slug: string): Pro
         .join("")}`
     : "";
 
+  // Siblings from the same category, so a product page is not a dead end for a crawler that
+  // arrives from search and never runs the bundle. Anchor text is each product's own name, and
+  // the cards carry their thumbnails — the pattern IndiaMART's category pages use to spread
+  // relevance across a catalogue. Best-effort: this is supporting content, and a failure here
+  // must not take down a page that is otherwise complete.
+  let related: ProductCardRow[] = [];
+  try {
+    related = await query<ProductCardRow>(
+      `SELECT p.slug, p.name, p.image, p.dimensions, p.seo_heading
+         FROM products p
+        WHERE p.slug <> $1
+          AND ($2::bigint IS NULL OR p.category_id = $2)
+        ORDER BY p.is_featured DESC, p.name
+        LIMIT 6`,
+      [productSlug, (product.category_id as number | null) ?? null]
+    );
+  } catch (error) {
+    console.warn(`[snapshot] Related products unavailable for ${productSlug}.`, error);
+  }
+
+  const relatedHtml = related.length
+    ? `<h2>Related nickel strip products</h2><ul>${productListHtml(related)}</ul>`
+    : "";
+
   const snapshotBody = `<article>
     <h1>${escapeHtml(name)}</h1>
     ${imageTag}
@@ -1125,6 +1244,8 @@ export async function renderProductSnapshot(template: string, slug: string): Pro
     <p><a href="${SITE_URL}${EXPORT_PATH}">Nickel strip and busbar export enquiry</a> &mdash; send your specification, quantity and destination port for a quotation.</p>
     <h2>${escapeHtml(RETURN_POLICY_HEADING)}</h2>
     ${RETURN_POLICY_LINES.map((line) => `<p>${escapeHtml(line)}</p>`).join("")}
+    ${relatedHtml}
+    <p><a href="${SITE_URL}/products">All nickel strip and busbar products</a></p>
   </article>`;
 
   const html = injectHead(template, {
