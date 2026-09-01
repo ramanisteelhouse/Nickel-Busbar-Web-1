@@ -535,21 +535,19 @@ const STATIC_ROUTE_SEO: Record<string, { title: string; description: string; jso
           })),
         ],
       },
-      {
-        "@context": "https://schema.org",
-        "@type": "Product",
-        "@id": `${SITE_URL}/#nickel-strip`,
-        name: "Nickel Strips for Lithium-Ion Batteries",
-        description:
-          "High purity nickel strips for EV, electronics, and energy storage applications.",
-        brand: { "@id": `${SITE_URL}/#organization` },
-        url: `${SITE_URL}/products?search=nickel`,
-        additionalProperty: HOME_SPECIFICATIONS.map((spec) => ({
-          "@type": "PropertyValue",
-          name: spec.label,
-          value: spec.value,
-        })),
-      },
+      // Deliberately no Product entity here.
+      //
+      // Search Console flagged this URL with "Either offers, review, or aggregateRating should
+      // be specified". The Product it was describing - "Nickel Strips for Lithium-Ion
+      // Batteries" - is a category, not something anyone can buy: it has no SKU, no single
+      // price, and no offer to state. The honest fix is to stop claiming the homepage is a
+      // product page rather than to attach an offer to an abstraction.
+      //
+      // Nothing is lost. Every real SKU publishes a complete Product with an Offer on its own
+      // page, and the specification table this entity carried in `additionalProperty` is still
+      // rendered as a visible <table> in the body below, which is what a reader or a model
+      // actually quotes from. The homepage keeps the entities that are true of it:
+      // Organization/LocalBusiness and WebSite from index.html, and the FAQPage above.
     ],
     body: `<article>
     <h1>India's Trusted Nickel Strip Manufacturer</h1>
@@ -668,6 +666,19 @@ const STATIC_ROUTE_SEO: Record<string, { title: string; description: string; jso
         applicationCategory: "UtilitiesApplication",
         operatingSystem: "Any",
         publisher: { "@type": "Organization", name: SITE_NAME, url: SITE_URL },
+        // Google asks a SoftwareApplication for one of offers/review/aggregateRating, which is
+        // what Search Console flagged on this URL. `price: 0` is the documented way to say a
+        // tool is free, and here it is simply true - the calculator is open to anyone.
+        //
+        // Note this is the opposite call from renderProductSnapshot, which omits the Offer
+        // entirely for enquiry-only products rather than publishing `price: 0`. A zero price on
+        // a physical product advertises it as free; on a free web tool it is the fact.
+        offers: {
+          "@type": "Offer",
+          price: "0",
+          priceCurrency: "INR",
+          availability: "https://schema.org/InStock",
+        },
       },
     ],
     body: `<article>
