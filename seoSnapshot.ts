@@ -1223,11 +1223,19 @@ export async function renderProductSnapshot(template: string, slug: string): Pro
   let related: ProductCardRow[] = [];
   try {
     related = await query<ProductCardRow>(
+      // Same category first, then fill from the rest of the catalogue rather than filtering to
+      // it. Restricting to the category left "Plain Nickel Strips" and "Copper Busbar" with no
+      // related products at all - each is the only item in its category - so the two pages that
+      // most needed a way onward were the two that stayed dead ends.
+      //
+      // IS NOT DISTINCT FROM, not `=`: a product with no category would otherwise compare NULL
+      // to NULL, get NULL rather than true, and lose its own category grouping.
       `SELECT p.slug, p.name, p.image, p.dimensions, p.seo_heading
          FROM products p
         WHERE p.slug <> $1
-          AND ($2::bigint IS NULL OR p.category_id = $2)
-        ORDER BY p.is_featured DESC, p.name
+        ORDER BY (p.category_id IS NOT DISTINCT FROM $2::bigint) DESC,
+                 p.is_featured DESC,
+                 p.name
         LIMIT 6`,
       [productSlug, (product.category_id as number | null) ?? null]
     );
