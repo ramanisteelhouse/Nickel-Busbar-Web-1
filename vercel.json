@@ -33,7 +33,6 @@
     { "src": "/blog/?", "dest": "/api/render?path=/blog" },
     { "src": "/blog/Why-99\\.6-Purity-Matters/?", "status": 301, "headers": { "Location": "https://www.nickelbusbar.com/blog/why-nickel-purity-matters" } },
     { "src": "/blog/Manufacturers-Guide/?", "status": 301, "headers": { "Location": "https://www.nickelbusbar.com/blog/sourcing-custom-stamped-nickel-busbars" } },
-    { "src": "/blog/Nickel-Strips-for-Electric-Vehicles/?", "status": 301, "headers": { "Location": "https://www.nickelbusbar.com/blog/nickel-strips-for-electric-vehicles" } },
     { "src": "/blog/Nickel-Strip-Manufacturer-for-UK-Battery-Industry/?", "status": 301, "headers": { "Location": "https://www.nickelbusbar.com/blog/nickel-strip-manufacturer-uk-battery-industry" } },
     { "src": "/blog/Pure-Nickel-Strip-vs-Nickel-Plated-Steel-Strip(?::|%3A)-Complete-Comparison/?", "status": 301, "headers": { "Location": "https://www.nickelbusbar.com/blog/pure-nickel-strip-vs-nickel-plated-steel-strip" } },
     { "src": "/blog/[^/]+/?", "dest": "/api/render" },

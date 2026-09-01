@@ -48,7 +48,7 @@ export default async function handler(req: IncomingMessage, res: ServerResponse)
   const pathname = resolvePathname(req);
 
   try {
-    let result: { status: number; html: string };
+    let result: { status: number; html: string; location?: string };
 
     if (isNoindexSnapshotRoute(pathname)) {
       result = renderNoindexSnapshot(template, pathname);
@@ -72,6 +72,15 @@ export default async function handler(req: IncomingMessage, res: ServerResponse)
       } else {
         result = { status: 200, html: template };
       }
+    }
+
+    // A snapshot renderer can ask for a redirect: a blog post requested under an old or
+    // wrongly-cased slug resolves to its canonical URL rather than serving a duplicate.
+    if (result.location) {
+      res.setHeader("Location", result.location);
+      res.statusCode = result.status;
+      res.end();
+      return;
     }
 
     if (result.status === 404) {

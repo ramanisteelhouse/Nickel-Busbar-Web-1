@@ -90,7 +90,10 @@ const inrFormatter = new Intl.NumberFormat("en-IN", {
 });
 const formatInr = (amount: number) => inrFormatter.format(amount);
 
-type SnapshotResult = { status: number; html: string };
+// `location` is set only on a 301: api/render.ts turns it into a Location header. A redirect
+// lives here rather than in vercel.json wherever the decision needs the database or a
+// case-sensitive comparison, neither of which a route pattern can do.
+type SnapshotResult = { status: number; html: string; location?: string };
 
 type HeadInput = {
   title: string;
@@ -284,14 +287,31 @@ export function renderUnavailableShell(template: string, pathname: string): Snap
 }
 
 export async function renderBlogSnapshot(template: string, slug: string): Promise<SnapshotResult> {
+  // lower(slug) rather than an exact match, so a request for a post's old Title-Case URL still
+  // finds it and can be redirected to the canonical spelling below.
+  //
+  // This cannot be done in vercel.json. Its `src` patterns match case-insensitively, so a rule
+  // written for "/blog/Nickel-Strips-for-Electric-Vehicles" also matches the lowercase URL it
+  // redirects to - which is an infinite loop, and briefly was one. Case-only differences have
+  // to be resolved somewhere that compares strings case-sensitively, which is here.
   const post = await queryOne<Record<string, unknown>>(
     `SELECT title, slug, excerpt, content, cover_image_url, author_name, meta_title,
             meta_description, faq_items, published_at, created_at, updated_at
      FROM blog_posts
-     WHERE slug = $1 AND status = 'published' AND (published_at IS NULL OR published_at <= now())
+     WHERE lower(slug) = lower($1) AND status = 'published' AND (published_at IS NULL OR published_at <= now())
      LIMIT 1`,
     [slug]
   );
+
+  // The stored slug is the canonical one. Anything that differs only by case gets a permanent
+  // redirect rather than a second URL serving identical content.
+  if (post && String(post.slug) !== slug) {
+    return {
+      status: 301,
+      location: `${SITE_URL}/blog/${encodeURIComponent(String(post.slug))}`,
+      html: "",
+    };
+  }
 
   if (!post) {
     const canonical = `${SITE_URL}/blog/${encodeURIComponent(slug)}`;
