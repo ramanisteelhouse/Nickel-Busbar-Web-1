@@ -1,3 +1,5 @@
+import { POSTAL_ADDRESS, PRIMARY_CALL } from './contact';
+
 /**
  * Indexable landing pages that sit between the homepage and the individual SKU pages.
  *
@@ -312,8 +314,81 @@ const stateLandingPage = (state: StateFacts): LandingPage => ({
   breadcrumbName: `Nickel Strip in ${state.name}`,
 });
 
+/**
+ * Mumbai, written by hand rather than generated from STATE_FACTS.
+ *
+ * Search Console shows 23 impressions and zero clicks across "nickel strips exporters in
+ * mumbai" (14), "nickel strips suppliers in mumbai" (6) and "nickel strips stockists in
+ * mumbai" (3). Those queries had nothing to land on: the state set covers Maharashtra, and a
+ * state page answers "which state do you ship to", not "who sells this in my city".
+ *
+ * It is deliberately not a stateLandingPage() with the name swapped, because that would make it
+ * a near-duplicate of the Maharashtra page — the doorway pattern this module warns about at the
+ * top. Everything below is true of Mumbai and of nowhere else on the site: the works address on
+ * C.P. Tank Road, the metals market it sits in, collection in person, and Nhava Sheva as the
+ * loading port. Maharashtra keeps the state-level clusters (Pune, Chakan, Nashik, Aurangabad).
+ */
+const MUMBAI_PAGE: LandingPage = {
+  slug: 'nickel-strip-manufacturer-in-mumbai',
+  title: 'Nickel Strip Manufacturer in Mumbai | Supplier & Exporter',
+  description:
+    'Nickel strip manufacturer, supplier and exporter in Mumbai since 1974. Pure nickel strip, H type strip and busbar from our C.P. Tank Road works.',
+  h1: 'Nickel Strip Manufacturer, Supplier & Exporter in Mumbai',
+  intro: `Ramani Steel House is a nickel strip manufacturer, supplier and exporter in Mumbai, working from ${POSTAL_ADDRESS.streetAddress} since 1974. Pure nickel strip, H type nickel strip and nickel busbar are slit and despatched from the same premises, so Mumbai buyers can collect in person rather than wait on a courier, and export consignments load through Nhava Sheva.`,
+  keywords: [
+    'Nickel Strip Manufacturer in Mumbai',
+    'Nickel Strips Suppliers in Mumbai',
+    'Nickel Strips Exporters in Mumbai',
+    'Nickel Strips Stockists in Mumbai',
+    'Nickel Busbar Manufacturer Mumbai',
+    'H Type Nickel Strip Mumbai',
+    'Pure Nickel Strip Supplier Mumbai',
+  ],
+  sections: [
+    {
+      heading: 'Nickel strip suppliers in Mumbai',
+      body: `The works and office are at ${POSTAL_ADDRESS.oneLine}, in the C.P. Tank metals market that has supplied Mumbai's fabricators and traders for decades. Buying from a manufacturer in the same city removes the freight leg and the lead time that comes with it: stock widths can be collected the same day, and custom slitting is quoted against your drawing rather than against a catalogue.`,
+    },
+    {
+      heading: 'Nickel strip exporters in Mumbai',
+      body: 'Export consignments are packed at the Mumbai works and loaded through Nhava Sheva (JNPT), the port that handles most of western India\'s container traffic. Commercial invoice, packing list, certificate of origin and material test certificates are prepared with the shipment, and nickel strip and busbar have shipped to buyers in 17+ countries.',
+    },
+    {
+      heading: 'Nickel strip stockists in Mumbai',
+      body: 'Common thicknesses and widths in pure nickel are held as coil and slit to order, so an ordinary 0.15mm or 0.20mm requirement does not wait on a mill run. Non-standard widths, pitches and hole patterns are cut to your cell layout, and a sample strip can be provided before a bulk lot is committed.',
+    },
+    {
+      heading: 'What is supplied',
+      bullets: SPEC_BULLETS,
+    },
+  ],
+  faqs: [
+    {
+      question: 'Who supplies nickel strips in Mumbai?',
+      answer: `Ramani Steel House manufactures and supplies nickel strip in Mumbai from ${POSTAL_ADDRESS.streetAddress}, and has done since 1974. Pure nickel strip, H type nickel strip, fuse-type and zig-zag patterns and nickel busbar are all made in-house rather than bought in.`,
+    },
+    {
+      question: 'Do you export nickel strips from Mumbai?',
+      answer:
+        'Yes. Export lots are packed at the Mumbai works and shipped through Nhava Sheva with full documentation, including certificate of origin and material test certificates. Send your specification, quantity and destination port for a quotation.',
+    },
+    {
+      question: 'Can I collect nickel strip from your Mumbai office?',
+      answer: `Yes. The works and office are at ${POSTAL_ADDRESS.oneLine}. Call ahead on ${PRIMARY_CALL.display} so the material is cut and ready when you arrive.`,
+    },
+    {
+      question: 'What nickel strip sizes are stocked in Mumbai?',
+      answer:
+        'Thickness runs 0.10mm to 0.50mm and width 2mm to 50mm, in pure nickel and nickel-plated steel. Common sizes are held as coil and slit to order; anything outside that is cut to your drawing.',
+    },
+  ],
+  productSearch: 'nickel strip',
+  breadcrumbName: 'Nickel Strip in Mumbai',
+};
+
 export const LANDING_PAGES: readonly LandingPage[] = [
   H_TYPE_PAGE,
+  MUMBAI_PAGE,
   ...STATE_FACTS.map(stateLandingPage),
 ];
 

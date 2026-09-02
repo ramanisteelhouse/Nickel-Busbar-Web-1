@@ -671,10 +671,17 @@ const STATIC_ROUTE_SEO: Record<string, { title: string; description: string; jso
     <p><a href="${SITE_URL}${BROCHURE.path}">${escapeHtml(BROCHURE.label)}</a> (${escapeHtml(BROCHURE.sizeLabel)})</p>
   </article>`,
   },
+  // Search Console shows this page earning impressions for capabilities it never mentions:
+  // "nickel alloy weight conversion calculator" (14 impressions, 0 clicks), "nickel strip
+  // thickness calculator" (5) and "steel strip length calculator" (3). CalculatorPage already
+  // does all three - its "Solve for" selector rearranges the weight formula for thickness,
+  // width or length, and dimensionToCm/cmToDimension convert between mm and inch - but the
+  // title and copy only ever said "weight". Google surfaced the page and the searcher never
+  // saw their own word in it. Nothing here claims a feature the tool lacks.
   "/calculator": {
-    title: "Nickel Alloy Weight Calculator | Nickel Strip Weight Tool",
+    title: "Free Nickel Strip & Alloy Weight Conversion Calculator",
     description:
-      "Calculate nickel strip and alloy weight instantly with a premium calculator built for battery, EV, and industrial manufacturing applications.",
+      "Free calculator for nickel strip weight, thickness, width and length. Converts mm and inch, and solves for any dimension from a known weight.",
     jsonLd: [
       {
         "@context": "https://schema.org",
@@ -702,8 +709,16 @@ const STATIC_ROUTE_SEO: Record<string, { title: string; description: string; jso
       },
     ],
     body: `<article>
-    <h1>Nickel Alloy Weight Calculator</h1>
-    <p>Instantly calculate weight for nickel strips, sheets, busbars, foil, wire and coil in mm or inches. Built for battery pack engineers, EV manufacturers and industrial metal buyers.</p>
+    <h1>Nickel Strip Weight and Conversion Calculator</h1>
+    <p>Calculate weight for nickel strips, sheets, busbars, foil, wire and coil in millimetres or inches. Built for battery pack engineers, EV manufacturers and industrial metal buyers.</p>
+    <h2>Nickel strip thickness calculator</h2>
+    <p>Enter a known weight with any two of thickness, width and length, and the calculator solves for the third. Use it to work back to the thickness a finished coil weight implies, or to check a supplied strip against the gauge it was ordered at.</p>
+    <h2>Strip length and width calculator</h2>
+    <p>The same "Solve for" selector returns length or width instead. Given a weight in kilograms, a thickness and one other dimension, it rearranges the weight formula rather than asking you to do it by hand.</p>
+    <h2>Nickel alloy weight conversion calculator</h2>
+    <p>Dimensions can be entered in millimetres or inches and are converted internally, so an imperial drawing does not need translating first. Density is selectable, which is what makes it an alloy calculator rather than a pure-nickel one: the same tool covers nickel, nickel-plated steel, copper and aluminium.</p>
+    <h2>How the weight is calculated</h2>
+    <p>Weight = Thickness &times; Width &times; Length &times; Density &times; Quantity, with every dimension converted to centimetres first. The result is shown in grams and kilograms.</p>
   </article>`,
   },
   // The export landing page targets two audiences on one URL - Indian bulk buyers and

@@ -353,35 +353,33 @@ export const CalculatorPage: React.FC = () => {
   return (
     <div className="bg-[#f6f8f9] text-brand">
       <Helmet>
-        <title>Nickel Alloy Weight Calculator | Nickel Strip Weight Tool</title>
+        <title>Free Nickel Strip & Alloy Weight Conversion Calculator</title>
         <meta
           name="description"
-          content="Calculate nickel strip and alloy weight instantly with a premium calculator built for battery, EV, and industrial manufacturing applications."
+          content="Free calculator for nickel strip weight, thickness, width and length. Converts mm and inch, and solves for any dimension from a known weight."
         />
         <link rel="canonical" href="https://www.nickelbusbar.com/calculator" />
         <meta property="og:type" content="website" />
-        <meta property="og:title" content="Nickel Alloy Weight Calculator | Nickel Strip Weight Tool" />
-        <meta property="og:description" content="Calculate nickel strip and alloy weight instantly with a premium calculator built for battery, EV, and industrial manufacturing applications." />
+        <meta property="og:title" content="Free Nickel Strip & Alloy Weight Conversion Calculator" />
+        <meta property="og:description" content="Free calculator for nickel strip weight, thickness, width and length. Converts mm and inch, and solves for any dimension from a known weight." />
         <meta property="og:url" content="https://www.nickelbusbar.com/calculator" />
         <meta property="og:image" content="https://www.nickelbusbar.com/img/logo.png" />
         <meta name="twitter:card" content="summary_large_image" />
-        <meta name="twitter:title" content="Nickel Alloy Weight Calculator | Nickel Strip Weight Tool" />
-        <meta name="twitter:description" content="Calculate nickel strip and alloy weight instantly with a premium calculator built for battery, EV, and industrial manufacturing applications." />
+        <meta name="twitter:title" content="Free Nickel Strip & Alloy Weight Conversion Calculator" />
+        <meta name="twitter:description" content="Free calculator for nickel strip weight, thickness, width and length. Converts mm and inch, and solves for any dimension from a known weight." />
         <meta name="twitter:image" content="https://www.nickelbusbar.com/img/logo.png" />
-        <script type="application/ld+json">
-          {JSON.stringify({
-            '@context': 'https://schema.org',
-            '@type': 'Product',
-            name: 'Nickel Alloy Weight Calculator',
-            description: 'A premium weight calculator for nickel strips, sheets, busbars, foil, wire and coil used in battery and industrial manufacturing.',
-            brand: {
-              '@type': 'Organization',
-              name: 'Ramani Steel House',
-              url: 'https://www.nickelbusbar.com',
-            },
-            url: 'https://www.nickelbusbar.com/calculator',
-          })}
-        </script>
+        {/*
+          No Product entity here. This page is a free tool, not something anyone can buy, and
+          the Product it used to publish carried no offers - which is what Search Console
+          flagged on /calculator with "Either offers, review, or aggregateRating should be
+          specified". It was only visible to a rendering crawler, since the raw HTML never had
+          it.
+
+          The correct entity, a WebApplication with a zero-price Offer, is published by
+          STATIC_ROUTE_SEO["/calculator"] in seoSnapshot.ts and survives hydration: ssrHeadCleanup
+          only drops a server-rendered block when the app publishes one of the same @type, and
+          this page publishes no WebApplication.
+        */}
         <script type="application/ld+json">
           {JSON.stringify({
             '@context': 'https://schema.org',

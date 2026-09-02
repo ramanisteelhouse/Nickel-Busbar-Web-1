@@ -41,7 +41,7 @@ export const POSTAL_ADDRESS = {
   postalCode: '400004',
   addressCountry: 'IN',
   countryName: 'India',
-  /** "Marine Lines East, Mumbai, Maharashtra 400004, India" - for prose and one-line rendering. */
+  /** "65/73, C.P. Tank Road, Mumbai, Maharashtra 400004, India" - for prose and one-line rendering. */
   get oneLine() {
     return `${this.streetAddress}, ${this.addressLocality}, ${this.addressRegion} ${this.postalCode}, ${this.countryName}`;
   },
