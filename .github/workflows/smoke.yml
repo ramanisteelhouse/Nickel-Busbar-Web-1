@@ -1,0 +1,40 @@
+name: Post-deploy smoke check
+
+# deployment_status, not push. Vercel builds after the push lands, so a push-triggered job
+# would smoke the *previous* deployment and pass while the new one is broken. GitHub fires
+# deployment_status when Vercel reports the build finished, and hands us the URL it produced.
+on:
+  deployment_status:
+  # So a deploy can be re-checked by hand, or a preview URL checked before promoting it.
+  workflow_dispatch:
+    inputs:
+      url:
+        description: Base URL to smoke check
+        required: false
+        default: https://www.nickelbusbar.com
+
+jobs:
+  smoke:
+    # Only successful deployments. Vercel also reports 'pending' and 'failure', and smoking a
+    # deployment that never finished would just report noise.
+    if: github.event_name == 'workflow_dispatch' || github.event.deployment_status.state == 'success'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install
+        run: npm ci --no-audit --no-fund
+
+      - name: Smoke check
+        env:
+          # The deployment's own URL, so a preview deploy is checked against itself rather than
+          # against production. Falls back to the live site for manual runs.
+          SMOKE_BASE_URL: ${{ github.event.inputs.url || github.event.deployment_status.target_url || 'https://www.nickelbusbar.com' }}
+        run: npm run smoke

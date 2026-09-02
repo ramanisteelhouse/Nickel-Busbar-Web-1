@@ -10,7 +10,8 @@
     "preview": "vite preview",
     "start": "cross-env NODE_ENV=production tsx server.ts",
     "clean": "rm -rf dist",
-    "lint": "tsc --noEmit"
+    "lint": "tsc --noEmit",
+    "smoke": "tsx scripts/smoke.ts"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.102.1",
