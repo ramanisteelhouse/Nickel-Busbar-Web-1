@@ -1,4 +1,4 @@
-import { POSTAL_ADDRESS, PRIMARY_CALL } from './contact';
+import { POSTAL_ADDRESS, PRIMARY_CALL } from './contact.js';
 
 /**
  * Indexable landing pages that sit between the homepage and the individual SKU pages.
