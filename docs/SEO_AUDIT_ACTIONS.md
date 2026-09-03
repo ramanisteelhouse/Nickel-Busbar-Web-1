@@ -91,18 +91,56 @@ A pixel is only worth its privacy cost if you intend to run Meta ads and retarge
 added for it. If that changes, it should follow the same consent-gated, env-var pattern as
 `Analytics.tsx` rather than being pasted into `index.html`.
 
-## 7. Verify before publishing
+## 7. Address — resolved, with one value still approximate
 
-Two values in the structured data were derived rather than supplied, and should be confirmed:
+**Street address: fixed.** `POSTAL_ADDRESS` in `src/lib/contact.ts` previously held "Marine
+Lines East", a locality rather than a street address — which is why the audit's Local SEO check
+could not identify an address on the page at all. The company's own 4-page brochure gives the
+real one, and it is now published:
 
-- **`geo` coordinates** in `index.html` (`18.9435, 72.8234`) are a Marine Lines, Mumbai
-  approximation from the stated locality, not a surveyed location for the premises.
-- **Street address.** `POSTAL_ADDRESS` in `src/lib/contact.ts` holds "Marine Lines East", which
-  is a locality rather than a full street address. A building name and number would help both
-  the Local SEO check and buyers trying to find you. Update it there and it propagates to the
-  footer, the JSON-LD and the crawler snapshots at once.
+```
+65/73, C.P. Tank Road, Mumbai - 400 004, Maharashtra, India
+```
 
-## 8. Point Merchant Center at the generated product feed
+It propagates from that one constant to the footer microdata, the `@graph` in `index.html`, and
+every crawler snapshot.
+
+**`geo` coordinates: still approximate.** `index.html` now carries `18.9512, 72.8268`, which is
+the C.P. Tank area rather than a surveyed point for the premises. Replace it with the exact
+pin from the Google Business Profile when that is set up.
+
+## 8. Two discrepancies the brochure surfaced — need a decision
+
+Neither is a bug, and neither has been changed unilaterally: both are statements about the
+business that only the company can settle.
+
+**Positioning.** `public/llms.txt` — the file AI assistants read to describe this company —
+says Ramani Steel House is:
+
+> "a primary manufacturer **(not a reseller or distributor)** of nickel strips"
+
+The brochure says:
+
+> "India's leading **importer and stockholder** of Nickel & Nickel Alloys, Stainless Steel,
+> Titanium & Titanium alloys, Duplex, Super Duplex and High-Performance Stainless Steel"
+
+Both can be true — nickel strip manufactured in-house, the wider alloy range imported and
+stocked — but the parenthetical is an exclusive claim the brochure contradicts, on the one file
+written specifically to tell language models what this company is. Decide which is accurate and
+edit `scripts/generate-llms-txt.ts` (the committed `public/llms.txt` is generated from it).
+
+**Contact details missing from the site.** The brochure publishes a landline and a general
+mailbox that appear nowhere on nickelbusbar.com:
+
+- `+91 (22) 2242 1388` / `+91 (22) 6636 2224`
+- `info@ramanisteel.com`
+
+A landline is a stronger local-search signal than a mobile, so adding at least one to
+`PHONE_NUMBERS` in `src/lib/contact.ts` would strengthen the LocalBusiness entity. The four
+named contacts and their personal mobiles are also in the brochure; whether those belong in
+public structured data is a separate call.
+
+## 9. Point Merchant Center at the generated product feed
 
 Merchant Center reported `Missing value: gtin` and `Missing value: brand` on every item in the
 **PRODUCTS SOURCE 2** feed. Neither was a fault on the website — the product pages already

@@ -35,6 +35,7 @@ import {
   whyChooseUs as whyChooseUsCopy,
 } from '../lib/homeContent';
 import { Tilt3D, Reveal } from '../components/Tilt3D';
+import { NickelStrip3D } from '../components/NickelStrip3D';
 import { HeritageBadge, FOUNDED_YEAR } from '../components/HeritageBadge';
 import { ProductThumbnail } from '../components/ProductThumbnail';
 
@@ -323,22 +324,13 @@ export const HomePage: React.FC = () => {
             animate={{ x: [0, 20, 0], y: [0, -20, 0] }}
             transition={{ duration: 16, repeat: Infinity, ease: 'easeInOut' }}
           />
-          {/* Floating 3D strip accents */}
-          <div className="hidden lg:block" style={{ perspective: 1000 }}>
-            {[
-              { top: '12%', left: '58%', width: 220, rotate: -18, delay: 0 },
-              { top: '58%', left: '52%', width: 160, rotate: 12, delay: 0.6 },
-              { top: '32%', left: '68%', width: 130, rotate: -8, delay: 1.1 },
-            ].map((strip, index) => (
-              <motion.div
-                key={index}
-                className="absolute h-3 rounded-full bg-gradient-to-r from-white/40 via-emerald-200/30 to-white/10 shadow-lg"
-                style={{ top: strip.top, left: strip.left, width: strip.width, rotate: strip.rotate, transformStyle: 'preserve-3d' }}
-                animate={{ y: [0, -18, 0], rotateZ: [strip.rotate, strip.rotate + 6, strip.rotate] }}
-                transition={{ duration: 7 + index, repeat: Infinity, ease: 'easeInOut', delay: strip.delay }}
-              />
-            ))}
-          </div>
+          {/* The product itself, in 3D, instead of the three rounded bars that used to stand in
+              for it. Those were generic decoration; this is an H type strip with its real
+              rail-and-rung geometry, which a battery pack builder recognises on sight.
+              Deliberately behind the headline and dimmed — it is the backdrop to the claim, not
+              a competitor for it. Hidden below lg, where the hero is a single narrow column and
+              a wide strip has nowhere to sit. */}
+          <NickelStrip3D className="absolute right-[-6%] top-1/2 hidden h-[26rem] w-[68%] -translate-y-1/2 opacity-50 lg:block" />
         </div>
 
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-24 lg:py-32">
