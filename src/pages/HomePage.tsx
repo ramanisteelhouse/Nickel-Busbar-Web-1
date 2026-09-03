@@ -324,13 +324,6 @@ export const HomePage: React.FC = () => {
             animate={{ x: [0, 20, 0], y: [0, -20, 0] }}
             transition={{ duration: 16, repeat: Infinity, ease: 'easeInOut' }}
           />
-          {/* The product itself, in 3D, instead of the three rounded bars that used to stand in
-              for it. Those were generic decoration; this is an H type strip with its real
-              rail-and-rung geometry, which a battery pack builder recognises on sight.
-              Deliberately behind the headline and dimmed — it is the backdrop to the claim, not
-              a competitor for it. Hidden below lg, where the hero is a single narrow column and
-              a wide strip has nowhere to sit. */}
-          <NickelStrip3D className="absolute right-[-6%] top-1/2 hidden h-[26rem] w-[68%] -translate-y-1/2 opacity-50 lg:block" />
         </div>
 
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-24 lg:py-32">
@@ -402,23 +395,18 @@ export const HomePage: React.FC = () => {
 
             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.9, delay: 0.1 }}>
               <Tilt3D className="rounded-[2rem] border border-white/10 bg-white/10 p-4 shadow-2xl shadow-slate-950/20 backdrop-blur-xl" maxTilt={7} liftZ={16}>
+                {/* The hero's featured visual is the product itself, turning in 3D. It sits in
+                    the card rather than loose in the background because the hero has no third
+                    slot: the headline holds the left column and this card the right, and an
+                    element competing with both ends up either fighting the copy or pushed below
+                    the fold. The factory video keeps its own section further down the page. */}
                 <div className="relative overflow-hidden rounded-[1.8rem] border border-white/10 bg-slate-950" style={{ transform: 'translateZ(40px)' }}>
-                  <video
-                    src={heroVideoSrc || undefined}
-                    poster="/img/hero-poster.webp"
-                    preload="none"
-                    autoPlay
-                    muted
-                    loop
-                    playsInline
-                    aria-label="Factory tour: battery pack nickel strip production"
-                    className="h-72 w-full object-cover"
-                  />
+                  <NickelStrip3D className="h-72 w-full" />
                   <div className="absolute inset-0 bg-gradient-to-t from-slate-950/90 via-transparent to-transparent" />
                   <div className="absolute bottom-4 left-4 right-4 rounded-3xl bg-slate-950/80 p-4 text-white backdrop-blur-sm">
-                    <p className="text-xs uppercase tracking-[0.3em] text-slate-300">Factory Tour</p>
-                    <h2 className="mt-2 text-lg font-semibold text-white">Battery pack strip production</h2>
-                    <p className="mt-2 text-sm text-slate-300">Real-time manufacturing visuals for nickel strip and connector fabrication.</p>
+                    <p className="text-xs uppercase tracking-[0.3em] text-slate-300">H Type Nickel Strip</p>
+                    <h2 className="mt-2 text-lg font-semibold text-white">The interconnect, in three dimensions</h2>
+                    <p className="mt-2 text-sm text-slate-300">Rails and rungs cut to the cell pitch, so the neck concentrates heat at the weld.</p>
                   </div>
                 </div>
                 <div className="mt-5 grid gap-3 sm:grid-cols-2">
@@ -458,6 +446,36 @@ export const HomePage: React.FC = () => {
               </Reveal>
             ))}
           </div>
+        </div>
+      </section>
+
+      {/* The factory footage, moved out of the hero when the 3D strip took the featured slot.
+          It is real manufacturing video and worth keeping — a synthetic render is not a
+          substitute for it — so it gets its own band rather than being dropped. Same deferred
+          loading as before: 10.8MB behind a poster, attached only after the load event. */}
+      <section className="bg-white pb-4">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <Reveal>
+            <div className="relative overflow-hidden rounded-3xl border border-slate-200 bg-slate-950 shadow-xl shadow-slate-200/40">
+              <video
+                src={heroVideoSrc || undefined}
+                poster="/img/hero-poster.webp"
+                preload="none"
+                autoPlay
+                muted
+                loop
+                playsInline
+                aria-label="Factory tour: battery pack nickel strip production"
+                className="h-64 w-full object-cover sm:h-80"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-slate-950/90 via-slate-950/20 to-transparent" />
+              <div className="absolute bottom-5 left-5 right-5 text-white">
+                <p className="text-xs uppercase tracking-[0.3em] text-slate-300">Factory Tour</p>
+                <h2 className="mt-2 text-xl font-semibold text-white">Battery pack strip production</h2>
+                <p className="mt-2 max-w-xl text-sm text-slate-300">Real-time manufacturing visuals for nickel strip and connector fabrication at our Mumbai works.</p>
+              </div>
+            </div>
+          </Reveal>
         </div>
       </section>
 

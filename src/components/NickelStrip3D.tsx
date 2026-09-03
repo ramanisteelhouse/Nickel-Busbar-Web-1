@@ -56,11 +56,15 @@ const addBox = (mesh: Mesh, min: Vec3, max: Vec3) => {
  * exaggerated in thickness — a real 0.15mm strip 8mm wide would be invisibly thin on screen —
  * but the pattern and its proportions are the product's own.
  */
+/** Shared with the projection below, which sizes the strip to the canvas from these. */
+const HALF_LENGTH = 3.4;
+const HALF_HEIGHT = 0.72;
+
 const buildStrip = (): Mesh => {
   const mesh: Mesh = { vertices: [], faces: [] };
 
-  const halfLength = 3.4;
-  const halfHeight = 0.72;
+  const halfLength = HALF_LENGTH;
+  const halfHeight = HALF_HEIGHT;
   const halfThickness = 0.075;
   const railHeight = 0.2;
   const rungHalfWidth = 0.16;
@@ -88,14 +92,20 @@ const LIGHT: Vec3 = (() => {
   return [v[0] / len, v[1] / len, v[2] / len];
 })();
 
-/** Nickel: a cool grey that runs to near-white on the lit faces and to the brand navy in shadow. */
+/**
+ * Nickel: cool grey, running from a deep blue-shadow to a bright but never pure-white highlight.
+ *
+ * The curve is deliberately steep (`^1.5`). A gentler ramp lit almost every face to the same
+ * near-white and the strip read as painted plastic — metal needs most surfaces sitting mid-tone
+ * with the light concentrated on the few faces actually facing the source. The highlight also
+ * stops short of 255 and keeps a blue bias, because a neutral white highlight looks like paper.
+ */
 const shade = (intensity: number) => {
   const t = Math.min(1, Math.max(0, intensity));
-  // Shadow -> mid -> highlight, eased so the metal keeps a bright, narrow specular roll-off.
-  const eased = Math.pow(t, 0.75);
-  const r = Math.round(26 + eased * 214);
-  const g = Math.round(45 + eased * 202);
-  const b = Math.round(58 + eased * 191);
+  const eased = Math.pow(t, 1.5);
+  const r = Math.round(38 + eased * 197);
+  const g = Math.round(55 + eased * 187);
+  const b = Math.round(68 + eased * 178);
   return `rgb(${r},${g},${b})`;
 };
 
@@ -132,23 +142,40 @@ export const NickelStrip3D: React.FC<{ className?: string }> = ({ className }) =
       if (!width || !height) return;
       ctx.clearRect(0, 0, width, height);
 
-      // A gentle fixed tilt so the extruded thickness stays visible through the whole turn.
+      // A gentle fixed tilt so the extruded thickness stays visible through the whole turn, and
+      // a roll so the strip runs diagonally. The strip is 4.7:1 while the canvas is nearer 1.5:1
+      // — laid out flat it left most of the frame empty, and the diagonal both fills the box and
+      // gives the piece some motion even at the instant it is standing still.
       const tiltX = -0.34;
+      const roll = -0.24;
       const cosY = Math.cos(angle);
       const sinY = Math.sin(angle);
       const cosX = Math.cos(tiltX);
       const sinX = Math.sin(tiltX);
+      const cosR = Math.cos(roll);
+      const sinR = Math.sin(roll);
 
       const rotate = ([x, y, z]: Vec3): Vec3 => {
         const rx = x * cosY + z * sinY;
         const rz = -x * sinY + z * cosY;
         const ry = y * cosX - rz * sinX;
         const rz2 = y * sinX + rz * cosX;
-        return [rx, ry, rz2];
+        return [rx * cosR - ry * sinR, rx * sinR + ry * cosR, rz2];
       };
 
-      const scale = Math.min(width, height * 2.1) * 0.26;
       const cameraZ = 9;
+      // Fit the strip to the canvas from its own dimensions rather than a tuned constant. It
+      // turns on Y, so at some point in every rotation the far end swings to z = +HALF_LENGTH
+      // and perspective magnifies it by this much; sizing for that worst case is what keeps the
+      // strip inside the frame for the whole turn instead of only at the angle it was tuned at.
+      const nearestZ = cameraZ / (cameraZ - HALF_LENGTH);
+      // Extents after the roll, so the diagonal is fitted rather than the flat strip.
+      const spanX = HALF_LENGTH * Math.abs(cosR) + HALF_HEIGHT * Math.abs(sinR);
+      const spanY = HALF_LENGTH * Math.abs(sinR) + HALF_HEIGHT * Math.abs(cosR);
+      const scale = Math.min(
+        width / (2 * spanX * nearestZ * 1.04),
+        height / (2 * spanY * nearestZ * 1.15)
+      );
       const project = ([x, y, z]: Vec3): [number, number] => {
         const p = cameraZ / (cameraZ - z);
         return [width / 2 + x * scale * p, height / 2 - y * scale * p];
@@ -156,7 +183,7 @@ export const NickelStrip3D: React.FC<{ className?: string }> = ({ className }) =
 
       const rotated = mesh.vertices.map(rotate);
 
-      type Drawable = { depth: number; points: [number, number][]; fill: string };
+      type Drawable = { depth: number; points: [number, number][]; intensity: number };
       const drawables: Drawable[] = [];
 
       for (const face of mesh.faces) {
@@ -174,7 +201,7 @@ export const NickelStrip3D: React.FC<{ className?: string }> = ({ className }) =
         drawables.push({
           depth,
           points: verts.map(project),
-          fill: shade(0.16 + lambert * 0.72 + specular),
+          intensity: 0.1 + lambert * 0.78 + specular,
         });
       }
 
@@ -186,10 +213,22 @@ export const NickelStrip3D: React.FC<{ className?: string }> = ({ className }) =
         ctx.moveTo(d.points[0][0], d.points[0][1]);
         for (let i = 1; i < d.points.length; i++) ctx.lineTo(d.points[i][0], d.points[i][1]);
         ctx.closePath();
-        ctx.fillStyle = d.fill;
+
+        // A gradient across each face rather than one flat colour. Flat fills gave every
+        // surface a single tone and the strip read as moulded plastic; sweeping the value
+        // across the quad is what puts a sheen on it, which is most of what makes brushed
+        // metal look like metal. The axis runs corner to corner, so it shifts as the piece
+        // turns instead of sitting still on the face.
+        const [p0, , p2] = d.points;
+        const gradient = ctx.createLinearGradient(p0[0], p0[1], p2[0], p2[1]);
+        gradient.addColorStop(0, shade(d.intensity * 0.78));
+        gradient.addColorStop(0.55, shade(d.intensity));
+        gradient.addColorStop(1, shade(d.intensity * 1.22));
+
+        ctx.fillStyle = gradient;
         ctx.fill();
-        // A hairline in the same colour closes the seams antialiasing leaves between quads.
-        ctx.strokeStyle = d.fill;
+        // A hairline closes the seams antialiasing leaves between adjacent quads.
+        ctx.strokeStyle = shade(d.intensity);
         ctx.lineWidth = 0.6;
         ctx.stroke();
       }
