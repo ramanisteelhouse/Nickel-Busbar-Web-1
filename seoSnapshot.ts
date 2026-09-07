@@ -1229,10 +1229,10 @@ export async function renderBlogListSnapshot(template: string): Promise<Snapshot
   const description =
     "Read technical guides and industry insights from Ramani Steel House on nickel strips, battery tabs, and lithium manufacturing.";
 
-  let posts: Array<{ title: string; slug: string; excerpt: string | null }> = [];
+  let posts: Array<{ title: string; slug: string; excerpt: string | null; cover_image_url: string | null }> = [];
   try {
-    posts = await query<{ title: string; slug: string; excerpt: string | null }>(
-      `SELECT title, slug, excerpt FROM blog_posts
+    posts = await query<{ title: string; slug: string; excerpt: string | null; cover_image_url: string | null }>(
+      `SELECT title, slug, excerpt, cover_image_url FROM blog_posts
        WHERE status = 'published' AND (published_at IS NULL OR published_at <= now())
          AND slug IS NOT NULL AND slug <> ''
        ORDER BY published_at DESC NULLS LAST, id DESC
@@ -1248,12 +1248,20 @@ export async function renderBlogListSnapshot(template: string): Promise<Snapshot
   // in the client bundle, so nothing but the sitemap pointed at individual articles.
   const postsHtml = posts.length
     ? `<ul>${posts
-        .map(
-          (post) =>
-            `<li><a href="${SITE_URL}/blog/${encodeURIComponent(post.slug)}">${escapeHtml(post.title)}</a>${
+        .map((post) => {
+          // The cover art as a real element, matching what /products does for its grid. The
+          // index rendered twenty links and no pictures, so an image crawler saw nothing here.
+          const cover = post.cover_image_url
+            ? `<img src="${escapeAttr(post.cover_image_url)}" alt="${escapeAttr(
+                buildImageAlt(post.title)
+              )}" width="600" height="338" loading="lazy" decoding="async" />`
+            : "";
+          return (
+            `<li><a href="${SITE_URL}/blog/${encodeURIComponent(post.slug)}">${cover}${escapeHtml(post.title)}</a>${
               post.excerpt ? ` — ${escapeHtml(post.excerpt)}` : ""
             }</li>`
-        )
+          );
+        })
         .join("")}</ul>`
     : "";
 
