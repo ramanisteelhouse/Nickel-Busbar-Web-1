@@ -1,6 +1,7 @@
 import { existsSync, readFileSync, writeFileSync } from "fs";
 import path from "path";
 import { LANDING_PATHS } from "../src/lib/landingPages.js";
+import { productImageUrl } from "../src/lib/productImage.js";
 
 const SITE_URL = "https://www.nickelbusbar.com";
 
@@ -27,7 +28,21 @@ const staticPages: Array<{ path: string; changefreq: string; priority: string }>
   })),
 ];
 
-type SitemapUrl = { loc: string; lastmod: string; changefreq: string; priority: string };
+type SitemapImage = { loc: string; title: string };
+
+type SitemapUrl = {
+  loc: string;
+  lastmod: string;
+  changefreq: string;
+  priority: string;
+  /**
+   * Photos on this page, submitted to Google Images through the image namespace declared on
+   * the urlset. Google will index an image it finds by crawling the page anyway, but a photo
+   * that appears only after React mounts is not in the HTML an image crawler reads, and the
+   * sitemap is the supported way to declare one regardless.
+   */
+  images?: SitemapImage[];
+};
 
 const escapeXml = (value: string) =>
   value
@@ -59,8 +74,8 @@ async function main() {
     const { query } = await import("../db.js");
 
     try {
-      const products = await query<{ slug: string }>(
-        `SELECT slug FROM products WHERE slug IS NOT NULL AND slug <> '' ORDER BY id`
+      const products = await query<{ slug: string; name: string | null; image: string | null }>(
+        `SELECT slug, name, image FROM products WHERE slug IS NOT NULL AND slug <> '' ORDER BY id`
       );
       for (const product of products) {
         urls.push({
@@ -68,6 +83,16 @@ async function main() {
           lastmod: today,
           changefreq: "weekly",
           priority: "0.6",
+          // productImageUrl resolves to the synced WebP on our own origin, never the signed
+          // Supabase URL held in `image`: storage answers every object with X-Robots-Tag:
+          // none, so an image crawler sent there would be told not to index the very photo
+          // this entry exists to submit.
+          images: [
+            {
+              loc: productImageUrl(SITE_URL, product.slug, product.image),
+              title: product.name?.trim() || product.slug,
+            },
+          ],
         });
       }
     } catch (error) {
@@ -101,10 +126,18 @@ async function main() {
     degraded = true;
   }
 
-  const xml = `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${urls
+  const imageXml = (images?: SitemapImage[]) =>
+    (images ?? [])
+      .map(
+        (image) =>
+          `\n    <image:image>\n      <image:loc>${escapeXml(image.loc)}</image:loc>\n      <image:title>${escapeXml(image.title)}</image:title>\n    </image:image>`
+      )
+      .join("");
+
+  const xml = `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">\n${urls
     .map(
       (url) =>
-        `  <url>\n    <loc>${escapeXml(url.loc)}</loc>\n    <lastmod>${url.lastmod}</lastmod>\n    <changefreq>${url.changefreq}</changefreq>\n    <priority>${url.priority}</priority>\n  </url>`
+        `  <url>\n    <loc>${escapeXml(url.loc)}</loc>\n    <lastmod>${url.lastmod}</lastmod>\n    <changefreq>${url.changefreq}</changefreq>\n    <priority>${url.priority}</priority>${imageXml(url.images)}\n  </url>`
     )
     .join("\n")}\n</urlset>\n`;
 

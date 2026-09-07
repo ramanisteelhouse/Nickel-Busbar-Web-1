@@ -80,7 +80,7 @@ export const EXPORT_PRODUCT_FORMS: ReadonlyArray<string> = [
 
 /** Specification range - mirrors the homepage specification table. */
 export const EXPORT_SPECS: ReadonlyArray<{ label: string; value: string }> = [
-  { label: 'Purity', value: '99.6% - 99.8% pure nickel' },
+  { label: 'Purity', value: '99.2% pure nickel' },
   { label: 'Thickness', value: '0.10 - 0.50 mm' },
   { label: 'Width', value: '2 - 50 mm (custom slitting available)' },
   { label: 'Standards', value: 'ASTM B16 / UNS N02201 / DIN 2.4068' },

@@ -52,7 +52,7 @@ export type LandingPage = {
 };
 
 const SPEC_BULLETS = [
-  'Nickel purity 99.6-99.8%, with material test certificates on request',
+  'Nickel purity 99.2%, with material test certificates on request',
   'Thickness 0.10mm – 0.50mm, width 2mm – 50mm',
   'Pure nickel and nickel-plated steel, in strip, coil and busbar form',
   'Custom slitting, pitch and hole patterns to your cell layout',

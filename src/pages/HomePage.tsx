@@ -449,7 +449,7 @@ export const HomePage: React.FC = () => {
               { label: '52+ Years Experience', value: 'Since 1974', icon: Factory },
               { label: 'ISO Certified', value: 'Quality assured', icon: ShieldCheck },
               { label: 'Global Exporter', value: '17+ countries', icon: Globe },
-              { label: 'High Purity Nickel', value: '99.6% - 99.8%', icon: BadgeCheck },
+              { label: 'High Purity Nickel', value: '99.2%', icon: BadgeCheck },
             ].map((item, index) => (
               <Reveal key={item.label} delay={index * 0.08}>
                 <Tilt3D maxTilt={8} liftZ={12} className="h-full rounded-2xl">

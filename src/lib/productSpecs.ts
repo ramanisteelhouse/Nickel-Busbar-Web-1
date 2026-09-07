@@ -13,18 +13,47 @@
  */
 
 /**
- * Purity is a range, not a floor. Products are 99.6% to 99.8% pure nickel depending on the
- * item, so "99.8%+" — which several older pages still say — claims a minimum the 99.6% items
- * do not meet. Stating the range is the accurate site-wide claim; a per-product figure would
- * need a `purity` column on `products`.
+ * The measured purity of the nickel supplied, confirmed against the company's own IndiaMART
+ * listing. The site previously published "99.6% - 99.8%", and before that "99.8%+", both of
+ * which overstated it — this is the figure a buyer checks against their drawing, so it is the
+ * worst place on the site to be optimistic.
+ *
+ * 99.2% is consistent with the grades the catalogue actually lists: ASTM B162/B16/B17 Nickel
+ * 200 and 201 both specify 99.0% nickel minimum.
  */
-export const NICKEL_PURITY_RANGE = '99.6% - 99.8% pure nickel';
+export const NICKEL_PURITY_RANGE = '99.2% pure nickel';
 
 /** Material test certificates are issued on request, not automatically with every despatch. */
 export const MTC_AVAILABILITY = 'Material test certificate provided on request';
 
-/** Minimum order quantity, uniform across the catalogue. */
+/**
+ * Minimum order quantity, uniform across the catalogue.
+ *
+ * Confirmed at 5 kg, not the 15 kg on the IndiaMART listing. Supplying in smaller lots than the
+ * mills is a stated differentiator, so this is a figure worth publishing rather than burying.
+ */
 export const MINIMUM_ORDER_QUANTITY = '5 kg';
+
+/** Published on the company's IndiaMART listing; the same commitment applies here. */
+export const DELIVERY_TIME = '7 days';
+
+/** Ditto — export consignments are packed to standard export specification. */
+export const PACKAGING = 'Standard export packing';
+
+/**
+ * The alloy grade, read off the UNS number already stored per product rather than fixed
+ * site-wide.
+ *
+ * This matters: the IndiaMART listing quotes "Nickel 200", but 15 of the 17 catalogue items are
+ * UNS N02201, which is Nickel 201. Publishing 200 across the site would misstate the grade on
+ * almost every product — and grade is exactly what a buyer cross-checks against a drawing.
+ */
+function deriveGrade(unsValue?: string | null): string | null {
+  const uns = (unsValue ?? '').toUpperCase();
+  if (uns.includes('N02200')) return 'Nickel 200';
+  if (uns.includes('N02201')) return 'Nickel 201';
+  return null;
+}
 
 export type ProductSpecRow = { label: string; value: string };
 
@@ -91,7 +120,14 @@ export function buildProductSpecs(product: ProductSpecInput): ProductSpecRow[] {
 
   const rows: Array<[string, string | null | undefined]> = [
     ['Material', nickel ? 'Pure nickel' : null],
+    ['Grade', nickel ? deriveGrade(product.uns_value) : null],
     ['Purity', nickel ? NICKEL_PURITY_RANGE : null],
+    // Silver is true of nickel and nickel-plated strip alike, and marketplace listings publish
+    // it because buyers filter on it. Surface finish is deliberately absent: the catalogue is
+    // supplied bright, matte and nickel-plated, and there is no per-product column saying
+    // which — asserting "Bright" on all 17 would be a guess on the row most likely to be
+    // checked against a sample.
+    ['Colour', nickel ? 'Silver' : null],
     ['Thickness', dims.thickness],
     ['Width', dims.width],
     ['Cell format', deriveCellFormat(name)],
@@ -100,6 +136,8 @@ export function buildProductSpecs(product: ProductSpecInput): ProductSpecRow[] {
     ['Standard', product.astm_value],
     ['UNS / DIN', product.uns_value],
     ['Minimum order', MINIMUM_ORDER_QUANTITY],
+    ['Delivery time', DELIVERY_TIME],
+    ['Packaging', PACKAGING],
     ['Test certificate', MTC_AVAILABILITY],
     ['Country of origin', 'India'],
   ];

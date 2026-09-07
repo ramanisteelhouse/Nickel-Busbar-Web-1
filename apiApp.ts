@@ -560,6 +560,14 @@ const ensureProductEnquiriesSchema = async () => {
     await query(
       `ALTER TABLE public.product_enquiries ADD COLUMN IF NOT EXISTS user_id bigint REFERENCES public.users(id) ON DELETE SET NULL`
     );
+    // A quick enquiry captures a phone number and nothing else, so name and email can no
+    // longer be required at insert time. Widening a NOT NULL is safe for existing rows.
+    await query(`ALTER TABLE public.product_enquiries ALTER COLUMN full_name DROP NOT NULL`);
+    await query(`ALTER TABLE public.product_enquiries ALTER COLUMN email DROP NOT NULL`);
+    // Lets the person who created a quick enquiry add details to that same row afterwards.
+    // Without it, /api/enquiries/:id/details would let anyone overwrite any lead by guessing
+    // a sequential id.
+    await query(`ALTER TABLE public.product_enquiries ADD COLUMN IF NOT EXISTS update_token text`);
   } catch (error) {
     console.error("Failed to ensure product_enquiries schema is up to date", error);
   }
@@ -1725,12 +1733,23 @@ export function createApiApp() {
     const message = optionalText(body.message, 5000);
     const productId = body.productId;
 
-    if (!fullName || !email || !phone) {
+    // A quick enquiry is the phone-number-only capture on the product page. It exists because
+    // the full form asks for nine fields before it will save anything, and a buyer who
+    // abandons at field four leaves nothing behind at all. Here the lead is stored on the
+    // first submit and the rest is asked for afterwards, so an abandoned second step costs the
+    // detail rather than the contact.
+    const isQuick = body.quick === true;
+
+    if (isQuick) {
+      if (!phone) {
+        return res.status(400).json({ error: "A phone number is required." });
+      }
+    } else if (!fullName || !email || !phone) {
       return res.status(400).json({ error: "Full name, email, and phone are required." });
     }
     // Matches the check on /api/auth/register: a malformed address here still triggers a real
     // notification email and WhatsApp message to the sales inbox.
-    if (!EMAIL_PATTERN.test(email)) {
+    if (email && !EMAIL_PATTERN.test(email)) {
       return res.status(400).json({ error: "A valid email address is required." });
     }
 
@@ -1739,25 +1758,28 @@ export function createApiApp() {
 
     const initialUserId = getSessionUserId(req);
 
+    const updateToken = isQuick ? randomUUID() : null;
+
     const insertEnquiry = (productIdValue: unknown, userIdValue: unknown) =>
       queryOne<{ id: number }>(
         `INSERT INTO product_enquiries
-          (product_id, product_name, requirement, thickness, full_name, email, phone, company, location, quantity, message, user_id)
-          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+          (product_id, product_name, requirement, thickness, full_name, email, phone, company, location, quantity, message, user_id, update_token)
+          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
           RETURNING id`,
         [
           productIdValue ?? null,
           productName ?? null,
           requirement ?? null,
           thickness ?? null,
-          fullName,
-          email,
+          fullName ?? null,
+          email ?? null,
           phone,
           company ?? null,
           location ?? null,
           quantity ?? null,
           message ?? null,
           userIdValue ?? null,
+          updateToken,
         ]
       );
 
@@ -1824,6 +1846,12 @@ export function createApiApp() {
         console.error("Failed to send enquiry notification", notifyError);
       });
 
+      // A quick enquiry answers with the row id and its token so the browser can attach the
+      // remaining detail to this same lead rather than opening a second one.
+      if (isQuick && enquiry) {
+        return res.status(201).json({ id: enquiry.id, token: updateToken });
+      }
+
       res.sendStatus(201);
     } catch (e) {
       const isDev = process.env.NODE_ENV !== "production";
@@ -1844,6 +1872,80 @@ export function createApiApp() {
       }
       console.error("Failed to submit enquiry", e);
       res.status(500).json({ error: "Failed to submit enquiry", ...(devDetail ? { devDetail } : {}) });
+    }
+  }));
+
+  // Step two of a quick enquiry: attach name, quantity, thickness and the rest to a lead that
+  // was already saved from its phone number alone.
+  //
+  // The token is what makes this safe. Enquiry ids are sequential, so an endpoint keyed on id
+  // alone would let anyone overwrite any lead in the table by counting upwards. Only the
+  // browser that created the row has its token, and the update is scoped to rows that still
+  // carry one — so a completed enquiry cannot be edited twice.
+  app.post("/api/enquiries/:id/details", enquiryLimiter, asyncHandler(async (req, res) => {
+    const body = req.body ?? {};
+    const id = Number(req.params.id);
+    const token = optionalText(body.token, 64);
+
+    if (!Number.isInteger(id) || id <= 0 || !token) {
+      return res.status(400).json({ error: "A valid enquiry reference is required." });
+    }
+
+    const fullName = optionalText(body.fullName, 200);
+    const email = optionalText(body.email, 320);
+    const company = optionalText(body.company, 200);
+    const location = optionalText(body.location, 200);
+    const quantity = optionalText(body.quantity, 100);
+    const thickness = optionalText(body.thickness, 100);
+    const message = optionalText(body.message, 5000);
+
+    if (email && !EMAIL_PATTERN.test(email)) {
+      return res.status(400).json({ error: "A valid email address is required." });
+    }
+
+    await ensureSchemaReady();
+
+    try {
+      // COALESCE so a blank field leaves whatever the row already holds rather than wiping it.
+      const updated = await queryOne<{ id: number; phone: string; product_name: string | null }>(
+        `UPDATE product_enquiries
+            SET full_name = COALESCE($3, full_name),
+                email     = COALESCE($4, email),
+                company   = COALESCE($5, company),
+                location  = COALESCE($6, location),
+                quantity  = COALESCE($7, quantity),
+                thickness = COALESCE($8, thickness),
+                message   = COALESCE($9, message),
+                update_token = NULL
+          WHERE id = $1 AND update_token = $2
+          RETURNING id, phone, product_name`,
+        [id, token, fullName ?? null, email ?? null, company ?? null, location ?? null, quantity ?? null, thickness ?? null, message ?? null]
+      );
+
+      if (!updated) {
+        return res.status(404).json({ error: "That enquiry could not be found." });
+      }
+
+      // A second notification, because the first one only carried a phone number: this is the
+      // one that tells sales what the caller actually wants.
+      sendEnquiryNotifications({
+        productName: updated.product_name ?? undefined,
+        fullName,
+        email,
+        phone: updated.phone,
+        company,
+        location,
+        quantity,
+        thickness,
+        message,
+      }).catch((notifyError) => {
+        console.error("Failed to send enquiry detail notification", notifyError);
+      });
+
+      res.sendStatus(204);
+    } catch (e) {
+      console.error("Failed to add enquiry details", e);
+      res.status(500).json({ error: "Failed to add enquiry details" });
     }
   }));
 

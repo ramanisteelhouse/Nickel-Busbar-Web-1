@@ -1,11 +1,13 @@
 import React from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import { ShoppingCart, Shield, Truck, RotateCcw, ChevronRight, X, CheckCircle2, Globe } from 'lucide-react';
+import { ShoppingCart, Shield, Truck, RotateCcw, ChevronRight, X, CheckCircle2, Globe, Phone } from 'lucide-react';
 import { motion } from 'motion/react';
 import { Helmet } from 'react-helmet-async';
 import { Product } from '../types';
-import { buildImageAlt, getProductUnitLabel, getStrikePrice } from '../lib/utils';
+import { buildImageAlt, getProductUnitLabel, getStrikePrice, logCallClick } from '../lib/utils';
+import { PRIMARY_CALL, telHref } from '../lib/contact';
 import { productImagePath, productImageUrl } from '../lib/productImage';
+import { QuickEnquiry } from '../components/QuickEnquiry';
 import {
   RETURN_POLICY_HEADING,
   RETURN_POLICY_LINES,
@@ -420,13 +422,26 @@ export const ProductDetailPage: React.FC<{ onAddToCart: (p: Product) => void }> 
               <ShoppingCart size={20} />
               {t('productDetail.addToCart')}
             </button>
-            <button
-              type="button"
-              onClick={() => navigate(`/products?enquiry=1&product=${product.slug}`)}
-              className="flex-1 bg-zinc-100 text-zinc-900 py-4 rounded-full font-bold hover:bg-zinc-200 transition-all"
+            <a
+              href={telHref(PRIMARY_CALL)}
+              onClick={() => logCallClick(`+${PRIMARY_CALL.e164}`, 'product_detail')}
+              className="flex-1 bg-zinc-100 text-zinc-900 py-4 rounded-full font-bold hover:bg-zinc-200 transition-all flex items-center justify-center gap-2"
             >
-              {t('productDetail.requestQuote')}
-            </button>
+              <Phone size={18} />
+              {PRIMARY_CALL.display}
+            </a>
+          </div>
+
+          {/* The enquiry capture, in place. This used to be a "Request Quote" button that
+              navigated to /products?enquiry=1 — pushing the buyer off the page they were
+              deciding on, into a nine-field form that saved nothing until the last one was
+              filled. See QuickEnquiry: one field, saved immediately, detail asked afterwards. */}
+          <div className="mt-6" id="enquiry">
+            <QuickEnquiry
+              productName={product.name}
+              productId={product.id}
+              defaultThickness={productSpecs.find((row) => row.label === 'Thickness')?.value}
+            />
           </div>
 
           {/* Trust Badges */}
@@ -501,9 +516,9 @@ export const ProductDetailPage: React.FC<{ onAddToCart: (p: Product) => void }> 
             ) : (
               <p className="text-zinc-500">
                 Application details for {product.name} are available on request &mdash; {' '}
-                <Link to={`/products?enquiry=1&product=${product.slug}`} className="font-semibold text-brand hover:underline">
-                  contact our engineering team
-                </Link>
+                <a href="#enquiry" className="font-semibold text-brand hover:underline">
+                  leave your number above
+                </a>
                 .
               </p>
             )}
