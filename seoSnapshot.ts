@@ -263,6 +263,40 @@ const productCardHtml = (product: ProductCardRow): string => {
 export const productListHtml = (products: ProductCardRow[]): string =>
   products.map(productCardHtml).filter(Boolean).join("");
 
+/**
+ * A BreadcrumbList for a page one or two levels below the homepage.
+ *
+ * Breadcrumbs were published on product, landing and export pages but not on blog posts, the
+ * blog index or the catalogue, so those URLs showed a bare domain in search results instead of
+ * a labelled trail. It is also the cheapest way to tell Google how a URL sits in the site,
+ * which matters most for the pages that have the fewest inbound links.
+ */
+const breadcrumbJsonLd = (
+  trail: { name: string; url: string }[]
+): object => ({
+  "@context": "https://schema.org",
+  "@type": "BreadcrumbList",
+  itemListElement: [{ name: "Home", url: SITE_URL }, ...trail].map((crumb, index) => ({
+    "@type": "ListItem",
+    position: index + 1,
+    name: crumb.name,
+    item: crumb.url,
+  })),
+});
+
+/**
+ * `priceValidUntil` for a product Offer, 30 days out.
+ *
+ * Google warns on an Offer without it, and treats a date in the past as an expired price -
+ * which is why this is computed per render rather than written into the data. Nickel is priced
+ * off a moving metal market, so a month is roughly how long a quoted rate holds; it is a
+ * statement about how long the figure shown can be relied on, not a commitment beyond it.
+ */
+const priceValidUntil = (): string => {
+  const until = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
+  return until.toISOString().slice(0, 10);
+};
+
 // Every renderer below reads the database, so any of them can throw when it is unreachable.
 // Answering that with the untouched template returns 200 carrying the *homepage's* title and
 // <link rel="canonical" href="https://www.nickelbusbar.com/">, so during an outage every
@@ -379,13 +413,90 @@ export async function renderBlogSnapshot(template: string, slug: string): Promis
         .join("")}</section>`
     : "";
 
+  // Every article was a dead end: 21 posts, none of them linking to a product or to each
+  // other, so the blog held a fifth of the site's URLs and passed relevance to none of them.
+  // These are the two links that matter — the product a reader of this article might actually
+  // buy, and the next article — and both are chosen from the post's own subject rather than
+  // being a fixed block repeated on all 21.
+  const titleTokens = String(post.title ?? "")
+    .toLowerCase()
+    .split(/[^a-z0-9]+/)
+    .filter(
+      (token) =>
+        token.length >= 3 &&
+        // Words every product name contains carry no signal, and matching on them would rank
+        // the catalogue in its default order on every article.
+        !["nickel", "strip", "strips", "the", "and", "for", "with", "your", "what", "how", "vs"].includes(token)
+    );
+
+  let relatedProducts: ProductCardRow[] = [];
+  let relatedPosts: { slug: string; title: string }[] = [];
+  try {
+    [relatedProducts, relatedPosts] = await Promise.all([
+      query<ProductCardRow>(
+        // Ordered by how many of the article's distinctive words appear in the product name, so
+        // a piece about 21700 packs leads with 21700 strip. Falls back to featured order when
+        // nothing matches, which keeps the links present rather than dropping the section.
+        `SELECT p.slug, p.name, p.image, p.dimensions, p.seo_heading
+           FROM products p
+          ORDER BY (
+            SELECT count(*) FROM unnest($1::text[]) AS token
+             WHERE regexp_replace(lower(coalesce(p.name, '')), '[^a-z0-9]+', ' ', 'g')
+                   LIKE '%' || token || '%'
+          ) DESC, p.is_featured DESC, p.name
+          LIMIT 4`,
+        [titleTokens]
+      ),
+      query<{ slug: string; title: string }>(
+        `SELECT slug, title
+           FROM blog_posts
+          WHERE lower(slug) <> lower($1)
+            AND status = 'published' AND (published_at IS NULL OR published_at <= now())
+          ORDER BY (
+            SELECT count(*) FROM unnest($2::text[]) AS token
+             WHERE regexp_replace(lower(coalesce(title, '')), '[^a-z0-9]+', ' ', 'g')
+                   LIKE '%' || token || '%'
+          ) DESC, published_at DESC NULLS LAST, id DESC
+          LIMIT 4`,
+        [slug, titleTokens]
+      ),
+    ]);
+  } catch (error) {
+    console.warn(`[snapshot] Related links unavailable for /blog/${slug}.`, error);
+  }
+
+  const relatedProductsHtml = relatedProducts.length
+    ? `<h2>Products covered in this article</h2><ul>${productListHtml(relatedProducts)}</ul>`
+    : "";
+
+  const relatedPostsHtml = relatedPosts.length
+    ? `<h2>Related guides</h2><ul>${relatedPosts
+        .map(
+          (item) =>
+            `<li><a href="${SITE_URL}/blog/${encodeURIComponent(item.slug)}">${escapeHtml(item.title)}</a></li>`
+        )
+        .join("")}</ul>`
+    : "";
+
+  // The cover photo as a real element. It was published in the Article JSON-LD but never as an
+  // <img>, so an image crawler had nothing on the page to index.
+  const coverImageHtml = coverImageUrl
+    ? `<img src="${escapeAttr(coverImageUrl)}" alt="${escapeAttr(
+        buildImageAlt(String(post.title ?? ""))
+      )}" width="1200" height="675" fetchpriority="high" />`
+    : "";
+
   // The content column is only ever written via the authenticated /api/admin/blog-posts
   // endpoint (not public user input), so it's rendered as-is here — same trust boundary
   // the client already relies on before its own sanitize-then-render step.
   const snapshotBody = `<article>
     <h1>${escapeHtml(post.title as string)}</h1>
+    ${coverImageHtml}
     ${(post.content as string) || ""}
     ${faqHtml}
+    ${relatedProductsHtml}
+    ${relatedPostsHtml}
+    <p><a href="${SITE_URL}/blog">All nickel strip guides and technical articles</a> &middot; <a href="${SITE_URL}/products">Nickel strip and busbar products</a></p>
   </article>`;
 
   const html = injectHead(template, {
@@ -393,7 +504,14 @@ export async function renderBlogSnapshot(template: string, slug: string): Promis
     description,
     canonical,
     ogImage: coverImageUrl || undefined,
-    jsonLd: faqJsonLd ? [articleJsonLd, faqJsonLd] : [articleJsonLd],
+    jsonLd: [
+      articleJsonLd,
+      ...(faqJsonLd ? [faqJsonLd] : []),
+      breadcrumbJsonLd([
+        { name: "Blog", url: `${SITE_URL}/blog` },
+        { name: String(post.title ?? ""), url: canonical },
+      ]),
+    ],
     snapshotBody,
   });
 
@@ -493,7 +611,7 @@ export async function renderProductListSnapshot(template: string, isCategoriesRo
     title,
     description,
     canonical,
-    jsonLd: [collectionJsonLd],
+    jsonLd: [collectionJsonLd, breadcrumbJsonLd([{ name: "Products", url: SITE_URL + "/products" }])],
     snapshotBody: `<article>
     <h1>${escapeHtml(isCategoriesRoute ? "Nickel Strip Categories" : "Nickel Strip Products")}</h1>
     <p>${escapeHtml(description)}</p>
@@ -571,6 +689,13 @@ const STATIC_ROUTE_SEO: Record<string, { title: string; description: string; jso
     ],
     body: `<article>
     <h1>India's Trusted Nickel Strip Manufacturer</h1>
+    <!-- The hero photograph, as a real element with real dimensions and alt text. Google
+         Images will not index a picture that only exists once the bundle has run, and this is
+         the one product photo on the site's most-linked URL. Mirrors the <img> HomePage
+         renders in the hero card. -->
+    <img src="${SITE_URL}/img/products/ni-18650-2p-h-type.webp" alt="${escapeAttr(
+      buildImageAlt("H type nickel strip for 18650 battery packs, cut to cell pitch")
+    )}" width="900" height="900" fetchpriority="high" />
     <h2>${ANSWER_BLOCK_QUESTION}</h2>
     <p>${ANSWER_BLOCK}</p>
     <p>Looking for a specific pattern? <a href="${SITE_URL}/h-type-nickel-strip">H type nickel strip manufacturer in India</a> — pure nickel H type strip for 18650, 21700, 32650 and 32700 packs in 2P, 3P and 4P layouts.</p>
@@ -632,10 +757,42 @@ const STATIC_ROUTE_SEO: Record<string, { title: string; description: string; jso
         url: `${SITE_URL}/about`,
         about: { "@type": "Organization", name: SITE_NAME, url: SITE_URL, foundingDate: "1974" },
       },
+      breadcrumbJsonLd([{ name: "About", url: `${SITE_URL}/about` }]),
     ],
+    // Was two sentences. /about is one of the pages a buyer checks before enquiring and one of
+    // the few an answer engine reads to decide what this company is, and it said almost nothing
+    // that could be quoted. Every claim below is already published elsewhere on the site — the
+    // specification table, the quality points, the cell formats — so nothing here is a new
+    // assertion, it is the same facts on the page that exists to state them.
     body: `<article>
     <h1>Trusted Nickel Strip Manufacturer Since 1974</h1>
-    <p>We manufacture high-quality nickel strips with reliable delivery, competitive pricing, and technical support, supplying PAN India and exporting to 17+ countries. Our core focus is nickel strips for lithium-ion battery applications.</p>
+    <p>Ramani Steel House has manufactured nickel strip in Mumbai since 1974. Over 52 years the work has narrowed to what it is now known for: pure nickel strip, H type nickel strip and nickel busbar for lithium-ion battery packs, supplied to pack builders, EV manufacturers and energy storage integrators across India and in 17+ export markets.</p>
+    <p>Strip is slit, cut and finished at our own works at ${escapeHtml(POSTAL_ADDRESS.oneLine)} rather than bought in and resold, which is what makes custom pitch, width and hole patterns a normal order rather than a special case.</p>
+    <h2>What we manufacture</h2>
+    <table>
+      <tbody>${HOME_SPECIFICATIONS.map(
+        (spec) => `<tr><th>${escapeHtml(spec.label)}</th><td>${escapeHtml(spec.value)}</td></tr>`
+      ).join("")}</tbody>
+    </table>
+    <h2>Cell formats and patterns supplied</h2>
+    <ul>
+      <li>18650 in 2P, 3P and 4P — plain, fuse-type and honeycomb</li>
+      <li>21700 in 2P and 4P, including double-fuse</li>
+      <li>32650 and 32700 in 2P, zig-zag and honeycomb</li>
+      <li>Custom pitch, neck width and hole pattern against your pack drawing</li>
+    </ul>
+    <h2>Quality and certification</h2>
+    <ul>${HOME_QUALITY_POINTS.map((item) => `<li>${escapeHtml(item)}</li>`).join("")}</ul>
+    <h2>Supply and export</h2>
+    <p>Domestic consignments despatch from Mumbai to battery and electronics manufacturing across India. Export lots load through Nhava Sheva with commercial invoice, packing list, certificate of origin and material test certificates prepared alongside the shipment.</p>
+    <h2>Where to go next</h2>
+    <ul>
+      <li><a href="${SITE_URL}/products">Nickel strip and busbar products</a></li>
+      <li><a href="${SITE_URL}/h-type-nickel-strip">H type nickel strip manufacturer in India</a></li>
+      <li><a href="${SITE_URL}/nickel-strip-manufacturer-in-mumbai">Nickel strip manufacturer, supplier and exporter in Mumbai</a></li>
+      <li><a href="${SITE_URL}${EXPORT_PATH}">Nickel strip and busbar export enquiry</a></li>
+      <li><a href="${SITE_URL}/contact">Contact the sales team</a></li>
+    </ul>
   </article>`,
   },
   "/contact": {
@@ -661,14 +818,34 @@ const STATIC_ROUTE_SEO: Record<string, { title: string; description: string; jso
           })),
         },
       },
+      breadcrumbJsonLd([{ name: "Contact", url: `${SITE_URL}/contact` }]),
     ],
     body: `<article>
-    <h1>Contact Us</h1>
-    <p>For product enquiries, custom requirements, and bulk orders.</p>
-    <p>Ramani Steel House, ${escapeHtml(POSTAL_ADDRESS.oneLine)}</p>
+    <h1>Contact Ramani Steel House</h1>
+    <p>For nickel strip and nickel busbar enquiries, custom slitting, bulk orders and export quotations. We respond with a quotation within 1 business day.</p>
+    <h2>Nickel strip works and office</h2>
+    <address>Ramani Steel House, ${escapeHtml(POSTAL_ADDRESS.oneLine)}</address>
     <p>Email: ${EMAIL_ADDRESSES.join(" / ")}</p>
     <p>Phone: ${PHONE_NUMBERS.map((n) => n.display).join(" / ")}</p>
+    <p>Mumbai buyers can collect from the works; call ahead so the material is cut and ready.</p>
+    <h2>What to include in an enquiry</h2>
+    <p>The more of this a first message carries, the closer the first quotation is to a final price.</p>
+    <ul>
+      <li>Cell format and layout — 18650, 21700, 32650 or 32700, in 2P, 3P or 4P</li>
+      <li>Pattern — plain, H type, zig-zag or honeycomb, fuse or non-fuse</li>
+      <li>Thickness and width, or the pack drawing to cut against</li>
+      <li>Quantity in kilograms, and whether it is a one-off or a running requirement</li>
+      <li>Destination — city for PAN India despatch, or port for export</li>
+    </ul>
+    <h2>Company literature</h2>
     <p><a href="${SITE_URL}${BROCHURE.path}">${escapeHtml(BROCHURE.label)}</a> (${escapeHtml(BROCHURE.sizeLabel)})</p>
+    <h2>Where to go next</h2>
+    <ul>
+      <li><a href="${SITE_URL}/products">Nickel strip and busbar products</a></li>
+      <li><a href="${SITE_URL}${EXPORT_PATH}">Nickel strip and busbar export enquiry</a></li>
+      <li><a href="${SITE_URL}/calculator">Nickel strip weight and conversion calculator</a></li>
+      <li><a href="${SITE_URL}/about">About Ramani Steel House</a></li>
+    </ul>
   </article>`,
   },
   // Search Console shows this page earning impressions for capabilities it never mentions:
@@ -707,6 +884,7 @@ const STATIC_ROUTE_SEO: Record<string, { title: string; description: string; jso
           availability: "https://schema.org/InStock",
         },
       },
+      breadcrumbJsonLd([{ name: "Calculator", url: `${SITE_URL}/calculator` }]),
     ],
     body: `<article>
     <h1>Nickel Strip Weight and Conversion Calculator</h1>
@@ -719,6 +897,14 @@ const STATIC_ROUTE_SEO: Record<string, { title: string; description: string; jso
     <p>Dimensions can be entered in millimetres or inches and are converted internally, so an imperial drawing does not need translating first. Density is selectable, which is what makes it an alloy calculator rather than a pure-nickel one: the same tool covers nickel, nickel-plated steel, copper and aluminium.</p>
     <h2>How the weight is calculated</h2>
     <p>Weight = Thickness &times; Width &times; Length &times; Density &times; Quantity, with every dimension converted to centimetres first. The result is shown in grams and kilograms.</p>
+    <h2>Once you have the weight</h2>
+    <p>Nickel strip is priced per kilogram, so the figure this returns is what a quotation is built from.</p>
+    <ul>
+      <li><a href="${SITE_URL}/products">Nickel strip and busbar products, with prices per kg</a></li>
+      <li><a href="${SITE_URL}/h-type-nickel-strip">H type nickel strip manufacturer in India</a></li>
+      <li><a href="${SITE_URL}${EXPORT_PATH}">Nickel strip and busbar export enquiry</a></li>
+      <li><a href="${SITE_URL}/contact">Send your specification for a quotation</a></li>
+    </ul>
   </article>`,
   },
   // The export landing page targets two audiences on one URL - Indian bulk buyers and
@@ -1079,6 +1265,7 @@ export async function renderBlogListSnapshot(template: string): Promise<Snapshot
       description,
       url: canonical,
     },
+    breadcrumbJsonLd([{ name: "Blog", url: SITE_URL + "/blog" }]),
   ];
 
   if (posts.length) {
@@ -1195,6 +1382,9 @@ export async function renderProductSnapshot(template: string, slug: string): Pro
             price: numericPrice,
             availability:
               Number(product.stock) > 0 ? "https://schema.org/InStock" : "https://schema.org/OutOfStock",
+            // Without this Google warns on the Offer and can stop showing the price it is
+            // already displaying. Computed per render, never stored - see priceValidUntil().
+            priceValidUntil: priceValidUntil(),
             url: canonical,
             // Answers Search Console's "Missing field hasMerchantReturnPolicy (in offers)".
             // The copy backing this claim is rendered below, in the snapshot body.

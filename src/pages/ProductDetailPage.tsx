@@ -218,6 +218,10 @@ export const ProductDetailPage: React.FC<{ onAddToCart: (p: Product) => void }> 
                     priceCurrency: 'INR',
                     price: numericPrice,
                     availability: product.stock > 0 ? 'https://schema.org/InStock' : 'https://schema.org/OutOfStock',
+                    // 30 days out, computed on render rather than stored: a date in the past
+                    // reads to Google as an expired price. Mirrors priceValidUntil() in
+                    // seoSnapshot.ts — the two Product entities must agree.
+                    priceValidUntil: new Date(Date.now() + 30 * 864e5).toISOString().slice(0, 10),
                     url: canonicalUrl,
                     // Answers Search Console's "Missing field hasMerchantReturnPolicy (in
                     // offers)". Mirrored in seoSnapshot.ts, and backed by the returns copy

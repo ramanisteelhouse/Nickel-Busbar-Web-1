@@ -35,7 +35,6 @@ import {
   whyChooseUs as whyChooseUsCopy,
 } from '../lib/homeContent';
 import { Tilt3D, Reveal } from '../components/Tilt3D';
-import { NickelStrip3D } from '../components/NickelStrip3D';
 import { HeritageBadge, FOUNDED_YEAR } from '../components/HeritageBadge';
 import { ProductThumbnail } from '../components/ProductThumbnail';
 
@@ -395,18 +394,35 @@ export const HomePage: React.FC = () => {
 
             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.9, delay: 0.1 }}>
               <Tilt3D className="rounded-[2rem] border border-white/10 bg-white/10 p-4 shadow-2xl shadow-slate-950/20 backdrop-blur-xl" maxTilt={7} liftZ={16}>
-                {/* The hero's featured visual is the product itself, turning in 3D. It sits in
-                    the card rather than loose in the background because the hero has no third
-                    slot: the headline holds the left column and this card the right, and an
-                    element competing with both ends up either fighting the copy or pushed below
-                    the fold. The factory video keeps its own section further down the page. */}
+                {/* The hero's featured visual is a photograph of the actual strip, not a
+                    procedural model of one. This was a hand-rolled canvas renderer drawing the
+                    geometry from scratch; at hero size the flat-shaded quads read as a crude
+                    approximation, and a buyer who handles this product every day notices that
+                    immediately. The real photo is already on the domain (public/img/products,
+                    synced from the catalogue) and is shot at a strong diagonal, so it carries
+                    the depth the model was there to supply.
+
+                    The card keeps its 3D behaviour: Tilt3D rotates the whole thing to the
+                    pointer, and the image sits forward of the card face on the Z axis so the
+                    parallax between them is visible as it turns. */}
                 <div className="relative overflow-hidden rounded-[1.8rem] border border-white/10 bg-slate-950" style={{ transform: 'translateZ(40px)' }}>
-                  <NickelStrip3D className="h-72 w-full" />
+                  <img
+                    src="/img/products/ni-18650-2p-h-type.webp"
+                    alt={buildImageAlt('H type nickel strip for 18650 battery packs, cut to cell pitch')}
+                    width={900}
+                    height={900}
+                    // Above the fold on the site's most-visited URL: this is the LCP element,
+                    // so it must not be lazy-loaded or deprioritised.
+                    loading="eager"
+                    fetchPriority="high"
+                    decoding="async"
+                    className="h-72 w-full scale-105 object-cover transition-transform duration-700 hover:scale-110"
+                  />
                   <div className="absolute inset-0 bg-gradient-to-t from-slate-950/90 via-transparent to-transparent" />
                   <div className="absolute bottom-4 left-4 right-4 rounded-3xl bg-slate-950/80 p-4 text-white backdrop-blur-sm">
                     <p className="text-xs uppercase tracking-[0.3em] text-slate-300">H Type Nickel Strip</p>
-                    <h2 className="mt-2 text-lg font-semibold text-white">The interconnect, in three dimensions</h2>
-                    <p className="mt-2 text-sm text-slate-300">Rails and rungs cut to the cell pitch, so the neck concentrates heat at the weld.</p>
+                    <h2 className="mt-2 text-lg font-semibold text-white">Cut to the cell pitch</h2>
+                    <p className="mt-2 text-sm text-slate-300">Rails and rungs sized to your layout, so the neck concentrates heat at the weld.</p>
                   </div>
                 </div>
                 <div className="mt-5 grid gap-3 sm:grid-cols-2">
