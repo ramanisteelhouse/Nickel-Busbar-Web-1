@@ -37,9 +37,6 @@ export const MINIMUM_ORDER_QUANTITY = '5 kg';
 /** Published on the company's IndiaMART listing; the same commitment applies here. */
 export const DELIVERY_TIME = '7 days';
 
-/** Ditto — export consignments are packed to standard export specification. */
-export const PACKAGING = 'Standard export packing';
-
 /**
  * The alloy grade, read off the UNS number already stored per product rather than fixed
  * site-wide.
@@ -137,7 +134,10 @@ export function buildProductSpecs(product: ProductSpecInput): ProductSpecRow[] {
     ['UNS / DIN', product.uns_value],
     ['Minimum order', MINIMUM_ORDER_QUANTITY],
     ['Delivery time', DELIVERY_TIME],
-    ['Packaging', PACKAGING],
+    // Packaging is deliberately absent, for the same reason minimum order is absent from
+    // PRODUCT_EXPORT_TERMS: that block already carries an "Export packing" row, on the same
+    // page and in the same additionalProperty array, and it says more than "standard export
+    // packing" does. Two rows for one attribute is a duplicate claim, not a stronger one.
     ['Test certificate', MTC_AVAILABILITY],
     ['Country of origin', 'India'],
   ];
