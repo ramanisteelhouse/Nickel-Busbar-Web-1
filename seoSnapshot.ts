@@ -14,6 +14,7 @@ import {
   PRIMARY_EMAIL,
 } from "./src/lib/contact.js";
 import { ANSWER_BLOCK, ANSWER_BLOCK_QUESTION } from "./src/lib/answerBlock.js";
+import type { StaticSnapshotRoute, NoindexSnapshotRoute } from "./src/lib/snapshotRoutes.js";
 import {
   RETURN_POLICY_HEADING,
   RETURN_POLICY_LINES,
@@ -634,7 +635,10 @@ export async function renderProductListSnapshot(template: string, isCategoriesRo
 // therefore saw /about, /contact and /calculator each declare itself a duplicate of the
 // homepage. These values mirror the <Helmet> block in the matching page component
 // (HomePage / AboutPage / ContactPage / CalculatorPage); update both together.
-const STATIC_ROUTE_SEO: Record<string, { title: string; description: string; jsonLd: object[]; body: string }> = {
+// Keyed by StaticSnapshotRoute rather than string: the routing table is generated from that
+// union, so a route named there without content here (or the reverse) fails the typecheck
+// instead of shipping a rewrite to a page that renders nothing.
+const STATIC_ROUTE_SEO: Record<StaticSnapshotRoute, { title: string; description: string; jsonLd: object[]; body: string }> = {
   // The homepage is the first URL an answer engine fetches and was the last content route
   // with no snapshot at all: vercel.json sent "/" straight to the static dist/index.html,
   // whose body is an empty <div id="root">. Its head was already correct - what a crawler
@@ -1027,7 +1031,7 @@ const STATIC_ROUTE_SEO: Record<string, { title: string; description: string; jso
  * A self-referencing canonical rather than a homepage one: pointing a noindex page at the
  * homepage asks Google to consolidate the two, which is the opposite of excluding it.
  */
-const NOINDEX_ROUTES: Record<string, { title: string; description: string }> = {
+const NOINDEX_ROUTES: Record<NoindexSnapshotRoute, { title: string; description: string }> = {
   "/cart": {
     title: "Your Cart | Ramani Steel House",
     description: "Review the nickel strip and busbar items in your quote request.",
@@ -1202,6 +1206,11 @@ export async function renderLandingSnapshot(
 export function isStaticSnapshotRoute(pathname: string): boolean {
   return Object.prototype.hasOwnProperty.call(STATIC_ROUTE_SEO, pathname);
 }
+
+// The route names themselves live in src/lib/snapshotRoutes.ts, which imports nothing, so the
+// build-time routing-table generator can read them without pulling in db.ts. Re-exported here
+// so existing importers of this module keep working.
+export { STATIC_SNAPSHOT_ROUTES, NOINDEX_SNAPSHOT_ROUTES, SPA_ONLY_ROUTES } from "./src/lib/snapshotRoutes.js";
 
 export async function renderStaticRouteSnapshot(template: string, pathname: string): Promise<SnapshotResult> {
   // hasOwnProperty rather than a bare lookup: `/constructor` and `/toString` would otherwise

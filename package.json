@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "tsx server.ts",
-    "prebuild": "tsx scripts/generate-sitemap.ts && tsx scripts/generate-llms-txt.ts",
+    "prebuild": "tsx scripts/generate-sitemap.ts && tsx scripts/generate-llms-txt.ts && tsx scripts/generate-netlify-redirects.ts",
     "build": "vite build",
     "preview": "vite preview",
     "start": "cross-env NODE_ENV=production tsx server.ts",
@@ -40,6 +40,7 @@
     "react-dom": "^19.0.0",
     "react-helmet-async": "^3.0.0",
     "react-router-dom": "^7.13.1",
+    "serverless-http": "^4.0.0",
     "tailwind-merge": "^3.5.0",
     "tsx": "^4.23.0",
     "twilio": "^5.7.0",
