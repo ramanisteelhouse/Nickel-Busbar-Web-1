@@ -34,6 +34,7 @@ import {
 import { buildImageAlt } from "./src/lib/utils.js";
 import { buildProductSpecs, NICKEL_PURITY_RANGE } from "./src/lib/productSpecs.js";
 import { BROCHURE } from "./src/lib/brochure.js";
+import { YEARS_IN_BUSINESS } from "./src/lib/heritage.js";
 import {
   applications as HOME_APPLICATIONS,
   faqItems as HOME_FAQ_ITEMS,
@@ -770,7 +771,7 @@ const STATIC_ROUTE_SEO: Record<StaticSnapshotRoute, { title: string; description
     // assertion, it is the same facts on the page that exists to state them.
     body: `<article>
     <h1>Trusted Nickel Strip Manufacturer Since 1974</h1>
-    <p>Ramani Steel House has manufactured nickel strip in Mumbai since 1974. Over 52 years the work has narrowed to what it is now known for: pure nickel strip, H type nickel strip and nickel busbar for lithium-ion battery packs, supplied to pack builders, EV manufacturers and energy storage integrators across India and in 17+ export markets.</p>
+    <p>Ramani Steel House has manufactured nickel strip in Mumbai since 1974. Over ${YEARS_IN_BUSINESS} years the work has narrowed to what it is now known for: pure nickel strip, H type nickel strip and nickel busbar for lithium-ion battery packs, supplied to pack builders, EV manufacturers and energy storage integrators across India and in 17+ export markets.</p>
     <p>Strip is slit, cut and finished at our own works at ${escapeHtml(POSTAL_ADDRESS.oneLine)} rather than bought in and resold, which is what makes custom pitch, width and hole patterns a normal order rather than a special case.</p>
     <h2>What we manufacture</h2>
     <table>

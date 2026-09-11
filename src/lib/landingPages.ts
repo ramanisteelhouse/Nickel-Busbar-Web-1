@@ -1,4 +1,5 @@
 import { POSTAL_ADDRESS, PRIMARY_CALL } from './contact.js';
+import { YEARS_IN_BUSINESS } from './heritage.js';
 
 /**
  * Indexable landing pages that sit between the homepage and the individual SKU pages.
@@ -98,7 +99,7 @@ const H_TYPE_PAGE: LandingPage = {
     {
       heading: 'Why buyers source H type nickel strip from Ramani Steel House',
       bullets: [
-        '52 years of metallurgical manufacturing, ISO 9001 compliant processes',
+        `${YEARS_IN_BUSINESS} years of metallurgical manufacturing, ISO 9001 compliant processes`,
         'Pure nickel rather than nickel-plated steel where conductivity is critical',
         'Batch-wise conductivity and tensile testing, with traceable certificates',
         'Bulk capacity with export documentation prepared in-house',

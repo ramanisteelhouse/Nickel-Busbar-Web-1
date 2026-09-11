@@ -4,6 +4,7 @@ import { logCallClick } from '../lib/utils';
 import { EMAIL_ADDRESSES, PHONE_NUMBERS, POSTAL_ADDRESS, telHref } from '../lib/contact';
 import { STATE_LANDING_PAGES } from '../lib/landingPages';
 import { BROCHURE } from '../lib/brochure';
+import { YEARS_IN_BUSINESS } from '../lib/heritage';
 
 export const Footer: React.FC = () => {
   return (
@@ -15,7 +16,7 @@ export const Footer: React.FC = () => {
             <p className="text-sm text-slate-600">
               Premium nickel strips manufacturer serving lithium-ion battery producers worldwide.
             </p>
-            <p className="text-sm text-slate-600">52+ years of metallurgical excellence | Mumbai, India</p>
+            <p className="text-sm text-slate-600">{YEARS_IN_BUSINESS}+ years of metallurgical excellence | Mumbai, India</p>
             {/* PostalAddress microdata, not a sentence. The SEO audit's Local SEO check reported
                 the address as missing while this printed it as one unlabelled line — nothing in
                 the markup identified any part of it as an address. The values come from

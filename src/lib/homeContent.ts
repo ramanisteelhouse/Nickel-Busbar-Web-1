@@ -10,8 +10,10 @@
  * two copies drifting into two different sets of claims about the same product.
  *
  * Deliberately plain data: seoSnapshot.ts runs inside a Node serverless function, so nothing
- * here may import React or lucide-react. HomePage.tsx attaches its icons by `title`.
+ * here may import React or lucide-react. HomePage.tsx attaches its icons by position.
  */
+
+import { YEARS_IN_BUSINESS } from './heritage.js';
 
 export const applications = [
   'Lithium-ion Batteries',
@@ -28,7 +30,7 @@ export const industries = [
 ] as const;
 
 export const whyChooseUs = [
-  { title: '52 Years Manufacturing Experience', detail: 'Legacy of metallurgical excellence and precision engineering.' },
+  { title: `${YEARS_IN_BUSINESS} Years Manufacturing Experience`, detail: 'Legacy of metallurgical excellence and precision engineering.' },
   { title: 'Consistent Quality & Precision', detail: 'Strict ISO processes and multi-stage QA for every batch.' },
   { title: 'Bulk Supply Capability', detail: 'Scalable production with ready export documentation.' },
   { title: 'Custom Manufacturing Options', detail: 'Widths, thickness, and surface finishes tailored to spec.' },

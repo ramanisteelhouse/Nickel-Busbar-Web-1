@@ -35,12 +35,13 @@ import {
   whyChooseUs as whyChooseUsCopy,
 } from '../lib/homeContent';
 import { Tilt3D, Reveal } from '../components/Tilt3D';
-import { HeritageBadge, FOUNDED_YEAR } from '../components/HeritageBadge';
+import { HeritageBadge } from '../components/HeritageBadge';
+import { FOUNDED_YEAR, countYearsInBusiness } from '../lib/heritage';
 import { ProductThumbnail } from '../components/ProductThumbnail';
 
-// Derived, not typed in: "52+ years" stops being true in 2027, and the hero is the worst place
-// on the site for a number that quietly goes stale.
-const yearsInBusiness = new Date().getFullYear() - FOUNDED_YEAR;
+// Derived, not typed in (see lib/heritage): the hero is the worst place on the site for a number
+// that quietly goes stale every January.
+const yearsInBusiness = countYearsInBusiness();
 
 // 9KB WebP rather than the 317KB 1737x1906 JPEG this used to point at. The original is
 // displayed in a 160x40 slot and as a favicon, so nothing on screen was ever using the pixels.
@@ -446,7 +447,7 @@ export const HomePage: React.FC = () => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="-translate-y-8 rounded-3xl border border-slate-200 bg-white shadow-xl shadow-slate-200/40 px-4 py-6 grid grid-cols-2 md:grid-cols-4 gap-4 sm:gap-6">
             {[
-              { label: '52+ Years Experience', value: 'Since 1974', icon: Factory },
+              { label: `${yearsInBusiness}+ Years Experience`, value: `Since ${FOUNDED_YEAR}`, icon: Factory },
               { label: 'ISO Certified', value: 'Quality assured', icon: ShieldCheck },
               { label: 'Global Exporter', value: '17+ countries', icon: Globe },
               { label: 'High Purity Nickel', value: '99.2%', icon: BadgeCheck },

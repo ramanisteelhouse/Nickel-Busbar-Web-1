@@ -4,15 +4,17 @@ import React from 'react';
  * The circular heritage badge: the Ramani monogram on the front, "SINCE 1974" and the current
  * year count on the back, flipping continuously.
  *
- * The year count is derived rather than typed in. "52 years" is only true through 2026, and a
- * hardcoded number on a page whose whole point is longevity is the kind of stale detail a
- * visitor notices.
+ * The year count comes from lib/heritage rather than being typed in or computed here, so the
+ * badge can never disagree with the hero, footer and landing pages that state the same figure.
  *
  * The flip is a CSS animation, not a JS timer: it runs on the compositor, costs no re-renders,
  * and switches off wholesale under prefers-reduced-motion (see .heritage-badge in index.css),
  * where it settles on the monogram face rather than freezing mid-rotation.
  */
-export const FOUNDED_YEAR = 1974;
+import { FOUNDED_YEAR, countYearsInBusiness } from '../lib/heritage';
+
+// Re-exported so existing imports of FOUNDED_YEAR from this component keep working.
+export { FOUNDED_YEAR };
 
 export type HeritageBadgeProps = {
   /** Diameter in pixels. */
@@ -38,7 +40,7 @@ export const HeritageBadge: React.FC<HeritageBadgeProps> = ({
   priority = false,
   className,
 }) => {
-  const years = new Date().getFullYear() - FOUNDED_YEAR;
+  const years = countYearsInBusiness();
 
   // The face typography is specified in `em`, so without a font-size of its own the badge
   // inherits whatever the surrounding block happens to use — it renders correctly at 112px in
