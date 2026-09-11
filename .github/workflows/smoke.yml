@@ -1,10 +1,20 @@
 name: Post-deploy smoke check
 
-# deployment_status, not push. Vercel builds after the push lands, so a push-triggered job
-# would smoke the *previous* deployment and pass while the new one is broken. GitHub fires
-# deployment_status when Vercel reports the build finished, and hands us the URL it produced.
+# Triggered by push, not deployment_status. The only deployment events this repository has ever
+# received come from the "Production Build (GitHub Secrets)" workflow, whose job declares
+# `environment: production`: GitHub records every run of it as a deployment whose URL is the
+# Actions job page. This check used that URL as the site to test, so it was fetching
+# github.com/.../job/<id>/about and failing on every push without ever reaching the website.
+# Vercel reports to this repository through commit statuses, not deployment events.
+#
+# So on push it now waits until production actually serves the pushed commit — read from
+# /version.json, which the build writes — and only then smoke checks the live site. If Vercel
+# never deploys the commit, the wait fails with a message saying so. That is the failure that went
+# unnoticed for four days when the repository changed owner and Vercel stopped receiving pushes.
 on:
-  deployment_status:
+  push:
+    branches:
+      - main
   # So a deploy can be re-checked by hand, or a preview URL checked before promoting it.
   workflow_dispatch:
     inputs:
@@ -13,15 +23,42 @@ on:
         required: false
         default: https://www.nickelbusbar.com
 
+# A newer push supersedes an older one still waiting for its deploy.
+concurrency:
+  group: smoke-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   smoke:
-    # Only successful deployments. Vercel also reports 'pending' and 'failure', and smoking a
-    # deployment that never finished would just report noise.
-    if: github.event_name == 'workflow_dispatch' || github.event.deployment_status.state == 'success'
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 30
+    env:
+      SMOKE_BASE_URL: ${{ github.event.inputs.url || 'https://www.nickelbusbar.com' }}
 
     steps:
+      - name: Wait for production to serve this commit
+        if: github.event_name == 'push'
+        env:
+          EXPECTED: ${{ github.sha }}
+        shell: bash
+        run: |
+          # Vercel normally builds in 2-4 minutes. Twenty leaves room for a slow queue without
+          # letting a deploy that is never coming pass for one that is merely late.
+          deadline=$((SECONDS + 1200))
+          live=""
+          while [ "$SECONDS" -lt "$deadline" ]; do
+            live=$(curl -fsS --max-time 20 "$SMOKE_BASE_URL/version.json?t=$SECONDS" 2>/dev/null \
+              | grep -oE '"commit": *"[0-9a-f]+"' | grep -oE '[0-9a-f]{7,}' || true)
+            if [ "$live" = "$EXPECTED" ]; then
+              echo "Production is serving ${EXPECTED:0:7}."
+              exit 0
+            fi
+            echo "Waiting: production serves ${live:-no version.json yet}, expecting $EXPECTED"
+            sleep 30
+          done
+          echo "::error::Production did not serve ${EXPECTED:0:7} within 20 minutes (it serves ${live:-an older build with no version.json}). Vercel has not deployed this commit: check the Vercel project's Deployments list, and that the Vercel GitHub App has access to this repository."
+          exit 1
+
       - uses: actions/checkout@v4
 
       - uses: actions/setup-node@v4
@@ -33,8 +70,4 @@ jobs:
         run: npm ci --no-audit --no-fund
 
       - name: Smoke check
-        env:
-          # The deployment's own URL, so a preview deploy is checked against itself rather than
-          # against production. Falls back to the live site for manual runs.
-          SMOKE_BASE_URL: ${{ github.event.inputs.url || github.event.deployment_status.target_url || 'https://www.nickelbusbar.com' }}
         run: npm run smoke

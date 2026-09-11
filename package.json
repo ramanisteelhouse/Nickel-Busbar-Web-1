@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "tsx server.ts",
-    "prebuild": "tsx scripts/generate-sitemap.ts && tsx scripts/generate-llms-txt.ts && tsx scripts/generate-netlify-redirects.ts",
+    "prebuild": "tsx scripts/write-build-info.ts && tsx scripts/generate-sitemap.ts && tsx scripts/generate-llms-txt.ts && tsx scripts/generate-netlify-redirects.ts",
     "build": "vite build",
     "preview": "vite preview",
     "start": "cross-env NODE_ENV=production tsx server.ts",

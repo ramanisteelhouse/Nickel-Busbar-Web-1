@@ -40,7 +40,7 @@ import { FOUNDED_YEAR, countYearsInBusiness } from '../lib/heritage';
 import { ProductThumbnail } from '../components/ProductThumbnail';
 
 // Derived, not typed in (see lib/heritage): the hero is the worst place on the site for a number
-// that quietly goes stale every January.
+// that quietly goes stale once a year.
 const yearsInBusiness = countYearsInBusiness();
 
 // 9KB WebP rather than the 317KB 1737x1906 JPEG this used to point at. The original is

@@ -8,6 +8,9 @@ coverage/
 !.env.example
 Nickel-Busbar/
 
+# Rewritten on every build by scripts/write-build-info.ts
+public/version.json
+
 # Playwright
 /test-results/
 /playwright-report/
