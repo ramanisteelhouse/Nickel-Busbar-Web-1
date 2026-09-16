@@ -8,6 +8,7 @@ import { buildImageAlt, getProductUnitLabel, getStrikePrice, logCallClick } from
 import { PRIMARY_CALL, telHref } from '../lib/contact';
 import { productImagePath, productImageUrl } from '../lib/productImage';
 import { QuickEnquiry } from '../components/QuickEnquiry';
+import { RelatedProducts } from '../components/RelatedProducts';
 import {
   RETURN_POLICY_HEADING,
   RETURN_POLICY_LINES,
@@ -548,6 +549,13 @@ export const ProductDetailPage: React.FC<{ onAddToCart: (p: Product) => void }> 
           </p>
         ))}
       </section>
+
+      {/* The way onward. Without this a product page's only outbound links were the navigation
+          and the breadcrumb, so a visitor who landed here from search and wanted a different
+          pattern or cell format had to go back to /products and start again. The crawler
+          snapshot has rendered the same six products for a while; this brings the rendered page
+          into line with it. */}
+      {slug ? <RelatedProducts slug={slug} /> : null}
 
       {showCartToast && (
         <div className="fixed bottom-4 left-4 right-4 z-50 sm:hidden">

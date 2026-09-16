@@ -1428,6 +1428,40 @@ export function createApiApp() {
     }
   }));
 
+  // Feeds the related-products block on the React product page. The query is deliberately the
+  // same one renderProductSnapshot uses, so the crawler snapshot and the rendered page link to
+  // the same six products instead of drifting apart.
+  app.get("/api/products/:slug/related", asyncHandler(async (req, res) => {
+    try {
+      const product = await queryOne<{ category_id: number | null }>(
+        "SELECT category_id FROM products WHERE slug = $1",
+        [req.params.slug]
+      );
+      if (!product) return res.status(404).json({ error: "Product not found" });
+
+      const related = await query(
+        // Same category first, then fill from the rest of the catalogue rather than filtering to
+        // it: "Plain Nickel Strips" and "Copper Busbar" are each alone in their category, so a
+        // category-only filter left the two pages that most needed a way onward as dead ends.
+        //
+        // IS NOT DISTINCT FROM, not `=`: a product with no category would otherwise compare NULL
+        // to NULL, get NULL rather than true, and lose its own category grouping.
+        `SELECT p.slug, p.name, p.image, p.dimensions, p.seo_heading
+           FROM products p
+          WHERE p.slug <> $1
+          ORDER BY (p.category_id IS NOT DISTINCT FROM $2::bigint) DESC,
+                   p.is_featured DESC,
+                   p.name
+          LIMIT 6`,
+        [req.params.slug, product.category_id ?? null]
+      );
+      res.json(related);
+    } catch (e) {
+      console.error("Failed to fetch related products", e);
+      res.status(500).json({ error: "Failed to fetch related products" });
+    }
+  }));
+
   app.get("/api/categories", asyncHandler(async (req, res) => {
     try {
       const categories = await query("SELECT * FROM categories ORDER BY id");

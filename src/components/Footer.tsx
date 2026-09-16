@@ -5,6 +5,7 @@ import { EMAIL_ADDRESSES, PHONE_NUMBERS, POSTAL_ADDRESS, telHref } from '../lib/
 import { STATE_LANDING_PAGES } from '../lib/landingPages';
 import { BROCHURE } from '../lib/brochure';
 import { YEARS_IN_BUSINESS } from '../lib/heritage';
+import { PRODUCT_LINKS } from '../lib/productLinks';
 
 export const Footer: React.FC = () => {
   return (
@@ -93,6 +94,25 @@ export const Footer: React.FC = () => {
               <li>PAN India + international supply support</li>
             </ul>
           </div>
+        </div>
+        {/* The catalogue, linked from every page. A product URL used to be reachable only from
+            /products, from the sitemap, and from the related block on its siblings, so each one
+            sat three clicks from the homepage with no site-wide entry point. Anchor text is the
+            product's own name, because that is what tells a search engine which query the
+            destination answers. PRODUCT_LINKS is generated at build time (see
+            scripts/generate-product-links.ts) rather than fetched, so the footer stays free of
+            a network request on every page view. */}
+        <div className="mt-10 border-t border-slate-200 pt-8">
+          <p className="text-xs uppercase tracking-[0.3em] text-slate-400 mb-4">Nickel Strip &amp; Busbar Catalogue</p>
+          <ul className="flex flex-wrap gap-x-4 gap-y-2 text-sm text-slate-600">
+            {PRODUCT_LINKS.map((product) => (
+              <li key={product.slug}>
+                <Link to={`/product/${encodeURIComponent(product.slug)}`} className="inline-block py-1 hover:text-brand">
+                  {product.name}
+                </Link>
+              </li>
+            ))}
+          </ul>
         </div>
         {/* Crawlable links to the state landing pages. Without an entry point in site-wide
             navigation these URLs would be reachable only from the sitemap and from each other,
