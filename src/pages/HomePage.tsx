@@ -28,6 +28,7 @@ import { ANSWER_BLOCK, ANSWER_BLOCK_QUESTION } from '../lib/answerBlock';
 import {
   applications as applicationTitles,
   faqItems,
+  HERO_PRODUCT_SLUG,
   industries as industryTitles,
   productSpecifications,
   productVariants,
@@ -38,6 +39,7 @@ import { Tilt3D, Reveal } from '../components/Tilt3D';
 import { HeritageBadge } from '../components/HeritageBadge';
 import { FOUNDED_YEAR, countYearsInBusiness } from '../lib/heritage';
 import { ProductThumbnail } from '../components/ProductThumbnail';
+import { productImagePath } from '../lib/productImage';
 
 // Derived, not typed in (see lib/heritage): the hero is the worst place on the site for a number
 // that quietly goes stale once a year.
@@ -408,7 +410,7 @@ export const HomePage: React.FC = () => {
                     parallax between them is visible as it turns. */}
                 <div className="relative overflow-hidden rounded-[1.8rem] border border-white/10 bg-slate-950" style={{ transform: 'translateZ(40px)' }}>
                   <img
-                    src="/img/products/ni-18650-2p-h-type.webp"
+                    src={productImagePath(HERO_PRODUCT_SLUG)}
                     alt={buildImageAlt('H type nickel strip for 18650 battery packs, cut to cell pitch')}
                     width={900}
                     height={900}

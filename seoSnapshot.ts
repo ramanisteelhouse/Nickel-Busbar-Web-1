@@ -40,6 +40,7 @@ import { PRODUCT_LINKS } from "./src/lib/productLinks.js";
 import {
   applications as HOME_APPLICATIONS,
   faqItems as HOME_FAQ_ITEMS,
+  HERO_PRODUCT_SLUG,
   industries as HOME_INDUSTRIES,
   productSpecifications as HOME_SPECIFICATIONS,
   productVariants as HOME_VARIANTS,
@@ -715,7 +716,7 @@ const STATIC_ROUTE_SEO: Record<StaticSnapshotRoute, { title: string; description
          Images will not index a picture that only exists once the bundle has run, and this is
          the one product photo on the site's most-linked URL. Mirrors the <img> HomePage
          renders in the hero card. -->
-    <img src="${SITE_URL}/img/products/ni-18650-2p-h-type.webp" alt="${escapeAttr(
+    <img src="${productImageUrl(SITE_URL, HERO_PRODUCT_SLUG)}" alt="${escapeAttr(
       buildImageAlt("H type nickel strip for 18650 battery packs, cut to cell pitch")
     )}" width="900" height="900" fetchpriority="high" />
     <h2>${ANSWER_BLOCK_QUESTION}</h2>

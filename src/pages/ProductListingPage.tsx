@@ -1,12 +1,21 @@
 import React from 'react';
 import { Link, useLocation, useSearchParams } from 'react-router-dom';
-import { X } from 'lucide-react';
+import { ShoppingCart, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Helmet } from 'react-helmet-async';
 import { Product, Category } from '../types';
 import { cn, getProductUnitLabel, getStrikePrice } from '../lib/utils';
 import { ProductThumbnail } from '../components/ProductThumbnail';
+import { showToast } from '../components/Toast';
 import { useLanguage } from '../i18n/LanguageProvider';
+
+type ProductListingPageProps = {
+  /**
+   * Optional so the page still renders if it is ever mounted outside the cart-owning route —
+   * the card falls back to the enquiry button alone rather than throwing.
+   */
+  onAddToCart?: (product: Product) => void;
+};
 
 type EnquiryFormData = {
   requirement: string;
@@ -32,7 +41,7 @@ const initialEnquiryData: EnquiryFormData = {
   message: '',
 };
 
-export const ProductListingPage: React.FC = () => {
+export const ProductListingPage: React.FC<ProductListingPageProps> = ({ onAddToCart }) => {
   const location = useLocation();
   const isCategoriesRoute = location.pathname === '/categories';
   const [searchParams] = useSearchParams();
@@ -297,7 +306,7 @@ export const ProductListingPage: React.FC = () => {
                       <div className="text-[10px] font-bold text-emerald-600 uppercase tracking-widest mb-1">{product.category_name}</div>
                       <h3 className="font-bold text-brand mb-1 group-hover:text-emerald-600 transition-colors">{product.name}</h3>
                       <p className="text-xs text-[#5B757E] mb-4 line-clamp-1">{product.description}</p>
-                      <div className="flex justify-between items-center gap-3">
+                      <div className="flex flex-col gap-3">
                         <div className="flex flex-col">
                           <span className="text-lg font-bold text-brand">
                             {formatPrice(product.price)}
@@ -321,13 +330,35 @@ export const ProductListingPage: React.FC = () => {
                             );
                           })()}
                         </div>
-                        <button
-                          type="button"
-                          onClick={() => openEnquiryForm(product)}
-                          className="rounded-full bg-brand text-white px-4 py-2 text-xs font-semibold whitespace-nowrap hover:bg-brand-dark transition-colors"
-                        >
-                          {t('product.submitEnquiry')}
-                        </button>
+                        {/* Two intents, two buttons. "Get Best Price" opens the enquiry form for
+                            a buyer who wants a negotiated rate; "Add to Cart" is for one who has
+                            already decided and is assembling a multi-item RFQ. Until now the card
+                            offered only the first, so building a list meant opening every product
+                            page in turn — the cart existed but the grid had no way into it.
+                            Reuses the productDetail.addToCart key rather than adding a new one,
+                            so every language already has the string. */}
+                        <div className="flex items-center gap-2">
+                          {onAddToCart ? (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                onAddToCart(product);
+                                showToast(t('productDetail.addToCart'), product.name);
+                              }}
+                              className="flex flex-1 items-center justify-center gap-1.5 rounded-full bg-zinc-900 px-3 py-2 text-xs font-semibold text-white whitespace-nowrap transition-colors hover:bg-zinc-800"
+                            >
+                              <ShoppingCart size={14} />
+                              {t('productDetail.addToCart')}
+                            </button>
+                          ) : null}
+                          <button
+                            type="button"
+                            onClick={() => openEnquiryForm(product)}
+                            className="flex-1 rounded-full bg-brand px-3 py-2 text-xs font-semibold text-white whitespace-nowrap transition-colors hover:bg-brand-dark"
+                          >
+                            {t('product.submitEnquiry')}
+                          </button>
+                        </div>
                       </div>
                     </div>
                   </motion.div>

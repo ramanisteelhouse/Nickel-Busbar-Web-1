@@ -55,6 +55,12 @@
 /nickel-strip-manufacturer-in-rajasthan  /.netlify/functions/render?path=/nickel-strip-manufacturer-in-rajasthan  200
 /nickel-strip-manufacturer-in-west-bengal  /.netlify/functions/render?path=/nickel-strip-manufacturer-in-west-bengal  200
 
+# Product photos used to be saved as <slug>.webp and are now saved under a descriptive
+# filename, so an image URL indexed before the rename no longer matches a file. The old name
+# was the slug, which is exactly what the image proxy takes, so a 301 there resolves every
+# legacy URL to the same photo. Static files still win, so current filenames never reach it.
+/img/products/*  /api/product-image/:splat  301
+
 # Per-item pages. :splat carries the slug through to the renderer.
 /product/*  /.netlify/functions/render?path=/product/:splat  200
 /blog/*  /.netlify/functions/render?path=/blog/:splat  200

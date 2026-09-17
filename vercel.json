@@ -20,6 +20,7 @@
     { "src": "/merchant-feed.xml", "dest": "/api/index" },
     { "src": "/", "dest": "/api/render?path=/" },
     { "handle": "filesystem" },
+    { "src": "/img/products/([^/]+)\\.webp", "status": 301, "headers": { "Location": "/api/product-image/$1.webp" } },
     { "src": "/products/?", "dest": "/api/render" },
     { "src": "/categories/?", "dest": "/api/render" },
     { "src": "/product/[^/]+/?", "dest": "/api/render" },

@@ -15,6 +15,22 @@
 
 import { YEARS_IN_BUSINESS } from './heritage.js';
 
+/**
+ * The product whose photo fills the hero card, named by slug rather than by file path.
+ *
+ * Both surfaces used to hard-code /img/products/ni-18650-2p-h-type.webp. That filename is no
+ * longer correct — product photos are saved under a descriptive name now (see
+ * scripts/sync-product-images.ts) — and nothing would have reported the breakage: the routing
+ * tables 301 a legacy image URL to the /api/product-image proxy, so the picture still appears
+ * and the fault shows up only as a redirect into a serverless function and a round trip to
+ * Supabase, in place of a static file on the CDN. This is the LCP element of the site's
+ * most-visited page, so that swap is worth avoiding.
+ *
+ * Resolving through productImagePath() instead means the manifest decides the filename, and a
+ * future rename moves this with it.
+ */
+export const HERO_PRODUCT_SLUG = 'ni-18650-2p-h-type';
+
 export const applications = [
   'Lithium-ion Batteries',
   'EV Battery Packs',

@@ -292,9 +292,9 @@ export default function App() {
             <Suspense fallback={<RouteLoadingFallback />}>
               <Routes>
                 <Route path="/" element={<HomePage />} />
-                <Route path="/products" element={<ProductListingPage />} />
+                <Route path="/products" element={<ProductListingPage onAddToCart={addToCart} />} />
                 <Route path="/product/:slug" element={<ProductDetailPage onAddToCart={addToCart} />} />
-                <Route path="/categories" element={<ProductListingPage />} />
+                <Route path="/categories" element={<ProductListingPage onAddToCart={addToCart} />} />
                 <Route path="/cart" element={<CartPage cart={cart} updateQuantity={updateQuantity} removeItem={removeItem} />} />
                 <Route path="/checkout" element={<CheckoutPage cart={cart} />} />
                 <Route path="/login" element={<LoginPage />} />

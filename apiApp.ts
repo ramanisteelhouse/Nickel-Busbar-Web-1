@@ -2003,13 +2003,19 @@ export function createApiApp() {
     try {
       await client.query("BEGIN");
       const quoteResult = await client.query<{ id: number }>(
+        // full_name and email are stored, not just forwarded to the notification. Checkout
+        // makes both mandatory, and for an anonymous buyer there is no users row to recover
+        // them from later — without these columns the request landed in the table with no way
+        // to reply to it except the WhatsApp thread.
         `INSERT INTO quote_requests
-          (user_id, phone_country_code, phone_number, phone_full, gst_number, pin_code, shipping_option,
-           subtotal, gst, total, currency, locale, items_count, source, user_agent)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
+          (user_id, full_name, email, phone_country_code, phone_number, phone_full, gst_number, pin_code,
+           shipping_option, subtotal, gst, total, currency, locale, items_count, source, user_agent)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17)
          RETURNING id`,
         [
           userId ?? null,
+          customer.full_name ?? null,
+          customer.email ?? null,
           customer.phone_country_code ?? null,
           customer.phone_number ?? null,
           customer.phone_full ?? null,

@@ -8,6 +8,7 @@ import { getCountryOptions } from '../lib/countryCodes';
 import { calculateOrderTotals } from '../lib/tax';
 import { getProductUnitLabel, normalizeProductUnit } from '../lib/utils';
 import { PRIMARY_WHATSAPP } from '../lib/contact';
+import { flushPendingQuotes, saveQuoteRequest } from '../lib/quoteQueue';
 
 interface CheckoutPageProps {
   cart: CartItem[];
@@ -37,6 +38,12 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({ cart }) => {
   const [pinCode, setPinCode] = useState('');
   const [isSavingQuote, setIsSavingQuote] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
+
+  // Retry anything a previous visit could not save. Fire-and-forget: it is background repair of
+  // the business's own records and must not gate the page or surface anything to this buyer.
+  useEffect(() => {
+    void flushPendingQuotes().catch(() => {});
+  }, []);
 
   useEffect(() => {
     if (!selectedCountry && countryOptions.length) {
@@ -102,23 +109,6 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({ cart }) => {
     'Self courier',
   ];
 
-  const resolveErrorMessage = async (response: Response) => {
-    try {
-      const data = await response.json();
-      if (data && typeof data.error === 'string') {
-        return data.error;
-      }
-    } catch {
-      // Ignore JSON parsing errors.
-    }
-    try {
-      const text = await response.text();
-      return text || t('checkout.saveError');
-    } catch {
-      return t('checkout.saveError');
-    }
-  };
-
   const handleWhatsAppRFQ = async () => {
     // Fallback must be full international format - wa.me rejects a bare 10-digit number.
     const businessPhoneNumber =
@@ -163,13 +153,15 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({ cart }) => {
     message += `%0A*Subtotal:* ${formatPrice(subtotal)}`;
     message += `%0A%0A_Please provide a quote for the above items._`;
 
+    // The save and the WhatsApp hand-off are deliberately independent. A database failure must
+    // not stop the buyer sending the enquiry — that would turn a recoverable record problem
+    // into a lost order — so the result below only decides what the page says, never whether
+    // WhatsApp opens. saveQuoteRequest retries once and queues the payload if it still fails.
+    let saveResult: Awaited<ReturnType<typeof saveQuoteRequest>> = { saved: false, queued: false };
     try {
       setIsSavingQuote(true);
       setSaveError(null);
-      const response = await fetch('/api/quotes', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
+      saveResult = await saveQuoteRequest({
           customer: {
             full_name: trimmedName,
             email: trimmedEmail,
@@ -199,17 +191,11 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({ cart }) => {
             source: 'whatsapp_rfq',
             user_agent: navigator.userAgent,
           },
-        }),
       });
-
-      if (!response.ok) {
-        const errorMessage = await resolveErrorMessage(response);
-        throw new Error(errorMessage || 'Failed to save quote');
-      }
     } catch (error) {
-      const message = error instanceof Error ? error.message : t('checkout.saveError');
+      // saveQuoteRequest resolves rather than rejects for every failure it anticipates, so
+      // reaching here means something unexpected. The enquiry still goes out below.
       console.error('Failed to save quote request', error);
-      setSaveError(message || t('checkout.saveError'));
     } finally {
       setIsSavingQuote(false);
     }
@@ -217,6 +203,13 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({ cart }) => {
     if (!recipientNumber) {
       setSaveError('Unable to open WhatsApp. Please try again.');
       return;
+    }
+
+    // Only a genuinely lost record is worth alarming the buyer about. A queued request will be
+    // retried on their next visit and the enquiry itself is on its way over WhatsApp either
+    // way, so saying "we could not save this" there would be both frightening and untrue.
+    if (!saveResult.saved && !saveResult.queued) {
+      setSaveError(saveResult.error || t('checkout.saveError'));
     }
 
     const whatsappUrl = `https://wa.me/${recipientNumber}?text=${message}`;
