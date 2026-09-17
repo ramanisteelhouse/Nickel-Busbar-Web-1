@@ -13,15 +13,18 @@
  */
 
 /**
- * The measured purity of the nickel supplied, confirmed against the company's own IndiaMART
- * listing. The site previously published "99.6% - 99.8%", and before that "99.8%+", both of
- * which overstated it — this is the figure a buyer checks against their drawing, so it is the
- * worst place on the site to be optimistic.
+ * The purity of the nickel supplied — 99.6%, confirmed directly by the company.
  *
- * 99.2% is consistent with the grades the catalogue actually lists: ASTM B162/B16/B17 Nickel
- * 200 and 201 both specify 99.0% nickel minimum.
+ * This figure has moved four times: "99.8%+", then "99.6% - 99.8%", then "99.2%" (inferred from
+ * an IndiaMART listing and from Nickel 200/201 specifying 99.0% minimum), and now 99.6% on the
+ * owner's confirmation. The inference was wrong, and inferring it was the mistake: a mill test
+ * certificate states the assay, and nothing else should be used to set this value.
+ *
+ * It is the number a buyer checks against their drawing and the number an answer engine quotes,
+ * so it is the worst place on the site to be either optimistic or approximate. Change it only
+ * against an MTC, and change it here — every other surface reads from this constant.
  */
-export const NICKEL_PURITY_RANGE = '99.2% pure nickel';
+export const NICKEL_PURITY_RANGE = '99.6% pure nickel';
 
 /** Material test certificates are issued on request, not automatically with every despatch. */
 export const MTC_AVAILABILITY = 'Material test certificate provided on request';

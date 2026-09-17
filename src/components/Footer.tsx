@@ -6,6 +6,7 @@ import { STATE_LANDING_PAGES } from '../lib/landingPages';
 import { BROCHURE } from '../lib/brochure';
 import { YEARS_IN_BUSINESS } from '../lib/heritage';
 import { PRODUCT_LINKS } from '../lib/productLinks';
+import { GROUP_SITES } from '../lib/groupSites';
 
 export const Footer: React.FC = () => {
   return (
@@ -126,6 +127,37 @@ export const Footer: React.FC = () => {
               </li>
             ))}
           </ul>
+        </div>
+        {/* The company's other web properties, as crawlable links rather than only as `sameAs`
+            in the JSON-LD. Both matter and they do different jobs: the markup asserts "these are
+            one company", while a real anchor is what a crawler follows and what an answer engine
+            reads as rendered text. Ramani Steel House publishes under several domains and none
+            of them linked to any other, so each one looked like a separate business.
+
+            It names the company, not the group's other product lines. This site is nickel strip
+            and nickel busbar only; titanium, duplex, stainless and the powders belong to the
+            other domains. Listing them here would dilute the one thing this domain is topically
+            about, which is the opposite of what the cross-link is for. */}
+        <div className="mt-10 border-t border-slate-200 pt-8">
+          <p className="text-xs uppercase tracking-[0.3em] text-slate-400 mb-3">Part of Ramani Steel House</p>
+          <p className="text-sm text-slate-600 max-w-3xl">
+            NickelBusbar.com is the nickel strip and nickel busbar catalogue of Ramani Steel House,
+            Mumbai, established 1974. Company websites:{' '}
+            {GROUP_SITES.map((site, index) => (
+              <React.Fragment key={site.href}>
+                {index > 0 ? (index === GROUP_SITES.length - 1 ? ' and ' : ', ') : ''}
+                <a
+                  href={site.href}
+                  target="_blank"
+                  rel="noopener"
+                  className="underline underline-offset-2 hover:text-brand"
+                >
+                  {site.label}
+                </a>
+              </React.Fragment>
+            ))}
+            .
+          </p>
         </div>
         <div className="mt-10 border-t border-slate-200 pt-6 text-xs text-slate-500">
           <p>Copyright 2026 Ramani Steel House. All rights reserved.</p>

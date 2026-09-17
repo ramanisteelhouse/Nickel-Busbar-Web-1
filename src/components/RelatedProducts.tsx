@@ -49,7 +49,7 @@ export const RelatedProducts: React.FC<{ slug: string }> = ({ slug }) => {
     <section className="mt-16">
       <h2 className="text-lg font-bold text-zinc-900">Related nickel strip products</h2>
       <p className="mt-1 text-sm text-zinc-500">
-        Other patterns and cell formats from the same catalogue, supplied to the same 99.2% pure nickel specification.
+        Other patterns and cell formats from the same catalogue, supplied to the same 99.6% pure nickel specification.
       </p>
       <ul className="mt-6 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-6">
         {products.map((product) => (

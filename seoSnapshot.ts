@@ -34,7 +34,9 @@ import {
 import { buildImageAlt } from "./src/lib/utils.js";
 import { buildProductSpecs, NICKEL_PURITY_RANGE } from "./src/lib/productSpecs.js";
 import { BROCHURE } from "./src/lib/brochure.js";
+import { GROUP_SITES } from "./src/lib/groupSites.js";
 import { YEARS_IN_BUSINESS } from "./src/lib/heritage.js";
+import { PRODUCT_LINKS } from "./src/lib/productLinks.js";
 import {
   applications as HOME_APPLICATIONS,
   faqItems as HOME_FAQ_ITEMS,
@@ -264,6 +266,21 @@ const productCardHtml = (product: ProductCardRow): string => {
 
 export const productListHtml = (products: ProductCardRow[]): string =>
   products.map(productCardHtml).filter(Boolean).join("");
+
+/**
+ * The company's other web properties, as a sentence for the crawler snapshot.
+ *
+ * The `sameAs` array in index.html already asserts these are one company to anything parsing
+ * JSON-LD. This is the same claim in prose, for the retrieval side: an answer engine summarising
+ * "who is Ramani Steel House" reads body text, and until now nothing in the rendered page said
+ * this site and ramanialloys.com were the same business. Rendered only on / and /about — the two
+ * URLs where a reader is actually asking who the company is.
+ */
+const groupSitesHtml = (): string =>
+  `<h2>Part of Ramani Steel House</h2>
+    <p>NickelBusbar.com is the nickel strip and nickel busbar catalogue of Ramani Steel House, Mumbai, established 1974. Company websites: ${GROUP_SITES.map(
+      (site) => `<a href="${site.href}">${escapeHtml(site.label)}</a>`
+    ).join(", ")}.</p>`;
 
 /**
  * A BreadcrumbList for a page one or two levels below the homepage.
@@ -748,6 +765,7 @@ const STATIC_ROUTE_SEO: Record<StaticSnapshotRoute, { title: string; description
       <li><a href="${SITE_URL}/about">About Ramani Steel House</a></li>
       <li><a href="${SITE_URL}/contact">Contact the sales team</a></li>
     </ul>
+    ${groupSitesHtml()}
   </article>`,
   },
   "/about": {
@@ -798,6 +816,7 @@ const STATIC_ROUTE_SEO: Record<StaticSnapshotRoute, { title: string; description
       <li><a href="${SITE_URL}${EXPORT_PATH}">Nickel strip and busbar export enquiry</a></li>
       <li><a href="${SITE_URL}/contact">Contact the sales team</a></li>
     </ul>
+    ${groupSitesHtml()}
   </article>`,
   },
   "/contact": {
@@ -1490,6 +1509,27 @@ export async function renderProductSnapshot(template: string, slug: string): Pro
     ? `<h2>Related nickel strip products</h2><ul>${productListHtml(related)}</ul>`
     : "";
 
+  // The rest of the catalogue, as plain links. The related block above is six contextual
+  // products chosen by category; this is the other side of the same problem — the audit found
+  // product pages linking to no other product at all, so a crawler arriving on one SKU from
+  // search had no path to the other sixteen except back through /products.
+  //
+  // The React page gets these from the footer, which the snapshot has no equivalent of, so
+  // without this block the crawler-visible page and the rendered page disagree about how
+  // connected the catalogue is. Read from the build-time PRODUCT_LINKS rather than a second
+  // query: it costs nothing per request, and a database hiccup cannot strip the site's internal
+  // linking. Anchor text is each product's own name, and the current page is left out — a page
+  // linking to itself is noise.
+  const catalogueLinks = PRODUCT_LINKS.filter((entry) => entry.slug !== productSlug);
+  const catalogueHtml = catalogueLinks.length
+    ? `<h2>Full nickel strip and busbar catalogue</h2><ul>${catalogueLinks
+        .map(
+          (entry) =>
+            `<li><a href="${SITE_URL}/product/${encodeURIComponent(entry.slug)}">${escapeHtml(entry.name)}</a></li>`
+        )
+        .join("")}</ul>`
+    : "";
+
   const snapshotBody = `<article>
     <h1>${escapeHtml(name)}</h1>
     ${imageTag}
@@ -1507,6 +1547,7 @@ export async function renderProductSnapshot(template: string, slug: string): Pro
     <h2>${escapeHtml(RETURN_POLICY_HEADING)}</h2>
     ${RETURN_POLICY_LINES.map((line) => `<p>${escapeHtml(line)}</p>`).join("")}
     ${relatedHtml}
+    ${catalogueHtml}
     <p><a href="${SITE_URL}/products">All nickel strip and busbar products</a></p>
   </article>`;
 

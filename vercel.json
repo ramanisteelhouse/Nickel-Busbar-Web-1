@@ -37,6 +37,11 @@
     { "src": "/blog/Pure-Nickel-Strip-vs-Nickel-Plated-Steel-Strip(?::|%3A)-Complete-Comparison/?", "status": 301, "headers": { "Location": "https://www.nickelbusbar.com/blog/pure-nickel-strip-vs-nickel-plated-steel-strip" } },
     { "src": "/blog/[^/]+/?", "dest": "/api/render" },
     { "src": "/h-type-nickel-strip/?", "dest": "/api/render?path=/h-type-nickel-strip" },
+    { "src": "/pure-nickel-strip-0-15mm-x-10mm/?", "dest": "/api/render?path=/pure-nickel-strip-0-15mm-x-10mm" },
+    { "src": "/pure-nickel-strip-0-20mm-x-15mm/?", "dest": "/api/render?path=/pure-nickel-strip-0-20mm-x-15mm" },
+    { "src": "/nickel-strip-for-battery-pack-welding/?", "dest": "/api/render?path=/nickel-strip-for-battery-pack-welding" },
+    { "src": "/nickel-strip-for-lithium-ion-battery-manufacturers/?", "dest": "/api/render?path=/nickel-strip-for-lithium-ion-battery-manufacturers" },
+    { "src": "/nickel-busbar-for-battery-applications/?", "dest": "/api/render?path=/nickel-busbar-for-battery-applications" },
     { "src": "/nickel-strip-manufacturer-in-[a-z0-9-]+/?", "dest": "/api/render" },
     { "src": "/(.*)", "status": 404, "dest": "/404.html" }
   ]

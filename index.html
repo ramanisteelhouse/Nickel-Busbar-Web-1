@@ -63,7 +63,22 @@
   <!-- One @graph rather than three loose objects. The Organization and the LocalBusiness are the
        same company, so they share an @id: published separately (and previously under two
        different names, "Ramani Steel House" and "Ramani Nickel Strips") they read as two rival
-       entities, and the audit's Local SEO check reported no LocalBusiness at all. -->
+       entities, and the audit's Local SEO check reported no LocalBusiness at all.
+
+       sameAs carries the company's other web properties, not just its social profiles. Ramani
+       Steel House publishes under at least five domains plus several trade directories, and
+       none of them linked to any other - so an answer engine resolving "Ramani Steel House"
+       found a well-documented alloy stockist on four properties and this site claiming
+       something different on a fifth, with nothing tying them together. It trusts the majority
+       and discounts the outlier, which is this site. Every URL below was checked to return 200
+       before being listed: a sameAs pointing at a dead page weakens the entity rather than
+       strengthening it.
+
+       This states that the properties are the same company. It does NOT reconcile what they
+       each say the company does - ramanisteelhouse.com says "wholesale trader, importer,
+       retailer and exporter" while llms.txt here says "primary manufacturer (not a reseller or
+       distributor)". That contradiction is a business decision, not a markup one, and is still
+       open. -->
   <script type="application/ld+json">
       {
         "@context": "https://schema.org",
@@ -108,6 +123,12 @@
             },
             "areaServed": "Worldwide",
             "sameAs": [
+              "https://www.ramanisteel.com/",
+              "https://www.ramanialloys.com/",
+              "https://www.ramanisteelhouse.com/",
+              "https://www.tradeindia.com/ramani-steel-house-316328/",
+              "https://www.exportersindia.com/ramani-steel-house/about-us.htm",
+              "https://www.thepipingmart.com/supplier/ramani-steel-house",
               "https://www.linkedin.com/company/ramani-steel-house/",
               "https://www.facebook.com/profile.php?id=61550731232092",
               "https://www.instagram.com/ramanisteelhouse/",

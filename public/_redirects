@@ -39,6 +39,11 @@
 # Category and location landing pages.
 /h-type-nickel-strip  /.netlify/functions/render?path=/h-type-nickel-strip  200
 /nickel-strip-manufacturer-in-mumbai  /.netlify/functions/render?path=/nickel-strip-manufacturer-in-mumbai  200
+/pure-nickel-strip-0-15mm-x-10mm  /.netlify/functions/render?path=/pure-nickel-strip-0-15mm-x-10mm  200
+/pure-nickel-strip-0-20mm-x-15mm  /.netlify/functions/render?path=/pure-nickel-strip-0-20mm-x-15mm  200
+/nickel-strip-for-battery-pack-welding  /.netlify/functions/render?path=/nickel-strip-for-battery-pack-welding  200
+/nickel-strip-for-lithium-ion-battery-manufacturers  /.netlify/functions/render?path=/nickel-strip-for-lithium-ion-battery-manufacturers  200
+/nickel-busbar-for-battery-applications  /.netlify/functions/render?path=/nickel-busbar-for-battery-applications  200
 /nickel-strip-manufacturer-in-tamil-nadu  /.netlify/functions/render?path=/nickel-strip-manufacturer-in-tamil-nadu  200
 /nickel-strip-manufacturer-in-karnataka  /.netlify/functions/render?path=/nickel-strip-manufacturer-in-karnataka  200
 /nickel-strip-manufacturer-in-maharashtra  /.netlify/functions/render?path=/nickel-strip-manufacturer-in-maharashtra  200

@@ -53,7 +53,7 @@ export type LandingPage = {
 };
 
 const SPEC_BULLETS = [
-  'Nickel purity 99.2%, with material test certificates on request',
+  'Nickel purity 99.6%, with material test certificates on request',
   'Thickness 0.10mm – 0.50mm, width 2mm – 50mm',
   'Pure nickel and nickel-plated steel, in strip, coil and busbar form',
   'Custom slitting, pitch and hole patterns to your cell layout',
@@ -387,9 +387,310 @@ const MUMBAI_PAGE: LandingPage = {
   breadcrumbName: 'Nickel Strip in Mumbai',
 };
 
+/**
+ * Size pages: one URL per commercially stocked thickness × width.
+ *
+ * A buyer sourcing nickel strip searches the dimension, not the pattern — "0.15mm x 10mm nickel
+ * strip" is a real query and the catalogue had no URL carrying that string. The SKU pages are
+ * named for cell format and pattern ("Ni 18650 2P H-Type"), which answers a different question,
+ * and /products canonicalises every search URL away, so there was nothing for a dimension query
+ * to land on.
+ *
+ * Only sizes confirmed by the company appear here. Adding a page for a size that is not actually
+ * stocked would rank for a query the enquiry cannot be fulfilled from, which costs more than the
+ * traffic is worth.
+ */
+type StripSize = {
+  slug: string;
+  thickness: string;
+  width: string;
+  title: string;
+  description: string;
+  /** What this gauge is actually for — the reason a buyer picks it over the other. */
+  suitedTo: string;
+  cellFormats: string;
+};
+
+const STRIP_SIZES: readonly StripSize[] = [
+  {
+    slug: 'pure-nickel-strip-0-15mm-x-10mm',
+    thickness: '0.15 mm',
+    width: '10 mm',
+    title: 'Pure Nickel Strip 0.15mm x 10mm | Manufacturer',
+    description:
+      'Pure nickel strip 0.15mm thick x 10mm wide, 99.6% nickel, UNS N02201. Made in Mumbai for 18650 and 21700 battery pack welding. 5 kg MOQ, 7 day delivery.',
+    suitedTo:
+      'the most widely used gauge for 18650 pack assembly. It spot welds cleanly on a mid-range resistance welder without the electrode force a thicker strip needs, which is why it is the size most builders standardise on for 2P and 3P layouts.',
+    cellFormats: '18650, 21700',
+  },
+  {
+    slug: 'pure-nickel-strip-0-20mm-x-15mm',
+    thickness: '0.20 mm',
+    width: '15 mm',
+    title: 'Pure Nickel Strip 0.20mm x 15mm | Manufacturer',
+    description:
+      'Pure nickel strip 0.20mm x 15mm wide, 99.6% nickel, UNS N02201. Higher current capacity for 21700 and 32700 packs. 5 kg MOQ, 7 day delivery from Mumbai.',
+    suitedTo:
+      'packs that draw more current per cell than 0.15 mm comfortably carries. The larger cross-section — thicker and wider — lowers resistance through the interconnect, at the cost of needing more weld energy than a 0.15 mm strip.',
+    cellFormats: '21700, 32650, 32700',
+  },
+];
+
+const stripSizePage = (size: StripSize): LandingPage => ({
+  slug: size.slug,
+  title: size.title,
+  description: size.description,
+  h1: `Pure Nickel Strip ${size.thickness} × ${size.width}`,
+  intro: `Pure nickel strip in ${size.thickness} thickness and ${size.width} width, manufactured by Ramani Steel House in Mumbai since 1974. Supplied at 99.6% nickel to UNS N02201, slit to width from coil, for battery pack builders working with ${size.cellFormats} cells. Minimum order 5 kg, despatched in 7 days PAN India and exported to 17+ countries.`,
+  keywords: [
+    `Pure Nickel Strip ${size.thickness} x ${size.width}`,
+    `Nickel Strip ${size.thickness}`,
+    `${size.width} Nickel Strip`,
+    `Nickel Strip ${size.thickness} x ${size.width} Price`,
+    'Pure Nickel Strip Manufacturer India',
+    'Battery Nickel Strip Supplier',
+  ],
+  sections: [
+    {
+      heading: `Specification — ${size.thickness} × ${size.width}`,
+      bullets: [
+        `Thickness ${size.thickness}, width ${size.width}`,
+        'Purity 99.6% pure nickel',
+        'Grade Nickel 201, UNS N02201 (DIN 2.4068)',
+        `Suited to ${size.cellFormats} cell formats`,
+        'Supplied as strip or coil, slit to width',
+        'Minimum order 5 kg · despatch in 7 days',
+        'Material test certificate on request',
+      ],
+    },
+    {
+      heading: 'What this size is used for',
+      body: `This gauge is ${size.suitedTo}`,
+    },
+    {
+      heading: 'Ordering this size',
+      body: `${size.thickness} × ${size.width} is a stocked size, so it ships from coil rather than being rolled to order. If your pack needs a different width, the same 99.6% material is slit to any width from 2 mm to 50 mm against your drawing — send the pitch and cell layout and it is cut to that instead.`,
+    },
+  ],
+  faqs: [
+    {
+      question: `What is pure nickel strip ${size.thickness} × ${size.width} used for?`,
+      answer: `It is used as a cell interconnect and battery tab in lithium-ion packs built from ${size.cellFormats} cells, spot welded onto the cell terminals to join cells in parallel and series.`,
+    },
+    {
+      question: `Is ${size.thickness} × ${size.width} nickel strip pure nickel or nickel-plated steel?`,
+      answer:
+        'Pure nickel, at 99.6%, to UNS N02201. Nickel-plated steel is supplied separately and is a different material — it is cheaper but has substantially higher resistance, so it is not interchangeable where conductivity matters.',
+    },
+    {
+      question: `What is the minimum order for ${size.thickness} × ${size.width} strip?`,
+      answer:
+        '5 kg. Both trial quantities for qualifying a new pack design and repeat bulk schedules are quoted from the same stock.',
+    },
+    {
+      question: 'Can this size be supplied as a coil rather than cut strip?',
+      answer:
+        'Yes. The same material is supplied as coil or as cut lengths. Say which you need with the enquiry, along with the coil weight or the cut length.',
+    },
+  ],
+  productSearch: 'nickel strip',
+  breadcrumbName: `${size.thickness} × ${size.width} Nickel Strip`,
+});
+
+/**
+ * Application pages: one URL per job the product is bought to do.
+ *
+ * Distinct from the size pages above and from the H-type page. A buyer searching "nickel strip
+ * for battery pack welding" is not asking for a dimension or a pattern — they are asking whether
+ * this supplier understands the process they are running. These pages answer that, and they are
+ * the phrasing answer engines are most often asked in.
+ */
+const APPLICATION_PAGES: readonly LandingPage[] = [
+  {
+    slug: 'nickel-strip-for-battery-pack-welding',
+    title: 'Nickel Strip for Battery Pack Welding | Supplier',
+    description:
+      'Nickel strip for battery pack spot welding: 99.6% pure nickel, 0.10-0.50mm, cut to cell pitch. Welds cleanly on 18650, 21700 and 32700 packs. Made in Mumbai.',
+    h1: 'Nickel Strip for Battery Pack Welding',
+    intro:
+      'Nickel strip for battery pack welding, manufactured in Mumbai by Ramani Steel House. Spot welding is what the material has to survive: 99.6% pure nickel takes a weld nugget cleanly at moderate electrode force, and the strip is slit and cut to your cell pitch so it seats on the pack without hand alignment.',
+    keywords: [
+      'Nickel Strip for Battery Pack Welding',
+      'Spot Welding Nickel Strip',
+      'Battery Tab Welding Strip',
+      'Nickel Strip for Spot Welder',
+      'Battery Pack Welding Strip Supplier India',
+    ],
+    sections: [
+      {
+        heading: 'Why pure nickel welds better than plated steel',
+        body:
+          'A spot weld forms where resistance concentrates. Pure nickel has low, predictable bulk resistance, so the heat forms at the interface between strip and cell terminal, which is where the joint is wanted. Nickel-plated steel puts a thin conductive layer over a resistive core, so weld behaviour varies with how the plating sits and the joint is harder to make repeatable across a production run.',
+      },
+      {
+        heading: 'What we supply for welding',
+        bullets: [
+          'Purity 99.6% pure nickel, Nickel 201 / UNS N02201',
+          'Thickness 0.10mm – 0.50mm; 0.15mm is the common welding gauge',
+          'Width 2mm – 50mm, slit to your drawing',
+          'H-type, zig-zag, honeycomb, fuse-type and plain patterns',
+          'Cut to the cell pitch of your pack layout',
+          'Minimum order 5 kg · despatch in 7 days',
+        ],
+      },
+      {
+        heading: 'Matching thickness to your welder',
+        body:
+          'Thicker strip carries more current but needs more weld energy. A resistance welder comfortable with 0.15 mm may produce shallow, high-resistance joints on 0.25 mm without a change in settings or hardware. Tell us the welder and the per-cell current when enquiring and the gauge is recommended against both, rather than against the current alone.',
+      },
+    ],
+    faqs: [
+      {
+        question: 'What thickness nickel strip is best for spot welding?',
+        answer:
+          '0.15 mm is the most widely used for 18650 pack assembly — it carries useful current and welds on a mid-range resistance welder. Heavier packs move to 0.20 mm or 0.25 mm, but only if the welder can deliver the extra energy.',
+      },
+      {
+        question: 'Can nickel-plated steel strip be spot welded the same way?',
+        answer:
+          'It can be welded, but not with the same settings or the same consistency. The plated layer over a resistive core makes the joint less repeatable across a run, which is why pure nickel is preferred where weld quality is being controlled.',
+      },
+      {
+        question: 'Do you cut nickel strip to our cell pitch?',
+        answer:
+          'Yes. Pitch, neck width, strip width and hole pattern are all cut to your pack drawing rather than to a nearest standard size. Send the drawing or the cell layout with the enquiry.',
+      },
+    ],
+    productSearch: 'nickel strip',
+    breadcrumbName: 'Battery Pack Welding',
+  },
+  {
+    slug: 'nickel-strip-for-lithium-ion-battery-manufacturers',
+    title: 'Nickel Strip for Lithium-Ion Battery Manufacturers',
+    description:
+      'Bulk nickel strip for lithium-ion battery manufacturers: 99.6% pure nickel, custom slitting, test certificates, PAN India supply and export to 17+ countries.',
+    h1: 'Nickel Strip for Lithium-Ion Battery Manufacturers',
+    intro:
+      'Ramani Steel House supplies nickel strip to lithium-ion battery manufacturers across India and in 17+ export markets, from its Mumbai works. What a manufacturer needs beyond the material itself is repeatability, traceable batches and a supplier who can hold a delivery schedule — the strip is slit in-house, tested batch-wise, and despatched in 7 days.',
+    keywords: [
+      'Nickel Strip for Lithium-Ion Battery Manufacturers',
+      'Bulk Nickel Strip Supplier India',
+      'Lithium Battery Nickel Strip Manufacturer',
+      'Battery Manufacturer Nickel Strip Supply',
+      'OEM Nickel Strip Supplier',
+    ],
+    sections: [
+      {
+        heading: 'What manufacturers buy on',
+        bullets: [
+          'Batch-to-batch consistency in thickness and temper',
+          'Material test certificates, traceable to the batch, on request',
+          'Repeat schedules held to a 7 day despatch',
+          'Custom slitting to a released drawing rather than a standard size',
+          'Bulk pricing, with a 5 kg minimum for qualification lots',
+          'Export documentation prepared in-house for overseas plants',
+        ],
+      },
+      {
+        heading: 'Qualification before volume',
+        body:
+          'Most manufacturers qualify a strip before committing to a schedule: a small lot, welded on the production line, checked for weld strength and contact resistance. The 5 kg minimum exists for exactly that — it is low enough to qualify a design without a mill-quantity commitment, and the same material and batch traceability applies to the trial lot as to the production one.',
+      },
+      {
+        heading: 'Specification supplied',
+        bullets: SPEC_BULLETS,
+      },
+    ],
+    faqs: [
+      {
+        question: 'Do you supply nickel strip in production volumes?',
+        answer:
+          'Yes. The catalogue runs from 5 kg qualification lots up to repeat bulk schedules, slit from coil in Mumbai and despatched PAN India or exported.',
+      },
+      {
+        question: 'Can you hold a delivery schedule for a production line?',
+        answer:
+          'Published despatch is 7 days. For repeat schedules, agree the call-off with the sales team at order confirmation so material is slit ahead of each release rather than on receipt of each order.',
+      },
+      {
+        question: 'Will you supply against our drawing rather than a standard size?',
+        answer:
+          'Yes — width, thickness, pitch, neck width and hole pattern are cut to a released drawing. Send the drawing with the enquiry and the quotation is made against it.',
+      },
+    ],
+    productSearch: 'nickel strip',
+    breadcrumbName: 'For Battery Manufacturers',
+  },
+  {
+    slug: 'nickel-busbar-for-battery-applications',
+    title: 'Nickel Busbar for Battery Applications | India',
+    description:
+      'Nickel busbar for battery applications: pure nickel interconnects for EV, storage and industrial packs. Custom width and thickness, made in Mumbai since 1974.',
+    h1: 'Nickel Busbar for Battery Applications',
+    intro:
+      'Nickel busbar for battery applications, manufactured in Mumbai by Ramani Steel House. Where a strip interconnects cells, a busbar carries the combined current of a module — so the cross-section, not the weld pattern, is the governing dimension. Supplied in pure nickel at 99.6%, cut to the width and thickness your module drawing calls for.',
+    keywords: [
+      'Nickel Busbar for Battery Applications',
+      'Nickel Busbar Manufacturer India',
+      'Battery Busbar Supplier',
+      'Pure Nickel Busbar',
+      'EV Battery Busbar India',
+      'Energy Storage Busbar Supplier',
+    ],
+    sections: [
+      {
+        heading: 'Busbar or strip — which your pack needs',
+        body:
+          'Nickel strip joins cells within a parallel group and carries the current of those cells only. A busbar joins groups or modules and carries their combined current, so it is sized on total current rather than per-cell current. Using strip where a busbar is needed is the more common error of the two, and it shows up as heating at the interconnect under load rather than as a failed weld.',
+      },
+      {
+        heading: 'What we supply',
+        bullets: [
+          'Pure nickel busbar at 99.6% purity, Nickel 201 / UNS N02201',
+          'Nickel-plated and copper busbar where conductivity or cost dictates',
+          'Width and thickness cut to your module drawing',
+          'Hole patterns and terminations to spec',
+          'Minimum order 5 kg · despatch in 7 days',
+          'Material test certificate on request',
+        ],
+      },
+      {
+        heading: 'Applications',
+        bullets: [
+          'EV battery modules and packs',
+          'Grid and commercial energy storage (BESS)',
+          'Industrial and traction battery assemblies',
+          'Power tool and light-EV packs',
+        ],
+      },
+    ],
+    faqs: [
+      {
+        question: 'What is a nickel busbar used for in a battery pack?',
+        answer:
+          'It carries current between parallel groups or between modules, where the combined current is higher than a cell interconnect strip is sized for. It is specified on cross-section against the total current it must carry.',
+      },
+      {
+        question: 'Nickel busbar or copper busbar — which is better?',
+        answer:
+          'Copper has higher conductivity for the same cross-section; nickel resists corrosion better and welds directly to cell terminals without plating. Many packs use both, with nickel at the cell interface and copper for the longer current paths.',
+      },
+      {
+        question: 'Can nickel busbar be made to our module drawing?',
+        answer:
+          'Yes. Width, thickness, length, hole pattern and terminations are cut to the drawing supplied. Send the drawing and the quotation is made against it rather than against a nearest standard section.',
+      },
+    ],
+    productSearch: 'busbar',
+    breadcrumbName: 'Nickel Busbar for Batteries',
+  },
+];
+
 export const LANDING_PAGES: readonly LandingPage[] = [
   H_TYPE_PAGE,
   MUMBAI_PAGE,
+  ...STRIP_SIZES.map(stripSizePage),
+  ...APPLICATION_PAGES,
   ...STATE_FACTS.map(stateLandingPage),
 ];
 
