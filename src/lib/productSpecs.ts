@@ -12,6 +12,8 @@
  * against their drawing.
  */
 
+import { CELL_FORMATS, STANDARD_THICKNESSES_MM, WIDTH_RANGE_MM } from './stripSizes.js';
+
 /**
  * The purity of the nickel supplied — 99.6%, confirmed directly by the company.
  *
@@ -76,7 +78,7 @@ export function isNickelProduct(product: ProductSpecInput): boolean {
 }
 
 /** "Thickness: 0.20mm, Width: 44mm, 19mm CD" -> { Thickness: "0.20mm", Width: "44mm" } */
-function parseDimensions(dimensions?: string | null): Record<string, string> {
+export function parseDimensions(dimensions?: string | null): Record<string, string> {
   const out: Record<string, string> = {};
   if (!dimensions) return out;
   for (const part of dimensions.split(',')) {
@@ -102,7 +104,7 @@ function derivePattern(name: string): string | null {
 }
 
 /** 18650 / 21700 / 32650 / 32700, read off the product name. */
-function deriveCellFormat(name: string): string | null {
+export function deriveCellFormat(name: string): string | null {
   const matches = [...name.matchAll(/\b(18650|21700|32650|32700)\b/g)].map((m) => m[1]);
   return matches.length ? [...new Set(matches)].join(', ') : null;
 }
@@ -130,6 +132,13 @@ export function buildProductSpecs(product: ProductSpecInput): ProductSpecRow[] {
     ['Colour', nickel ? 'Silver' : null],
     ['Thickness', dims.thickness],
     ['Width', dims.width],
+    // The listing records one size; the business makes many. Without these rows a buyer reading
+    // "Thickness: 0.15mm" reasonably concludes 0.15 mm is all there is, and a search for
+    // "0.12 mm nickel strip" finds nothing on the page to match. See lib/stripSizes.
+    ['Available thicknesses', nickel ? `${STANDARD_THICKNESSES_MM.join(', ')} mm standard; other thicknesses to order` : null],
+    ['Width range', nickel ? `${WIDTH_RANGE_MM.min}–${WIDTH_RANGE_MM.max} mm standard; other widths to order` : null],
+    ['Battery cell types', nickel ? `${CELL_FORMATS.filter((cell) => cell !== 'Other').join(', ')}, or any custom cell pitch` : null],
+    ['Custom design', nickel ? 'Made to your drawing, with tooling developed for new battery pack layouts' : null],
     ['Cell format', deriveCellFormat(name)],
     ['Configuration', deriveConfiguration(name)],
     ['Pattern', derivePattern(name)],

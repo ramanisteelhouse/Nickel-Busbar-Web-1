@@ -20,7 +20,8 @@ import {
   RETURN_POLICY_LINES,
   RETURN_POLICY_SCHEMA,
 } from "./src/lib/returnPolicy.js";
-import { getLandingPageByPathname, STATE_LANDING_PAGES } from "./src/lib/landingPages.js";
+import { getLandingPageByPathname, parentCategoryFor, STATE_LANDING_PAGES } from "./src/lib/landingPages.js";
+import { blogCtaFor } from "./src/lib/blogCta.js";
 import { productImageUrl } from "./src/lib/productImage.js";
 import {
   fillKeywordParagraphs,
@@ -41,6 +42,9 @@ import {
   applications as HOME_APPLICATIONS,
   faqItems as HOME_FAQ_ITEMS,
   HERO_PRODUCT_SLUG,
+  HOME_HERO,
+  HOME_SEO,
+  TRADE_ROLES_SECTION,
   industries as HOME_INDUSTRIES,
   productSpecifications as HOME_SPECIFICATIONS,
   productVariants as HOME_VARIANTS,
@@ -509,10 +513,14 @@ export async function renderBlogSnapshot(template: string, slug: string): Promis
   // The content column is only ever written via the authenticated /api/admin/blog-posts
   // endpoint (not public user input), so it's rendered as-is here — same trust boundary
   // the client already relies on before its own sanitize-then-render step.
+  // Same topic-matched next step as BlogPostPage renders; see src/lib/blogCta.
+  const cta = blogCtaFor(String(post.slug ?? slug));
+  const ctaHtml = `<section><h2>${escapeHtml(cta.heading)}</h2><p>${escapeHtml(cta.body)}</p><p><a href="${SITE_URL}${cta.link.path}">${escapeHtml(cta.link.label)}</a></p></section>`;
   const snapshotBody = `<article>
     <h1>${escapeHtml(post.title as string)}</h1>
     ${coverImageHtml}
     ${(post.content as string) || ""}
+    ${ctaHtml}
     ${faqHtml}
     ${relatedProductsHtml}
     ${relatedPostsHtml}
@@ -675,9 +683,8 @@ const STATIC_ROUTE_SEO: Record<StaticSnapshotRoute, { title: string; description
   // Previously each published a different subset, so a rendering crawler saw two FAQPage
   // entities on one URL - two competing copies of the same claim.
   "/": {
-    title: "Nickel Strip Manufacturer India | Nickel Busbar Supplier",
-    description:
-      "Nickel strip manufacturer in India supplying pure nickel strip, H type nickel strip and nickel busbar for 18650 battery packs. PAN India supply and export.",
+    title: HOME_SEO.title,
+    description: HOME_SEO.description,
     jsonLd: [
       {
         "@context": "https://schema.org",
@@ -711,7 +718,8 @@ const STATIC_ROUTE_SEO: Record<StaticSnapshotRoute, { title: string; description
       // Organization/LocalBusiness and WebSite from index.html, and the FAQPage above.
     ],
     body: `<article>
-    <h1>India's Trusted Nickel Strip Manufacturer</h1>
+    <h1>${escapeHtml(`${HOME_HERO.h1Lead} ${HOME_HERO.h1Main}`)}</h1>
+    <ul>${HOME_HERO.offers.map((offer) => `<li>${escapeHtml(offer)}</li>`).join("")}</ul>
     <!-- The hero photograph, as a real element with real dimensions and alt text. Google
          Images will not index a picture that only exists once the bundle has run, and this is
          the one product photo on the site's most-linked URL. Mirrors the <img> HomePage
@@ -722,6 +730,10 @@ const STATIC_ROUTE_SEO: Record<StaticSnapshotRoute, { title: string; description
     <h2>${ANSWER_BLOCK_QUESTION}</h2>
     <p>${ANSWER_BLOCK}</p>
     <p>Looking for a specific pattern? <a href="${SITE_URL}/h-type-nickel-strip">H type nickel strip manufacturer in India</a> — pure nickel H type strip for 18650, 21700, 32650 and 32700 packs in 2P, 3P and 4P layouts.</p>
+    <h2>${escapeHtml(TRADE_ROLES_SECTION.heading)}</h2>
+    ${TRADE_ROLES_SECTION.paragraphs.map((paragraph) => `<p>${escapeHtml(paragraph)}</p>`).join("")}
+    <ul>${TRADE_ROLES_SECTION.bullets.map((bullet) => `<li>${escapeHtml(bullet)}</li>`).join("")}</ul>
+    <p>Buying to resell or in small lots? <a href="${SITE_URL}/nickel-strip-wholesaler-and-distributor">Nickel strip wholesaler and distributor</a> — stock sizes, 5 kg MOQ and trade enquiries.</p>
     <h2>Nickel strip specifications</h2>
     <table>
       <tbody>${HOME_SPECIFICATIONS.map(
@@ -888,9 +900,9 @@ const STATIC_ROUTE_SEO: Record<StaticSnapshotRoute, { title: string; description
       {
         "@context": "https://schema.org",
         "@type": "WebApplication",
-        name: "Nickel Alloy Weight Calculator",
+        name: "Nickel Strip Weight Calculator",
         description:
-          "A weight calculator for nickel strips, sheets, busbars, foil, wire and coil used in battery and industrial manufacturing.",
+          "A weight calculator for nickel strip and busbar: weight from size, or length, thickness and piece count from a known weight, with weight per metre.",
         url: `${SITE_URL}/calculator`,
         applicationCategory: "UtilitiesApplication",
         operatingSystem: "Any",
@@ -912,18 +924,16 @@ const STATIC_ROUTE_SEO: Record<StaticSnapshotRoute, { title: string; description
       breadcrumbJsonLd([{ name: "Calculator", url: `${SITE_URL}/calculator` }]),
     ],
     body: `<article>
-    <h1>Nickel Strip Weight and Conversion Calculator</h1>
-    <p>Calculate weight for nickel strips, sheets, busbars, foil, wire and coil in millimetres or inches. Built for battery pack engineers, EV manufacturers and industrial metal buyers.</p>
-    <h2>Nickel strip thickness calculator</h2>
-    <p>Enter a known weight with any two of thickness, width and length, and the calculator solves for the third. Use it to work back to the thickness a finished coil weight implies, or to check a supplied strip against the gauge it was ordered at.</p>
-    <h2>Strip length and width calculator</h2>
-    <p>The same "Solve for" selector returns length or width instead. Given a weight in kilograms, a thickness and one other dimension, it rearranges the weight formula rather than asking you to do it by hand.</p>
-    <h2>Nickel alloy weight conversion calculator</h2>
-    <p>Dimensions can be entered in millimetres or inches and are converted internally, so an imperial drawing does not need translating first. Density is selectable, which is what makes it an alloy calculator rather than a pure-nickel one: the same tool covers nickel, nickel-plated steel, copper and aluminium.</p>
+    <h1>Nickel Strip Weight Calculator</h1>
+    <p>Enter a size to get the weight, or enter a weight to find the length, thickness or number of pieces. Works in millimetres or inches, for pure nickel (Nickel 200 / 201) and nickel-plated steel.</p>
+    <h2>Nickel strip weight per metre</h2>
+    <p>For any thickness and width the calculator shows the weight per metre and per piece. A 0.15 mm &times; 8 mm pure nickel strip weighs about 10.7 g per metre, so 1 kg is roughly 94 metres.</p>
+    <h2>Nickel strip length and thickness calculator</h2>
+    <p>Choose Length, Thickness or Pieces, enter the total weight in kilograms and the other dimensions, and the calculator rearranges the weight formula to give the missing value.</p>
     <h2>How the weight is calculated</h2>
-    <p>Weight = Thickness &times; Width &times; Length &times; Density &times; Quantity, with every dimension converted to centimetres first. The result is shown in grams and kilograms.</p>
+    <p>Weight = Thickness &times; Width &times; Length &times; Density &times; Quantity, with every dimension converted to centimetres first. Pure nickel is 8.89 g/cm&sup3;; nickel-plated steel is 7.85 g/cm&sup3;.</p>
     <h2>Once you have the weight</h2>
-    <p>Nickel strip is priced per kilogram, so the figure this returns is what a quotation is built from.</p>
+    <p>Nickel strip is priced per kilogram, so the figure this returns is what a quotation is built from. The minimum order is 5 kg.</p>
     <ul>
       <li><a href="${SITE_URL}/products">Nickel strip and busbar products, with prices per kg</a></li>
       <li><a href="${SITE_URL}/h-type-nickel-strip">H type nickel strip manufacturer in India</a></li>
@@ -1442,12 +1452,14 @@ export async function renderProductSnapshot(template: string, slug: string): Pro
       : {}),
   };
 
+  // H type SKUs sit under /h-type-nickel-strip rather than /products; see parentCategoryFor.
+  const parent = parentCategoryFor({ name, slug: productSlug });
   const breadcrumbJsonLd = {
     "@context": "https://schema.org",
     "@type": "BreadcrumbList",
     itemListElement: [
       { "@type": "ListItem", position: 1, name: "Home", item: SITE_URL },
-      { "@type": "ListItem", position: 2, name: "Products", item: `${SITE_URL}/products` },
+      { "@type": "ListItem", position: 2, name: parent.name, item: `${SITE_URL}${parent.path}` },
       { "@type": "ListItem", position: 3, name, item: canonical },
     ],
   };
@@ -1532,6 +1544,7 @@ export async function renderProductSnapshot(template: string, slug: string): Pro
     : "";
 
   const snapshotBody = `<article>
+    <nav aria-label="Breadcrumb"><a href="${SITE_URL}/">Home</a> › <a href="${SITE_URL}${parent.path}">${escapeHtml(parent.name)}</a> › ${escapeHtml(name)}</nav>
     <h1>${escapeHtml(name)}</h1>
     ${imageTag}
     <p>${escapeHtml((product.description as string) || "")}</p>

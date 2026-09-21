@@ -43,6 +43,12 @@ export interface Product {
 
 export interface CartItem extends Product {
   quantity: number;
+  /**
+   * The size the buyer asked for (see lib/stripSpec). Optional because a line added from the
+   * product grid, or stored by an older build, has none yet; checkout asks for it before the
+   * order can be sent.
+   */
+  spec?: import('./lib/stripSpec').StripSpec;
 }
 
 export interface Country {

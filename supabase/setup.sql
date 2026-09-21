@@ -495,6 +495,20 @@ create table if not exists public.call_clicks (
 alter table if exists public.product_enquiries add column if not exists user_id bigint references public.users(id) on delete set null;
 alter table if exists public.product_enquiries add column if not exists thickness text;
 alter table if exists public.quote_requests add column if not exists user_id bigint references public.users(id) on delete set null;
+-- Checkout requires both; for an anonymous buyer there is no users row to recover them from.
+alter table if exists public.quote_requests add column if not exists full_name text;
+alter table if exists public.quote_requests add column if not exists email text;
+
+-- The size the buyer chose for each line (src/lib/stripSpec.ts). A cart line is identified by
+-- product *and* size, so the old UNIQUE (user_id, product_id) is dropped in favour of an index
+-- that includes spec_key. On an existing database that transition is split in two; see
+-- supabase/cart-sizes-phase2.sql.
+alter table if exists public.cart_items add column if not exists spec jsonb;
+alter table if exists public.cart_items add column if not exists spec_key text not null default '';
+create unique index if not exists cart_items_user_product_spec_key on public.cart_items (user_id, product_id, spec_key);
+alter table if exists public.cart_items drop constraint if exists cart_items_user_id_product_id_key;
+alter table if exists public.quote_request_items add column if not exists spec jsonb;
+alter table if exists public.quote_request_items add column if not exists spec_summary text;
 
 alter table if exists public.blog_posts add column if not exists excerpt text;
 alter table if exists public.blog_posts add column if not exists content text;

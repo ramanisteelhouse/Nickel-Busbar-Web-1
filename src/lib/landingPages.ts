@@ -1,5 +1,6 @@
 import { POSTAL_ADDRESS, PRIMARY_CALL } from './contact.js';
 import { YEARS_IN_BUSINESS } from './heritage.js';
+import { CELL_FORMATS, STANDARD_THICKNESSES_MM, WIDTH_RANGE_MM } from './stripSizes.js';
 
 /**
  * Indexable landing pages that sit between the homepage and the individual SKU pages.
@@ -54,7 +55,9 @@ export type LandingPage = {
 
 const SPEC_BULLETS = [
   'Nickel purity 99.6%, with material test certificates on request',
-  'Thickness 0.10mm – 0.50mm, width 2mm – 50mm',
+  `Thickness ${STANDARD_THICKNESSES_MM.join(', ')} mm standard, other thicknesses to order`,
+  `Width ${WIDTH_RANGE_MM.min}–${WIDTH_RANGE_MM.max} mm, cut to your drawing`,
+  `For ${CELL_FORMATS.filter((cell) => /^\d/.test(cell)).join(', ')} cells and custom pack layouts`,
   'Pure nickel and nickel-plated steel, in strip, coil and busbar form',
   'Custom slitting, pitch and hole patterns to your cell layout',
 ] as const;
@@ -121,6 +124,10 @@ const H_TYPE_PAGE: LandingPage = {
       question: 'Do you supply H type nickel strip in bulk and for export?',
       answer:
         'Yes. H type nickel strip is supplied in bulk across India and exported to 17+ countries, with material test certificates, HS code classification and export documentation prepared in-house. Send your cell format, layout and quantity for a quotation.',
+    },
+    {
+      question: 'What thicknesses does H type nickel strip come in?',
+      answer: `H type nickel strip is made in ${STANDARD_THICKNESSES_MM.join(', ')} mm as standard, and in other thicknesses to order. 0.15 mm suits most 18650 packs; heavier packs move to 0.20 mm or thicker. The minimum order is 5 kg, and a size not listed on a product page can still be ordered — enter it on the product page or send your drawing.`,
     },
     {
       question: 'Can you make H type nickel strip to a custom pitch?',
@@ -385,6 +392,96 @@ const MUMBAI_PAGE: LandingPage = {
   ],
   productSearch: 'nickel strip',
   breadcrumbName: 'Nickel Strip in Mumbai',
+};
+
+/**
+ * The trade-buyer page: stockist, wholesaler, distributor, trader.
+ *
+ * Manufacturing is the company's primary business, and every other page leads with it. But a
+ * large share of nickel strip buyers are not volume cell or EV makers: they are small battery
+ * manufacturers, pack assemblers and traders buying 5 to 50 kg at a time, and they search by
+ * the role they expect to buy from ("nickel strip wholesaler", "stockist", "distributor",
+ * "dealer"). A result that says only "manufacturer" reads to them as "minimum order: a tonne",
+ * and they scroll past it to a marketplace listing that stacks the trade roles in its title.
+ *
+ * This page answers that buyer directly, with the facts that matter to them and are true only
+ * here: the 5 kg MOQ, what is held in stock, and that the same manufacturer's material and
+ * certificates apply to a small lot. It is a different intent from the homepage, not a copy of
+ * it with the nouns swapped.
+ */
+const TRADE_BUYER_PAGE: LandingPage = {
+  slug: 'nickel-strip-wholesaler-and-distributor',
+  title: 'Nickel Strip Wholesaler & Distributor India | 5 kg MOQ',
+  description:
+    'Nickel strip wholesaler, stockist and distributor backed by our own Mumbai manufacturing. 99.6% pure nickel from 5 kg for small battery makers and traders.',
+  h1: 'Nickel Strip Wholesaler, Stockist & Distributor in India',
+  intro:
+    'Ramani Steel House is a nickel strip manufacturer in Mumbai that also sells as a wholesaler, stockist and distributor. Manufacturing is the core of the business, and because the strip is made and slit in-house, the same 99.6% pure nickel is available in small lots: orders start at 5 kg, which suits small battery manufacturers, pack assemblers and traders as well as volume buyers.',
+  keywords: [
+    'Nickel Strip Wholesaler',
+    'Nickel Strip Distributor',
+    'Nickel Strip Stockist',
+    'Nickel Strip Trader',
+    'Nickel Strip Dealer',
+    'Nickel Strip Wholesale Price',
+    'Nickel Strip 5 kg MOQ',
+    'Nickel Strip for Small Battery Manufacturers',
+    'Battery Nickel Strip Wholesale Supplier India',
+  ],
+  sections: [
+    {
+      heading: 'Why buy from a manufacturer that also wholesales',
+      body:
+        'A trader or distributor usually buys from a mill and resells, so the buyer is two steps from the material and the certificate. Buying from the manufacturer removes that step. The strip comes from the same production and slitting lines that supply volume orders, a material test certificate is available on request, and a question about thickness tolerance or weldability goes to the people who made the strip.',
+    },
+    {
+      heading: 'Small lots for small battery manufacturers',
+      body:
+        'The minimum order is 5 kg. That is enough strip for a pack builder assembling a few hundred cells, a workshop building e-bike or power-tool packs, or a trader stocking a few common sizes, without committing to a mill-sized order. Pricing is quoted per kilogram.',
+    },
+    {
+      heading: 'What is held in stock',
+      body:
+        'Common thicknesses in pure nickel, chiefly 0.15 mm and 0.20 mm, are held as coil and slit to the width you need, so an ordinary requirement does not wait on a mill run. Stock of a particular width is confirmed at quotation. Despatch is typically within 7 days, PAN India.',
+    },
+    {
+      heading: 'New designs made to your drawing',
+      body:
+        'The listed sizes are only the most requested ones. If your pack needs a different thickness, width, pitch or hole pattern, it is made to your drawing, and tooling is developed for unique battery pack layouts. Send the drawing or cell arrangement with the enquiry and the quotation is made against it.',
+    },
+    {
+      heading: 'At a glance',
+      bullets: [
+        'Manufacturer first, also stockist, wholesaler and distributor',
+        'Minimum order 5 kg, despatch in about 7 days',
+        ...SPEC_BULLETS,
+      ],
+    },
+  ],
+  faqs: [
+    {
+      question: 'What is the minimum order for nickel strip?',
+      answer:
+        '5 kg. The same material, certificates and slitting apply at 5 kg as at bulk quantities.',
+    },
+    {
+      question: 'Are you a nickel strip manufacturer or a distributor?',
+      answer:
+        'Both. Manufacturing in Mumbai is the primary business, and the company also sells as a stockist, wholesaler, trader and distributor, so small buyers get manufacturer-direct material without a mill-sized order.',
+    },
+    {
+      question: 'Can traders and distributors buy nickel strip from you for resale?',
+      answer:
+        'Yes. Traders and distributors buy by the kilogram in the common thicknesses and widths. Send the sizes and quantities you stock and a price is quoted per kilogram.',
+    },
+    {
+      question: 'Do you make nickel strip in sizes that are not listed?',
+      answer:
+        'Yes. Thickness, width, pitch and hole pattern are made to your drawing, and tooling is developed for new battery pack designs. The minimum order still applies.',
+    },
+  ],
+  productSearch: 'nickel strip',
+  breadcrumbName: 'Wholesale & Distribution',
 };
 
 /**
@@ -689,6 +786,7 @@ const APPLICATION_PAGES: readonly LandingPage[] = [
 export const LANDING_PAGES: readonly LandingPage[] = [
   H_TYPE_PAGE,
   MUMBAI_PAGE,
+  TRADE_BUYER_PAGE,
   ...STRIP_SIZES.map(stripSizePage),
   ...APPLICATION_PAGES,
   ...STATE_FACTS.map(stateLandingPage),
@@ -705,6 +803,30 @@ export function getLandingPage(slug?: string | null): LandingPage | null {
 /** "/h-type-nickel-strip" -> the page, for router and snapshot lookups by pathname. */
 export function getLandingPageByPathname(pathname: string): LandingPage | null {
   return getLandingPage(pathname);
+}
+
+/**
+ * The category page a product sits under, for its breadcrumb.
+ *
+ * Product breadcrumbs used to run Home › Products › product for every SKU. That told Google
+ * nothing about how the H type SKUs relate to /h-type-nickel-strip, so the category page and
+ * eleven product pages competed for "H type nickel strip" as unrelated URLs, and the homepage
+ * (with the most links) tended to win. Making the category page the parent of every H type SKU
+ * says which URL answers the category query: each SKU links up to it with the anchor
+ * "H Type Nickel Strip", and Google can show that trail in the result itself.
+ *
+ * Matched on slug as well as name because some names drop the pattern ("Ni Fuse type 21700"
+ * is ni-fuse-type-21700-2p-h-type-double-fuse).
+ */
+export function parentCategoryFor(product: { name?: string | null; slug?: string | null }): {
+  name: string;
+  path: string;
+} {
+  const haystack = `${product.name ?? ''} ${product.slug ?? ''}`;
+  if (/\bh[\s-]?type\b/i.test(haystack)) {
+    return { name: H_TYPE_PAGE.breadcrumbName, path: `/${H_TYPE_PAGE.slug}` };
+  }
+  return { name: 'Products', path: '/products' };
 }
 
 /** Every landing path, for the sitemap and the router. */

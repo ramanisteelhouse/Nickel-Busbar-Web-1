@@ -4,6 +4,8 @@ import { Helmet } from 'react-helmet-async';
 import type { BlogPost } from '../types';
 import { buildImageAlt, encodePathSegment, sanitizeRichHtml, resolveImageSrc } from '../lib/utils';
 import { BlogFaqSection } from '../components/BlogFaqSection';
+import { BlogCtaBar, BlogCtaBlock } from '../components/BlogCtaBlock';
+import { blogCtaFor } from '../lib/blogCta';
 
 const SITE_URL = 'https://www.nickelbusbar.com';
 const SITE_LOGO_URL = `${SITE_URL}/img/logo.png`;
@@ -105,6 +107,8 @@ export const BlogPostPage: React.FC = () => {
   const publishedIso = post.published_at || post.created_at || null;
   const modifiedIso = post.updated_at || publishedIso;
   const faqItems = post.faq_items || [];
+  // The next step for a reader of this article; see lib/blogCta.
+  const cta = blogCtaFor(post.slug || decodedSlug);
 
   // Article schema: built from the same title/description/dates rendered on the
   // page so structured data can never drift from what visitors actually see.
@@ -194,10 +198,14 @@ export const BlogPostPage: React.FC = () => {
           </figure>
         ) : null}
 
+        <BlogCtaBar cta={cta} />
+
         <div
           className="mt-10 text-base leading-relaxed text-slate-700 [&_h2]:mt-10 [&_h2]:text-2xl [&_h2]:font-bold [&_h2]:text-brand [&_h3]:mt-8 [&_h3]:text-xl [&_h3]:font-semibold [&_p]:mt-4 [&_ul]:mt-4 [&_ul]:list-disc [&_ul]:pl-6 [&_ol]:mt-4 [&_ol]:list-decimal [&_ol]:pl-6 [&_li]:mt-2 [&_a]:font-semibold [&_a]:text-brand [&_a]:underline [&_strong]:font-semibold [&_blockquote]:mt-6 [&_blockquote]:border-l-4 [&_blockquote]:border-brand/30 [&_blockquote]:pl-4 [&_blockquote]:italic [&_pre]:mt-4 [&_pre]:overflow-x-auto [&_pre]:rounded-xl [&_pre]:bg-slate-100 [&_pre]:p-4 [&_code]:rounded [&_code]:bg-slate-100 [&_code]:px-1.5 [&_code]:py-0.5 [&_img]:mt-6 [&_img]:rounded-2xl [&_img]:border [&_img]:border-slate-200 [&_img]:w-full [&_img]:h-auto [&_figure]:mt-6 [&_figure]:mb-2 [&_figcaption]:mt-2 [&_figcaption]:text-center [&_figcaption]:text-sm [&_figcaption]:text-slate-500"
           dangerouslySetInnerHTML={{ __html: sanitizedContent }}
         />
+
+        <BlogCtaBlock cta={cta} />
 
         <BlogFaqSection items={faqItems} />
 

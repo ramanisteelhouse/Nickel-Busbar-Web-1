@@ -158,8 +158,8 @@ export const EXPORT_FAQS: ReadonlyArray<{ question: string; answer: string; llms
     question: 'Do you export nickel strip and nickel busbar from India?',
     answer:
       'Yes. Ramani Steel House manufactures nickel strip and nickel busbar in Mumbai, India and ' +
-      'exports to 17+ countries, alongside PAN India supply. We are a manufacturer, not a ' +
-      'reseller or distributor, so export orders ship from our own production and slitting lines.',
+      'exports to 17+ countries, alongside PAN India supply. Manufacturing is our primary ' +
+      'business, so export orders ship from our own production and slitting lines.',
   },
   {
     llms: true,

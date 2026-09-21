@@ -1,3 +1,4 @@
+import { formatSpec, normaliseSpec } from "./src/lib/stripSpec.js";
 import pool, { query, queryOne } from "./db.js";
 import { waitUntil } from "@vercel/functions";
 
@@ -66,6 +67,8 @@ export type CrmLead = {
     quantity: number | null;
     unit_price: number | null;
     line_total: number | null;
+    /** The size the buyer chose, as one readable line (src/lib/stripSpec.ts). */
+    size: string | null;
   }>;
   totals?: {
     subtotal: number | null;
@@ -212,6 +215,7 @@ export const buildQuoteLead = (
       quantity: toNumber(item.quantity),
       unit_price: toNumber(item.unit_price),
       line_total: toNumber(item.line_total),
+      size: item.spec ? formatSpec(normaliseSpec(item.spec)) : null,
     })),
     totals: {
       subtotal: toNumber(summary.subtotal),

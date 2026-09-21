@@ -49,6 +49,7 @@ export const Footer: React.FC = () => {
               <li><Link className="inline-block py-1" to="/">Home</Link></li>
               <li><Link className="inline-block py-1" to="/products?search=nickel">Nickel Strips</Link></li>
               <li><Link className="inline-block py-1" to="/h-type-nickel-strip">H Type Nickel Strip</Link></li>
+              <li><Link className="inline-block py-1" to="/nickel-strip-wholesaler-and-distributor">Wholesale &amp; Distribution</Link></li>
               <li><Link className="inline-block py-1" to="/products">Products</Link></li>
               <li><Link className="inline-block py-1" to="/about">About Us</Link></li>
               <li><Link className="inline-block py-1" to="/calculator">Weight Calculator</Link></li>

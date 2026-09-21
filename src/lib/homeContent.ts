@@ -31,6 +31,84 @@ import { YEARS_IN_BUSINESS } from './heritage.js';
  */
 export const HERO_PRODUCT_SLUG = 'ni-18650-2p-h-type';
 
+/**
+ * The homepage <title>, description and keywords, shared by HomePage.tsx and the snapshot in
+ * seoSnapshot.ts. index.html carries a static copy for the pre-render shell and must be kept
+ * in step by hand.
+ *
+ * Positioning, as confirmed by the owner: manufacturing is the primary business, and the
+ * company also sells as a stockist, wholesaler, trader and distributor. The earlier copy said
+ * "manufacturer" only, and llms.txt went further and said "not a reseller or distributor".
+ * That cost a real segment of buyers. A small pack builder or a trader searching for a
+ * "nickel strip wholesaler" or "stockist" does not expect a manufacturer to sell 5 kg, and
+ * scrolls past a result that only says "manufacturer". The 5 kg MOQ sits in the title for the
+ * same reason: it is the fact that tells that buyer this supplier will take their order.
+ *
+ * "Manufacturer" still leads every string, because it is the primary business and the
+ * strongest claim. The trade roles follow it rather than replace it.
+ */
+export const HOME_SEO = {
+  title: 'Nickel Strip Manufacturer & Stockist India | 5 kg MOQ',
+  description:
+    'Nickel strip and busbar manufacturer in Mumbai, also a stockist, wholesaler and distributor. 99.6% pure nickel from 5 kg MOQ, custom made to your drawing.',
+  socialDescription:
+    'Manufacturer of pure nickel strip, H type strip and nickel busbar since 1974, also a stockist, wholesaler and distributor. 5 kg MOQ; custom strips and tooling to your drawing.',
+  keywords: [
+    'Nickel Strip Manufacturer India',
+    'Nickel Strip Stockist',
+    'Nickel Strip Wholesaler',
+    'Nickel Strip Distributor',
+    'Nickel Strip Trader',
+    'Nickel Strip Supplier',
+    'Nickel Strip 5 kg MOQ',
+    'Custom Nickel Strip as per Drawing',
+    'Pure Nickel Strip',
+    'H Type Nickel Strip',
+    'Nickel Busbar',
+    'Nickel Strip for 18650 Battery',
+    'Nickel Strip Exporter',
+  ].join(', '),
+} as const;
+
+/**
+ * The hero heading and the three offers under it, shared with the crawler snapshot.
+ *
+ * The H1 repeats the title's phrase ("Nickel Strip Manufacturer & Stockist … India") on
+ * purpose. The title decides whether someone clicks; the H1 is the first thing they read after
+ * clicking, and a heading that matches what they clicked on is what tells them they landed in
+ * the right place instead of hitting back. "India's Trusted …" was a claim; this is a
+ * description, and the proof sits directly underneath it.
+ *
+ * The offers are the three facts a small buyer is checking for, and each is already stated
+ * elsewhere on the site: the 5 kg MOQ, a sample before a bulk order (the Mumbai page), and
+ * sizes made to the buyer's drawing.
+ */
+export const HOME_HERO = {
+  h1Lead: 'Nickel Strip Manufacturer',
+  h1Main: '& Stockist in India',
+  offers: ['5 kg minimum order', 'Sample before bulk order', 'Any size, made to your drawing'],
+} as const;
+
+/**
+ * The visible version of the positioning above. Meta tags alone do not rank a page for a
+ * phrase; the words have to be in the text a buyer reads. Rendered on the homepage and in its
+ * crawler snapshot.
+ */
+export const TRADE_ROLES_SECTION = {
+  heading: 'Manufacturer first, also stockist, wholesaler and distributor',
+  paragraphs: [
+    'Ramani Steel House manufactures nickel strip and nickel busbar in Mumbai, and that is the core of the business. Because the strip is made and slit in-house, the same material is also sold the way traders and smaller buyers need it: as a stockist of the common sizes, and as a wholesaler and distributor to small battery manufacturers, pack builders and traders.',
+    'Orders start at 5 kg. That is small enough for a pack assembler building a few hundred cells, not only for volume manufacturers, and the material and certificates are the same at 5 kg as at 500.',
+    'Listed sizes are only the most common ones. New designs are made to your drawing: strip thickness, width, pitch and hole pattern, plus tooling for unique battery pack layouts. Send the drawing or the cell arrangement and the quotation is made against it.',
+  ],
+  bullets: [
+    'Manufacturer: in-house production and slitting in Mumbai since 1974',
+    'Stockist: common thicknesses and widths for quick despatch',
+    'Wholesaler and distributor: 5 kg MOQ for small battery makers and traders',
+    'Custom: made to your drawing, with tooling for new pack designs',
+  ],
+} as const;
+
 export const applications = [
   'Lithium-ion Batteries',
   'EV Battery Packs',

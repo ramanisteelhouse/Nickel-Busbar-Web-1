@@ -130,6 +130,7 @@ const TITLE_SUFFIXES = [
 export const BUYER_ROLE_KEYWORDS: readonly string[] = [
   'Nickel Strip Manufacturer',
   'Nickel Strip Exporter',
+  'Nickel Strip Stockist',
   'Nickel Strip Wholesaler',
   'Nickel Strip Distributor',
   'Nickel Strip Dealer',

@@ -8,6 +8,10 @@ import { buildImageAlt, getProductUnitLabel, getStrikePrice, logCallClick } from
 import { PRIMARY_CALL, telHref } from '../lib/contact';
 import { productImagePath, productImageUrl } from '../lib/productImage';
 import { QuickEnquiry } from '../components/QuickEnquiry';
+import { parentCategoryFor } from '../lib/landingPages';
+import { StripSizePicker } from '../components/StripSizePicker';
+import { showToast } from '../components/Toast';
+import { checkSpec, defaultSpecFor, EMPTY_SPEC, formatSpec, takesStripSize, type StripSpec } from '../lib/stripSpec';
 import { RelatedProducts } from '../components/RelatedProducts';
 import {
   RETURN_POLICY_HEADING,
@@ -26,7 +30,7 @@ import { EXPORT_PATH, PRODUCT_EXPORT_LEAD, PRODUCT_EXPORT_TERMS } from '../lib/e
 import { buildProductSpecs, NICKEL_PURITY_RANGE } from '../lib/productSpecs';
 import { useLanguage } from '../i18n/LanguageProvider';
 
-export const ProductDetailPage: React.FC<{ onAddToCart: (p: Product) => void }> = ({ onAddToCart }) => {
+export const ProductDetailPage: React.FC<{ onAddToCart: (p: Product, spec?: StripSpec) => void }> = ({ onAddToCart }) => {
   const { slug } = useParams();
   const navigate = useNavigate();
   const [product, setProduct] = React.useState<Product | null>(null);
@@ -35,6 +39,16 @@ export const ProductDetailPage: React.FC<{ onAddToCart: (p: Product) => void }> 
   const [showCartToast, setShowCartToast] = React.useState(false);
   const [isMobile, setIsMobile] = React.useState(false);
   const [activeTab, setActiveTab] = React.useState<'specs' | 'applications' | 'shipping'>('specs');
+  // The buyer's own size. Seeded from the listing when the product loads, then theirs to change.
+  const [spec, setSpec] = React.useState<StripSpec>(EMPTY_SPEC);
+  const [showSpecErrors, setShowSpecErrors] = React.useState(false);
+  const sizeRef = React.useRef<HTMLDivElement>(null);
+
+  React.useEffect(() => {
+    if (!product) return;
+    setSpec(defaultSpecFor(product));
+    setShowSpecErrors(false);
+  }, [product]);
   const { t, formatPrice } = useLanguage();
   const siteUrl = 'https://www.nickelbusbar.com';
 
@@ -150,6 +164,7 @@ export const ProductDetailPage: React.FC<{ onAddToCart: (p: Product) => void }> 
   }
 
   const canonicalUrl = `${siteUrl}/product/${product.slug}`;
+  const parentCategory = parentCategoryFor(product);
   // Enquiry-only products carry no price; publishing `price: 0` would advertise them as free
   // in structured data, so the Offer node is omitted instead. Mirrored in seoSnapshot.ts.
   const numericPrice = Number(product.price);
@@ -249,7 +264,7 @@ export const ProductDetailPage: React.FC<{ onAddToCart: (p: Product) => void }> 
             '@type': 'BreadcrumbList',
             itemListElement: [
               { '@type': 'ListItem', position: 1, name: 'Home', item: siteUrl },
-              { '@type': 'ListItem', position: 2, name: 'Products', item: `${siteUrl}/products` },
+              { '@type': 'ListItem', position: 2, name: parentCategory.name, item: `${siteUrl}${parentCategory.path}` },
               { '@type': 'ListItem', position: 3, name: product.name, item: canonicalUrl },
             ],
           })}
@@ -259,7 +274,10 @@ export const ProductDetailPage: React.FC<{ onAddToCart: (p: Product) => void }> 
       <nav className="flex items-center gap-2 text-xs text-zinc-400 mb-8">
         <Link to="/" className="hover:text-zinc-900">{t('productDetail.breadcrumbHome')}</Link>
         <ChevronRight size={12} />
-        <Link to="/products" className="hover:text-zinc-900">{t('productDetail.breadcrumbProducts')}</Link>
+        {/* H type SKUs link up to the H type category page; see parentCategoryFor. */}
+        <Link to={parentCategory.path} className="hover:text-zinc-900">
+          {parentCategory.path === '/products' ? t('productDetail.breadcrumbProducts') : parentCategory.name}
+        </Link>
         <ChevronRight size={12} />
         <span className="text-zinc-900 font-medium">{product.name}</span>
       </nav>
@@ -409,13 +427,31 @@ export const ProductDetailPage: React.FC<{ onAddToCart: (p: Product) => void }> 
             </Link>
           </section>
 
+          {/* The buyer's size, asked for before Add to Cart. The listing records a few sizes,
+              most of them thickness only, and an order with no size in it is not something the
+              factory can make — it used to reach WhatsApp as just a product name. See
+              lib/stripSpec. Not shown for the copper busbar, which is sized differently. */}
+          {takesStripSize(product) ? (
+            <div ref={sizeRef} id="size" className="mb-6 scroll-mt-32">
+              <StripSizePicker value={spec} onChange={setSpec} showErrors={showSpecErrors} idPrefix="pdp" />
+            </div>
+          ) : null}
+
           {/* Actions */}
           <div className="flex flex-col sm:flex-row gap-4 mb-12">
             <button
               onClick={() => {
-                onAddToCart(product);
+                const needsSize = takesStripSize(product);
+                if (needsSize && Object.keys(checkSpec(spec).errors).length > 0) {
+                  setShowSpecErrors(true);
+                  sizeRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                  return;
+                }
+                onAddToCart(product, needsSize ? spec : undefined);
                 if (isMobile) {
                   setShowCartToast(true);
+                } else {
+                  showToast(t('productDetail.addedToCart'), needsSize ? `${product.name} — ${formatSpec(spec)}` : product.name);
                 }
               }}
               className="flex-1 bg-zinc-900 text-white py-4 rounded-full font-bold hover:bg-zinc-800 transition-all flex items-center justify-center gap-2"

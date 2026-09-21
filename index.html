@@ -15,14 +15,18 @@
        duplicate-canonical finding in the SEO audit. src/lib/ssrHeadCleanup.ts drops a marked
        tag once an unmarked replacement for it appears. Tags with no marker (og:site_name,
        og:locale, twitter:site, robots, icons) are site-wide and no page overrides them. -->
-  <title data-ssr-head="true">Nickel Strip Manufacturer India | Nickel Busbar Supplier</title>
+  <title data-ssr-head="true">Nickel Strip Manufacturer &amp; Stockist India | 5 kg MOQ</title>
   <meta name="description" data-ssr-head="true"
-    content="Nickel strip manufacturer in India supplying pure nickel strip, H type nickel strip and nickel busbar for 18650 battery packs. PAN India supply and export." />
+    content="Nickel strip and busbar manufacturer in Mumbai, also a stockist, wholesaler and distributor. 99.6% pure nickel from 5 kg MOQ, custom made to your drawing." />
   <meta name="keywords" data-ssr-head="true"
-    content="Nickel Strip Manufacturer India, Pure Nickel Strip, H Type Nickel Strip, Nickel Busbar, Nickel Strip for 18650 Battery, Battery Nickel Strip Supplier, Nickel Strip Exporter, Nickel Strip Supplier for Export, Nickel Busbar Wholesale Supplier, Bulk Nickel Strip Order" />
+    content="Nickel Strip Manufacturer India, Nickel Strip Stockist, Nickel Strip Wholesaler, Nickel Strip Distributor, Nickel Strip Trader, Nickel Strip Supplier, Nickel Strip 5 kg MOQ, Custom Nickel Strip as per Drawing, Pure Nickel Strip, H Type Nickel Strip, Nickel Busbar, Nickel Strip for 18650 Battery, Nickel Strip Exporter" />
   <!-- Marked: /cart, /checkout, /login and the 404 branches declare their own noindex, and
        React 19 would otherwise leave this "index, follow" sitting alongside it. -->
-  <meta name="robots" data-ssr-head="true" content="index, follow" />
+  <!-- max-image-preview:large is what permits Google to show a product photo at full thumbnail
+       size beside a result (and in Discover). Without it the preview is capped at "standard",
+       which on a product search is often no image at all. max-snippet:-1 lifts the text cap the
+       same way. Every indexable route inherits this tag; noindex routes replace it. -->
+  <meta name="robots" data-ssr-head="true" content="index, follow, max-image-preview:large, max-snippet:-1" />
   <meta name="google-site-verification" content="VkP4c3G6JYoWaVVw-BsxCq6yzMEhgvceC_LNecy30qM" />
   <meta name="theme-color" content="#0B1E2D" />
   <meta name="application-name" content="Nickel Strips Manufacturer" />
@@ -41,9 +45,9 @@
     href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700;800;900&display=swap" />
   <meta property="og:type" data-ssr-head="true" content="website" />
   <meta property="og:site_name" content="Ramani Steel House" />
-  <meta property="og:title" data-ssr-head="true" content="Nickel Strip Manufacturer India | Nickel Busbar Supplier" />
+  <meta property="og:title" data-ssr-head="true" content="Nickel Strip Manufacturer &amp; Stockist India | 5 kg MOQ" />
   <meta property="og:description" data-ssr-head="true"
-    content="Battery Nickel Strip Supplier manufacturing Pure Nickel Strip, H Type Nickel Strip, and Nickel Busbar for lithium-ion and EV battery packs. PAN India supply, exporting to 17+ countries worldwide." />
+    content="Manufacturer of pure nickel strip, H type strip and nickel busbar since 1974, also a stockist, wholesaler and distributor. 5 kg MOQ; custom strips and tooling to your drawing." />
   <meta property="og:url" data-ssr-head="true" content="https://www.nickelbusbar.com/" />
   <!-- 1200x630. The bare wordmark is ~5:1, so every social card cropped it to an unreadable band. -->
   <meta property="og:image" data-ssr-head="true" content="https://www.nickelbusbar.com/img/og-image.png" />
@@ -51,9 +55,9 @@
   <meta property="og:image:height" content="630" />
   <meta property="og:locale" content="en_IN" />
   <meta name="twitter:card" data-ssr-head="true" content="summary_large_image" />
-  <meta name="twitter:title" data-ssr-head="true" content="Nickel Strip Manufacturer India | Nickel Busbar Supplier" />
+  <meta name="twitter:title" data-ssr-head="true" content="Nickel Strip Manufacturer &amp; Stockist India | 5 kg MOQ" />
   <meta name="twitter:description" data-ssr-head="true"
-    content="Nickel strips manufacturer based in Mumbai, India, supplying lithium-ion battery and energy storage customers PAN India and exporting to 17+ countries worldwide." />
+    content="Manufacturer of pure nickel strip, H type strip and nickel busbar since 1974, also a stockist, wholesaler and distributor. 5 kg MOQ; custom strips and tooling to your drawing." />
   <meta name="twitter:image" data-ssr-head="true" content="https://www.nickelbusbar.com/img/og-image.png" />
   <!-- Matches the account the site actually links to. @nickelbusbar resolved to a profile that is
        not ours, so the audit reported a X account we do not control as the site's. -->
@@ -74,11 +78,10 @@
        before being listed: a sameAs pointing at a dead page weakens the entity rather than
        strengthening it.
 
-       This states that the properties are the same company. It does NOT reconcile what they
-       each say the company does - ramanisteelhouse.com says "wholesale trader, importer,
-       retailer and exporter" while llms.txt here says "primary manufacturer (not a reseller or
-       distributor)". That contradiction is a business decision, not a markup one, and is still
-       open. -->
+       The owner has since settled what the company does: manufacturing is the primary business,
+       and it also sells as a stockist, wholesaler, trader and distributor. That reconciles this
+       site with ramanisteelhouse.com ("wholesale trader, importer, retailer and exporter")
+       instead of contradicting it, so the description below says both. -->
   <script type="application/ld+json">
       {
         "@context": "https://schema.org",
@@ -88,7 +91,7 @@
             "@id": "https://www.nickelbusbar.com/#organization",
             "name": "Ramani Steel House",
             "alternateName": "Ramani Nickel Strips",
-            "description": "Nickel strip and nickel busbar manufacturer in Mumbai, India, supplying lithium-ion battery pack makers PAN India and exporting to 17+ countries.",
+            "description": "Nickel strip and nickel busbar manufacturer in Mumbai, India, also supplying as a stockist, wholesaler and distributor from a 5 kg minimum order. Custom strips are made to the buyer's drawing. PAN India supply and export to 17+ countries.",
             "url": "https://www.nickelbusbar.com/",
             "logo": {
               "@type": "ImageObject",

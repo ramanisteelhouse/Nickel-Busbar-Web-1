@@ -14,6 +14,7 @@ import { ToastContainer, showToast } from './components/Toast';
 import { getOrCreateSessionId } from './lib/utils';
 import { LANDING_PATHS } from './lib/landingPages';
 import { Product, CartItem } from './types';
+import { cartLineKey, normaliseSpec, type StripSpec } from './lib/stripSpec';
 
 const FRESH_LOGIN_KEY = 'fresh-login';
 
@@ -87,11 +88,14 @@ const readStoredCart = (): CartItem[] => {
     if (!Array.isArray(parsed)) return [];
     // Guard the fields the cart actually reads, so a stale or hand-edited entry cannot render
     // NaN prices or crash the totals.
-    return parsed.filter(
-      (item): item is CartItem =>
-        item && typeof item.id === 'number' && typeof item.name === 'string' &&
-        Number.isFinite(Number(item.price)) && Number.isFinite(Number(item.quantity))
-    );
+    return parsed
+      .filter(
+        (item): item is CartItem =>
+          item && typeof item.id === 'number' && typeof item.name === 'string' &&
+          Number.isFinite(Number(item.price)) && Number.isFinite(Number(item.quantity))
+      )
+      // A stored size is re-sanitised on the way in, the same as one arriving from the server.
+      .map((item) => (item.spec ? { ...item, spec: normaliseSpec(item.spec) } : item));
   } catch {
     return [];
   }
@@ -106,19 +110,21 @@ const writeStoredCart = (items: CartItem[]) => {
   }
 };
 
+// Keyed by product *and* size: the same strip in 0.15 mm and 0.20 mm is two lines.
 const mergeCartItems = (localItems: CartItem[], remoteItems: CartItem[]) => {
-  const merged = new Map<number, CartItem>();
+  const merged = new Map<string, CartItem>();
 
   remoteItems.forEach((item) => {
-    merged.set(item.id, { ...item });
+    merged.set(cartLineKey(item), { ...item });
   });
 
   localItems.forEach((item) => {
-    const existing = merged.get(item.id);
+    const key = cartLineKey(item);
+    const existing = merged.get(key);
     if (existing) {
-      merged.set(item.id, { ...existing, quantity: existing.quantity + item.quantity });
+      merged.set(key, { ...existing, quantity: existing.quantity + item.quantity });
     } else {
-      merged.set(item.id, { ...item });
+      merged.set(key, { ...item });
     }
   });
 
@@ -135,21 +141,24 @@ export default function App() {
   const [cartLoaded, setCartLoaded] = useState(false);
   const lastUserIdRef = useRef<number | null>(null);
 
-  const addToCart = (product: Product) => {
+  // Lines are addressed by cartLineKey (product + size), not by product id: one product can be
+  // in the cart in several sizes, and each is quoted and made separately.
+  const addToCart = (product: Product, spec?: StripSpec, quantity = 1) => {
+    const line: CartItem = { ...product, quantity, ...(spec ? { spec: normaliseSpec(spec) } : {}) };
+    const key = cartLineKey(line);
     setCart(prev => {
-      const existing = prev.find(item => item.id === product.id);
-      if (existing) {
+      if (prev.some(item => cartLineKey(item) === key)) {
         return prev.map(item =>
-          item.id === product.id ? { ...item, quantity: item.quantity + 1 } : item
+          cartLineKey(item) === key ? { ...item, quantity: item.quantity + quantity } : item
         );
       }
-      return [...prev, { ...product, quantity: 1 }];
+      return [...prev, line];
     });
   };
 
-  const updateQuantity = (id: number, delta: number) => {
+  const updateQuantity = (lineKey: string, delta: number) => {
     setCart(prev => prev.map(item => {
-      if (item.id === id) {
+      if (cartLineKey(item) === lineKey) {
         const newQty = Math.max(1, item.quantity + delta);
         return { ...item, quantity: newQty };
       }
@@ -157,8 +166,28 @@ export default function App() {
     }));
   };
 
-  const removeItem = (id: number) => {
-    setCart(prev => prev.filter(item => item.id !== id));
+  const removeItem = (lineKey: string) => {
+    setCart(prev => prev.filter(item => cartLineKey(item) !== lineKey));
+  };
+
+  /**
+   * Sets the size on a line, e.g. one added from the product grid. If another line already has
+   * this product at the new size, the two are folded together rather than left as duplicates.
+   */
+  const updateSpec = (lineKey: string, spec: StripSpec) => {
+    setCart(prev => {
+      const target = prev.find(item => cartLineKey(item) === lineKey);
+      if (!target) return prev;
+      const updated: CartItem = { ...target, spec: normaliseSpec(spec) };
+      const newKey = cartLineKey(updated);
+      const clash = newKey !== lineKey ? prev.find(item => cartLineKey(item) === newKey) : undefined;
+      if (clash) {
+        return prev
+          .filter(item => cartLineKey(item) !== lineKey)
+          .map(item => (cartLineKey(item) === newKey ? { ...item, quantity: item.quantity + target.quantity } : item));
+      }
+      return prev.map(item => (cartLineKey(item) === lineKey ? updated : item));
+    });
   };
 
   useEffect(() => {
@@ -262,6 +291,7 @@ export default function App() {
           items: cart.map((item) => ({
             product_id: item.id,
             quantity: item.quantity,
+            spec: item.spec ?? null,
           })),
         }),
         signal: controller.signal,
@@ -295,7 +325,7 @@ export default function App() {
                 <Route path="/products" element={<ProductListingPage onAddToCart={addToCart} />} />
                 <Route path="/product/:slug" element={<ProductDetailPage onAddToCart={addToCart} />} />
                 <Route path="/categories" element={<ProductListingPage onAddToCart={addToCart} />} />
-                <Route path="/cart" element={<CartPage cart={cart} updateQuantity={updateQuantity} removeItem={removeItem} />} />
+                <Route path="/cart" element={<CartPage cart={cart} updateQuantity={updateQuantity} removeItem={removeItem} updateSpec={updateSpec} />} />
                 <Route path="/checkout" element={<CheckoutPage cart={cart} />} />
                 <Route path="/login" element={<LoginPage />} />
                 <Route path="/about" element={<AboutPage />} />

@@ -1,22 +1,93 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
-import { Trash2, Plus, Minus, ArrowRight, ShoppingBag, Shield } from 'lucide-react';
+import { Trash2, Plus, Minus, ArrowRight, ShoppingBag, Shield, Ruler, AlertTriangle } from 'lucide-react';
 import { motion } from 'motion/react';
 import { CartItem } from '../types';
 import { useLanguage } from '../i18n/LanguageProvider';
 import { getProductUnitLabel, normalizeProductUnit } from '../lib/utils';
 import { ProductThumbnail } from '../components/ProductThumbnail';
 import { calculateOrderTotals } from '../lib/tax';
+import { StripSizePicker } from '../components/StripSizePicker';
+import {
+  cartLineKey,
+  defaultSpecFor,
+  formatSpec,
+  isSpecComplete,
+  takesStripSize,
+  type StripSpec,
+} from '../lib/stripSpec';
 
 interface CartPageProps {
   cart: CartItem[];
-  updateQuantity: (id: number, delta: number) => void;
-  removeItem: (id: number) => void;
+  /** Lines are addressed by cartLineKey (product + size), not by product id. */
+  updateQuantity: (lineKey: string, delta: number) => void;
+  removeItem: (lineKey: string) => void;
+  updateSpec: (lineKey: string, spec: StripSpec) => void;
 }
 
-export const CartPage: React.FC<CartPageProps> = ({ cart, updateQuantity, removeItem }) => {
+/** A line needs a size before it can be quoted, unless it is a product that is not sized as strip. */
+export const lineNeedsSize = (item: CartItem) => takesStripSize(item) && !isSpecComplete(item.spec);
+
+/**
+ * One line's size: a readable summary, and an editor that opens in place. A line added from the
+ * product grid arrives with no size, so its editor opens already expanded.
+ */
+const LineSize: React.FC<{ item: CartItem; lineKey: string; onSave: (spec: StripSpec) => void }> = ({ item, lineKey, onSave }) => {
+  const missing = lineNeedsSize(item);
+  const [open, setOpen] = React.useState(missing);
+  const [draft, setDraft] = React.useState<StripSpec>(item.spec ?? defaultSpecFor(item));
+  const [tried, setTried] = React.useState(false);
+
+  if (!takesStripSize(item)) return null;
+
+  if (!open) {
+    return (
+      <div className="mt-2 flex flex-wrap items-center gap-2 text-xs">
+        <span className="inline-flex items-center gap-1 rounded-full bg-zinc-100 px-2.5 py-1 font-semibold text-zinc-700">
+          <Ruler size={12} /> {formatSpec(item.spec)}
+        </span>
+        <button type="button" onClick={() => setOpen(true)} className="font-semibold text-brand underline underline-offset-2">
+          Change size
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <div className="mt-3 rounded-2xl border border-zinc-200 bg-zinc-50 p-4">
+      {missing ? (
+        <p className="mb-3 flex items-center gap-1.5 text-xs font-semibold text-amber-700">
+          <AlertTriangle size={14} /> Enter the size you need for this item
+        </p>
+      ) : null}
+      <StripSizePicker value={draft} onChange={setDraft} showErrors={tried} compact idPrefix={`cart-${lineKey}`} />
+      <div className="mt-3 flex gap-2">
+        <button
+          type="button"
+          onClick={() => {
+            setTried(true);
+            if (!isSpecComplete(draft)) return;
+            onSave(draft);
+            setOpen(false);
+          }}
+          className="rounded-full bg-brand px-4 py-2 text-xs font-semibold text-white hover:bg-brand-dark"
+        >
+          Save size
+        </button>
+        {!missing ? (
+          <button type="button" onClick={() => setOpen(false)} className="rounded-full px-4 py-2 text-xs font-semibold text-zinc-600 hover:bg-zinc-200">
+            Cancel
+          </button>
+        ) : null}
+      </div>
+    </div>
+  );
+};
+
+export const CartPage: React.FC<CartPageProps> = ({ cart, updateQuantity, removeItem, updateSpec }) => {
   const { t, formatPrice, country } = useLanguage();
+  const linesMissingSize = cart.filter(lineNeedsSize).length;
   const subtotal = cart.reduce((acc, item) => acc + item.price * item.quantity, 0);
   // Destination-based: exports out of India are zero-rated, so an overseas quote carries no GST
   // line. Previously this was an unconditional 18%, inflating every export total. See lib/tax.
@@ -53,9 +124,11 @@ export const CartPage: React.FC<CartPageProps> = ({ cart, updateQuantity, remove
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-12">
         <div className="lg:col-span-2 space-y-6">
-          {cart.map(item => (
+          {cart.map(item => {
+            const lineKey = cartLineKey(item);
+            return (
             <motion.div
-              key={item.id}
+              key={lineKey}
               layout
               className="flex gap-6 p-6 bg-white rounded-3xl border border-zinc-100 shadow-sm"
             >
@@ -76,19 +149,20 @@ export const CartPage: React.FC<CartPageProps> = ({ cart, updateQuantity, remove
                     <p className="text-xs text-zinc-500 mt-1">
                       {formatPrice(item.price)} {getProductUnitLabel(item.unit)}
                     </p>
+                    <LineSize item={item} lineKey={lineKey} onSave={(spec) => updateSpec(lineKey, spec)} />
                   </div>
-                  <button onClick={() => removeItem(item.id)} className="text-zinc-400 hover:text-red-500 transition-colors">
+                  <button onClick={() => removeItem(lineKey)} aria-label={`Remove ${item.name}`} className="text-zinc-400 hover:text-red-500 transition-colors">
                     <Trash2 size={18} />
                   </button>
                 </div>
                 <div className="flex justify-between items-end">
                   <div className="flex items-center gap-4 bg-zinc-100 rounded-full px-3 py-1">
-                    <button onClick={() => updateQuantity(item.id, -1)} className="p-1 hover:text-zinc-900 text-zinc-400">
+                    <button onClick={() => updateQuantity(lineKey, -1)} className="p-1 hover:text-zinc-900 text-zinc-400">
                       <Minus size={14} />
                     </button>
                     <span className="text-sm font-bold min-w-6 text-center">{item.quantity}</span>
                     <span className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500">{normalizeProductUnit(item.unit)}</span>
-                    <button onClick={() => updateQuantity(item.id, 1)} className="p-1 hover:text-zinc-900 text-zinc-400">
+                    <button onClick={() => updateQuantity(lineKey, 1)} className="p-1 hover:text-zinc-900 text-zinc-400">
                       <Plus size={14} />
                     </button>
                   </div>
@@ -96,7 +170,8 @@ export const CartPage: React.FC<CartPageProps> = ({ cart, updateQuantity, remove
                 </div>
               </div>
             </motion.div>
-          ))}
+            );
+          })}
         </div>
 
         <div className="space-y-6">
@@ -120,13 +195,32 @@ export const CartPage: React.FC<CartPageProps> = ({ cart, updateQuantity, remove
                 <span>{formatPrice(total)}</span>
               </div>
             </div>
-            <Link
-              to="/checkout"
-              className="w-full bg-brand text-white py-4 rounded-full font-bold hover:bg-brand-dark transition-all flex items-center justify-center gap-2 group"
-            >
-              {t('cart.checkout')}
-              <ArrowRight size={20} className="group-hover:translate-x-1 transition-transform" />
-            </Link>
+            {linesMissingSize > 0 ? (
+              <>
+                <p className="mb-3 flex items-start gap-1.5 text-xs font-semibold text-amber-700">
+                  <AlertTriangle size={14} className="mt-0.5 shrink-0" />
+                  {linesMissingSize === 1
+                    ? 'One item still needs a size. Add it above to continue.'
+                    : `${linesMissingSize} items still need a size. Add them above to continue.`}
+                </p>
+                <button
+                  type="button"
+                  disabled
+                  className="w-full cursor-not-allowed bg-zinc-300 text-white py-4 rounded-full font-bold flex items-center justify-center gap-2"
+                >
+                  {t('cart.checkout')}
+                  <ArrowRight size={20} />
+                </button>
+              </>
+            ) : (
+              <Link
+                to="/checkout"
+                className="w-full bg-brand text-white py-4 rounded-full font-bold hover:bg-brand-dark transition-all flex items-center justify-center gap-2 group"
+              >
+                {t('cart.checkout')}
+                <ArrowRight size={20} className="group-hover:translate-x-1 transition-transform" />
+              </Link>
+            )}
           </div>
 
           <div className="p-6 bg-emerald-50 rounded-2xl border border-emerald-100 flex gap-4">

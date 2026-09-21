@@ -29,6 +29,9 @@ import {
   applications as applicationTitles,
   faqItems,
   HERO_PRODUCT_SLUG,
+  HOME_HERO,
+  HOME_SEO,
+  TRADE_ROLES_SECTION,
   industries as industryTitles,
   productSpecifications,
   productVariants,
@@ -286,25 +289,19 @@ export const HomePage: React.FC = () => {
         Local SEO check reported no LocalBusiness at all: nothing said which was authoritative.
       */}
       <Helmet>
-        <title>Nickel Strip Manufacturer India | Nickel Busbar Supplier</title>
-        <meta
-          name="description"
-          content="Nickel strip manufacturer in India supplying pure nickel strip, H type nickel strip and nickel busbar for 18650 battery packs. PAN India supply and export."
-        />
-        <meta
-          name="keywords"
-          content="Nickel Strip Manufacturer India, Pure Nickel Strip, H Type Nickel Strip, Nickel Busbar, Nickel Strip for 18650 Battery, Battery Nickel Strip Supplier, Nickel Strip Exporter, Nickel Strip Supplier for Export, Nickel Busbar Wholesale Supplier, Bulk Nickel Strip Order"
-        />
+        <title>{HOME_SEO.title}</title>
+        <meta name="description" content={HOME_SEO.description} />
+        <meta name="keywords" content={HOME_SEO.keywords} />
         <link rel="canonical" href="https://www.nickelbusbar.com/" />
         <meta property="og:type" content="website" />
         <meta property="og:site_name" content="Ramani Steel House" />
-        <meta property="og:title" content="Nickel Strip Manufacturer India | Nickel Busbar Supplier" />
-        <meta property="og:description" content="Battery Nickel Strip Supplier manufacturing Pure Nickel Strip, H Type Nickel Strip, and Nickel Busbar for lithium-ion and EV battery packs. PAN India supply, exporting to 17+ countries worldwide." />
+        <meta property="og:title" content={HOME_SEO.title} />
+        <meta property="og:description" content={HOME_SEO.socialDescription} />
         <meta property="og:url" content="https://www.nickelbusbar.com/" />
         <meta property="og:image" content="https://www.nickelbusbar.com/img/og-image.png" />
         <meta name="twitter:card" content="summary_large_image" />
-        <meta name="twitter:title" content="Nickel Strip Manufacturer India | Nickel Busbar Supplier" />
-        <meta name="twitter:description" content="Battery Nickel Strip Supplier manufacturing Pure Nickel Strip, H Type Nickel Strip, and Nickel Busbar for lithium-ion and EV battery packs." />
+        <meta name="twitter:title" content={HOME_SEO.title} />
+        <meta name="twitter:description" content={HOME_SEO.socialDescription} />
         <meta name="twitter:image" content="https://www.nickelbusbar.com/img/og-image.png" />
       </Helmet>
 
@@ -343,12 +340,25 @@ export const HomePage: React.FC = () => {
               </div>
               <h1 className="mt-6 text-4xl md:text-6xl font-display font-bold leading-[1.05] tracking-tight">
                 <motion.span initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.7, delay: 0.1 }} className="block">
-                  India's Trusted
+                  {HOME_HERO.h1Lead}
                 </motion.span>
                 <motion.span initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.7, delay: 0.22 }} className="block bg-gradient-to-r from-white via-emerald-100 to-white bg-clip-text text-transparent">
-                  Nickel Strip Manufacturer
+                  {HOME_HERO.h1Main}
                 </motion.span>
               </h1>
+              {/* The three facts a small buyer is scanning for, directly under the heading that
+                  matched their search. See HOME_HERO in lib/homeContent. */}
+              <ul className="mt-5 flex flex-wrap gap-2" aria-label="What we offer">
+                {HOME_HERO.offers.map((offer) => (
+                  <li
+                    key={offer}
+                    className="inline-flex items-center gap-1.5 rounded-full border border-white/25 bg-white/10 px-3 py-1.5 text-sm font-semibold text-white"
+                  >
+                    <BadgeCheck size={15} className="text-emerald-200" />
+                    {offer}
+                  </li>
+                ))}
+              </ul>
               <p className="mt-4 text-xl text-white/85">
                 Premium Pure Nickel Strip, Nickel Busbar and H Type Nickel Strip connectors for lithium-ion manufacturing.
               </p>
@@ -519,6 +529,52 @@ export const HomePage: React.FC = () => {
               </Link>{' '}
               — pure nickel H type strip for 18650, 21700, 32650 and 32700 packs in 2P, 3P and 4P layouts.
             </p>
+          </div>
+        </div>
+      </section>
+
+      {/* Who we sell to, and how. The words a small battery maker or a trader searches with
+          ("stockist", "wholesaler", "distributor", "5 kg") have to be in the visible text, not
+          only the meta tags, or the page does not rank for them. Copy lives in homeContent so
+          the crawler snapshot renders the same section. */}
+      <section className="bg-white pb-12">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="grid gap-8 rounded-3xl border border-slate-200 px-6 py-8 md:grid-cols-5 md:px-10 md:py-10">
+            <div className="md:col-span-3">
+              <h2 className="text-2xl md:text-3xl font-display font-bold text-brand">{TRADE_ROLES_SECTION.heading}</h2>
+              {TRADE_ROLES_SECTION.paragraphs.map((paragraph) => (
+                <p key={paragraph.slice(0, 32)} className="mt-4 text-base leading-relaxed text-slate-700">
+                  {paragraph}
+                </p>
+              ))}
+              <Link
+                to="/contact"
+                className="mt-6 inline-flex items-center gap-2 rounded-full bg-brand px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-brand-dark"
+              >
+                Send your drawing or size <ArrowRight size={16} />
+              </Link>
+              <p className="mt-4 text-sm text-slate-600">
+                Buying to resell or in small lots?{' '}
+                <Link to="/nickel-strip-wholesaler-and-distributor" className="font-semibold text-brand underline underline-offset-4">
+                  Nickel strip wholesaler and distributor
+                </Link>{' '}
+                — stock sizes, 5 kg MOQ and trade enquiries.
+              </p>
+            </div>
+            <ul className="space-y-3 md:col-span-2">
+              {TRADE_ROLES_SECTION.bullets.map((bullet) => {
+                const [role, detail] = bullet.split(': ');
+                return (
+                  <li key={bullet} className="flex gap-3 rounded-2xl bg-slate-50 px-4 py-3 text-sm text-slate-700">
+                    <BadgeCheck size={18} className="mt-0.5 shrink-0 text-brand" />
+                    <span>
+                      <strong className="font-semibold text-brand">{role}</strong>
+                      {detail ? `: ${detail}` : ''}
+                    </span>
+                  </li>
+                );
+              })}
+            </ul>
           </div>
         </div>
       </section>

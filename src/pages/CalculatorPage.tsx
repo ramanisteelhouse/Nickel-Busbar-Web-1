@@ -1,354 +1,202 @@
 import React from 'react';
 import { Helmet } from 'react-helmet-async';
-import { ArrowRight, Copy, Download, RefreshCcw, Plus, Trash2, MessageCircle } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import { encodePathSegment, logCallClick } from '../lib/utils';
+import { ArrowRight, MessageCircle } from 'lucide-react';
+import { cn, logCallClick } from '../lib/utils';
 import { PRIMARY_WHATSAPP, buildWhatsAppUrl } from '../lib/contact';
-import type { BlogPost } from '../types';
 
-interface MaterialOption {
-  name: string;
-  density: number;
-  description: string;
-}
+/**
+ * Nickel strip weight calculator.
+ *
+ * Rebuilt to do one job clearly. The previous page offered batch mode, PDF export, copy, reset,
+ * recent calculations, a material search box over five options, tonnes, two WhatsApp buttons,
+ * two result cards, a blog feed and three lists of "highlights" — and a "Shape" selector that
+ * fed into nothing at all. Every one of those competed with the two things a visitor comes for:
+ * type a size, read a weight. What remains is the formula, the four questions buyers actually
+ * ask of it (weight, length, thickness, pieces), and a way to turn the answer into a quote.
+ *
+ * Added, because they are what strip buyers ask for and the old page never showed: weight per
+ * metre, weight per piece, and how much of this size the 5 kg minimum order comes to.
+ */
 
-interface BatchRow {
-  id: string;
-  thickness: string;
-  width: string;
-  length: string;
-  quantity: string;
-  material: string;
-}
+type Unit = 'mm' | 'inch';
+type SolveTarget = 'weight' | 'length' | 'thickness' | 'quantity';
 
-interface SavedCalculation {
-  id: string;
-  label: string;
-  totalKg: number;
-  createdAt: string;
-}
+const MATERIALS = [
+  { id: 'nickel', label: 'Pure nickel (Nickel 200 / 201)', density: 8.89 },
+  { id: 'plated', label: 'Nickel-plated steel', density: 7.85 },
+  { id: 'custom', label: 'Other (enter density)', density: 0 },
+] as const;
+type MaterialId = (typeof MATERIALS)[number]['id'];
 
-const materialOptions: MaterialOption[] = [
-  { name: 'Nickel 200', density: 8.89, description: 'High-purity nickel for corrosion resistance and conductivity.' },
-  { name: 'Nickel 201', density: 8.89, description: 'Lower carbon nickel for improved weldability in battery tabs.' },
-  { name: 'Pure Nickel', density: 8.90, description: 'Premium nickel grade for high-conductivity battery busbars.' },
-  { name: 'Nickel Plated Steel', density: 7.85, description: 'Cost-effective plated steel with nickel surface conduction.' },
-  { name: 'Nickel Alloy', density: 8.50, description: 'Alloyed nickel for stronger structural strip and busbar applications.' },
+const TARGETS: ReadonlyArray<{ id: SolveTarget; label: string }> = [
+  { id: 'weight', label: 'Weight' },
+  { id: 'length', label: 'Length' },
+  { id: 'thickness', label: 'Thickness' },
+  { id: 'quantity', label: 'Pieces' },
 ];
 
-const shapeOptions = ['Strip', 'Sheet / Plate', 'Foil', 'Busbar', 'Wire', 'Coil'];
+/** Confirmed minimum order; see MINIMUM_ORDER_QUANTITY in lib/productSpecs. */
+const MOQ_KG = 5;
 
 const faqItems = [
   {
-    question: 'How to calculate nickel strip weight?',
-    answer: 'Multiply thickness, width, length, density and quantity. Convert each dimension to centimeters before applying density in g/cm³.',
+    question: 'How do I calculate nickel strip weight?',
+    answer:
+      'Weight = Thickness × Width × Length × Density × Quantity, with every dimension converted to centimetres first. Pure nickel is 8.89 g/cm³. For example, a 0.15 mm × 8 mm × 100 mm strip weighs about 1.07 g.',
   },
   {
-    question: 'What is the density of Nickel 200?',
-    answer: 'Nickel 200 has a density of approximately 8.89 g/cm³, widely used for battery tabs and connectors.',
+    question: 'What is the density of Nickel 200 and Nickel 201?',
+    answer: 'Both are about 8.89 g/cm³. Nickel-plated steel is about 7.85 g/cm³.',
   },
   {
-    question: 'How much does 0.15mm nickel strip weigh?',
-    answer: 'Weight depends on width, length and quantity. A 0.15mm × 8mm × 100mm strip at 8.89 g/cm³ weighs roughly 1.07 grams per piece.',
+    question: 'How many metres of nickel strip are in 1 kg?',
+    answer:
+      'It depends on thickness and width. 0.15 mm × 8 mm pure nickel weighs about 10.7 g per metre, so 1 kg is roughly 94 metres. Choose "Length" above and enter your size to get the exact figure.',
   },
   {
-    question: 'What is the weight formula for nickel strips?',
-    answer: 'Weight = Thickness × Width × Length × Density × Quantity, with dimensions converted to cm first.',
-  },
-  {
-    question: 'I know the total weight in kg — how do I find the length or width?',
-    answer: 'Use the "Solve for" selector in Simple mode. Choose Length or Width, enter your known weight in kg plus the other two dimensions and quantity, and the calculator rearranges the weight formula to solve for the missing value.',
+    question: 'I know the weight in kg. How do I find the length, thickness or number of pieces?',
+    answer:
+      'Choose what you want to find at the top of the calculator, enter the total weight in kg and the other dimensions, and the calculator rearranges the formula for you.',
   },
 ];
 
-type SolveTarget = 'weight' | 'thickness' | 'width' | 'length' | 'quantity';
-
-const solveTargetLabels: Record<SolveTarget, string> = {
-  weight: 'Weight',
-  thickness: 'Thickness',
-  width: 'Width',
-  length: 'Length',
-  quantity: 'Quantity',
-};
-
-const formatValue = (value: number) => (Number.isFinite(value) ? Number(value.toFixed(3)) : 0);
-
 const parseNumber = (value: string) => {
   const parsed = Number(String(value).replace(/,/g, '').trim());
-  return Number.isFinite(parsed) ? parsed : 0;
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : 0;
 };
 
-const dimensionToCm = (value: number, unit: 'mm' | 'inch') => {
-  if (!Number.isFinite(value) || value <= 0) return 0;
-  return unit === 'mm' ? value / 10 : value * 2.54;
-};
+const toCm = (value: number, unit: Unit) => (unit === 'mm' ? value / 10 : value * 2.54);
+const fromCm = (value: number, unit: Unit) => (unit === 'mm' ? value * 10 : value / 2.54);
 
-const cmToDimension = (valueCm: number, unit: 'mm' | 'inch') => {
-  if (!Number.isFinite(valueCm) || valueCm <= 0) return 0;
-  return unit === 'mm' ? valueCm * 10 : valueCm / 2.54;
-};
+/** Rounds for display without trailing zeros: 1.0700 -> "1.07", 94.2857 -> "94.29". */
+const fmt = (value: number, digits = 2) =>
+  Number.isFinite(value) && value > 0 ? Number(value.toFixed(digits)).toLocaleString('en-IN') : '—';
 
-const calculateWeightGrams = (thickness: number, width: number, length: number, density: number, quantity: number, unit: 'mm' | 'inch') => {
-  const t = dimensionToCm(thickness, unit);
-  const w = dimensionToCm(width, unit);
-  const l = dimensionToCm(length, unit);
-  if (!t || !w || !l || !Number.isFinite(density) || density <= 0 || !Number.isFinite(quantity) || quantity <= 0) {
-    return 0;
-  }
-  return t * w * l * density * quantity;
-};
+const inputClass =
+  'w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-base text-brand outline-none transition placeholder:text-slate-400 focus:border-brand focus:ring-2 focus:ring-brand/20';
 
-interface SolveInputs {
-  target: SolveTarget;
-  thickness: number;
-  width: number;
-  length: number;
-  quantity: number;
-  density: number;
-  weightGrams: number;
-  unit: 'mm' | 'inch';
-}
-
-interface SolveResult {
-  weightGrams: number;
-  thickness: number;
-  width: number;
-  length: number;
-  quantity: number;
-  isValid: boolean;
-}
-
-/** Weight(g) = Thickness(cm) x Width(cm) x Length(cm) x Density(g/cm3) x Quantity — solved for whichever field is the target. */
-const solveNickelCalculation = (inputs: SolveInputs): SolveResult => {
-  const { target, unit, density } = inputs;
-  const t = dimensionToCm(inputs.thickness, unit);
-  const w = dimensionToCm(inputs.width, unit);
-  const l = dimensionToCm(inputs.length, unit);
-  const q = inputs.quantity;
-  const weightG = inputs.weightGrams;
-  const hasDensity = Number.isFinite(density) && density > 0;
-
-  const empty: SolveResult = { weightGrams: 0, thickness: 0, width: 0, length: 0, quantity: 0, isValid: false };
-  if (!hasDensity) return empty;
-
-  if (target === 'weight') {
-    if (!t || !w || !l || !q || q <= 0) return empty;
-    return { weightGrams: t * w * l * density * q, thickness: inputs.thickness, width: inputs.width, length: inputs.length, quantity: q, isValid: true };
-  }
-
-  if (!weightG || weightG <= 0) return empty;
-
-  if (target === 'thickness') {
-    if (!w || !l || !q || q <= 0) return empty;
-    const solvedCm = weightG / (w * l * density * q);
-    return { weightGrams: weightG, thickness: cmToDimension(solvedCm, unit), width: inputs.width, length: inputs.length, quantity: q, isValid: solvedCm > 0 };
-  }
-
-  if (target === 'width') {
-    if (!t || !l || !q || q <= 0) return empty;
-    const solvedCm = weightG / (t * l * density * q);
-    return { weightGrams: weightG, thickness: inputs.thickness, width: cmToDimension(solvedCm, unit), length: inputs.length, quantity: q, isValid: solvedCm > 0 };
-  }
-
-  if (target === 'length') {
-    if (!t || !w || !q || q <= 0) return empty;
-    const solvedCm = weightG / (t * w * density * q);
-    return { weightGrams: weightG, thickness: inputs.thickness, width: inputs.width, length: cmToDimension(solvedCm, unit), quantity: q, isValid: solvedCm > 0 };
-  }
-
-  // target === 'quantity'
-  if (!t || !w || !l) return empty;
-  const solvedQuantity = weightG / (t * w * l * density);
-  return { weightGrams: weightG, thickness: inputs.thickness, width: inputs.width, length: inputs.length, quantity: solvedQuantity, isValid: solvedQuantity > 0 };
-};
-
-const inputClass = 'w-full rounded-full border border-slate-200 bg-slate-50 px-5 py-3 text-sm text-brand outline-none transition focus:border-brand focus:ring-2 focus:ring-brand/20';
-const selectClass = 'w-full rounded-full border border-slate-200 bg-white px-5 py-3 text-sm text-brand outline-none transition focus:border-brand focus:ring-2 focus:ring-brand/20';
+const Field: React.FC<{
+  id: string;
+  label: string;
+  suffix: string;
+  value: string;
+  onChange: (value: string) => void;
+}> = ({ id, label, suffix, value, onChange }) => (
+  <div>
+    <label htmlFor={id} className="mb-1.5 block text-sm font-semibold text-slate-700">
+      {label}
+    </label>
+    <div className="relative">
+      <input
+        id={id}
+        inputMode="decimal"
+        value={value}
+        onChange={(event) => onChange(event.target.value)}
+        className={cn(inputClass, 'pr-14')}
+      />
+      <span className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-sm text-slate-400">{suffix}</span>
+    </div>
+  </div>
+);
 
 export const CalculatorPage: React.FC = () => {
-  const [mode, setMode] = React.useState<'simple' | 'batch'>('simple');
-  const [unit, setUnit] = React.useState<'mm' | 'inch'>('mm');
-  const [selectedMaterial, setSelectedMaterial] = React.useState(materialOptions[0].name);
-  const [materialSearch, setMaterialSearch] = React.useState('');
-  const [shape, setShape] = React.useState(shapeOptions[0]);
-  const [solveFor, setSolveFor] = React.useState<SolveTarget>('weight');
+  const [target, setTarget] = React.useState<SolveTarget>('weight');
+  const [unit, setUnit] = React.useState<Unit>('mm');
+  const [materialId, setMaterialId] = React.useState<MaterialId>('nickel');
+  const [customDensity, setCustomDensity] = React.useState('');
   const [thickness, setThickness] = React.useState('0.15');
   const [width, setWidth] = React.useState('8');
   const [length, setLength] = React.useState('100');
   const [quantity, setQuantity] = React.useState('10');
-  const [targetWeightKg, setTargetWeightKg] = React.useState('1');
-  const [customDensity, setCustomDensity] = React.useState('');
-  const [copyMessage, setCopyMessage] = React.useState('');
-  const [recentCalculations, setRecentCalculations] = React.useState<SavedCalculation[]>([]);
-  const [blogPosts, setBlogPosts] = React.useState<BlogPost[]>([]);
-  const [rows, setRows] = React.useState<BatchRow[]>([
-    { id: 'row-1', thickness: '0.15', width: '8', length: '120', quantity: '10', material: materialOptions[0].name },
-  ]);
+  const [totalKg, setTotalKg] = React.useState('1');
 
-  const filteredMaterials = React.useMemo(() => {
-    const query = materialSearch.trim().toLowerCase();
-    if (!query) return materialOptions;
-    return materialOptions.filter((option) => option.name.toLowerCase().includes(query) || option.description.toLowerCase().includes(query));
-  }, [materialSearch]);
-
-  const selectedDensity = React.useMemo(() => {
-    if (customDensity.trim()) {
-      const custom = Number(customDensity);
-      return Number.isFinite(custom) && custom > 0 ? custom : 0;
-    }
-    const material = materialOptions.find((option) => option.name === selectedMaterial);
-    return material?.density ?? 0;
-  }, [customDensity, selectedMaterial]);
-
-  const simpleResult = React.useMemo(() => {
-    return solveNickelCalculation({
-      target: solveFor,
-      thickness: parseNumber(thickness),
-      width: parseNumber(width),
-      length: parseNumber(length),
-      quantity: parseNumber(quantity),
-      density: selectedDensity,
-      weightGrams: parseNumber(targetWeightKg) * 1000,
-      unit,
-    });
-  }, [solveFor, thickness, width, length, quantity, selectedDensity, targetWeightKg, unit]);
-
-  const batchWeightGrams = React.useMemo(() => {
-    return rows.reduce((sum, row) => {
-      const rowDensity = row.material === 'Custom Density' ? selectedDensity : materialOptions.find((option) => option.name === row.material)?.density ?? 0;
-      return sum + calculateWeightGrams(parseNumber(row.thickness), parseNumber(row.width), parseNumber(row.length), rowDensity, parseNumber(row.quantity), unit);
-    }, 0);
-  }, [rows, selectedDensity, unit]);
-
-  const activeWeightGrams = mode === 'simple' ? simpleResult.weightGrams : batchWeightGrams;
-  const activeWeightKg = activeWeightGrams / 1000;
-  const activeWeightTons = activeWeightKg / 1000;
-  const activeWeightG = activeWeightGrams;
-
-  const resolvedSimple = React.useMemo(() => ({
-    thickness: solveFor === 'thickness' && simpleResult.isValid ? simpleResult.thickness : parseNumber(thickness),
-    width: solveFor === 'width' && simpleResult.isValid ? simpleResult.width : parseNumber(width),
-    length: solveFor === 'length' && simpleResult.isValid ? simpleResult.length : parseNumber(length),
-    quantity: solveFor === 'quantity' && simpleResult.isValid ? simpleResult.quantity : parseNumber(quantity),
-  }), [solveFor, simpleResult, thickness, width, length, quantity]);
-
-  const livePreview = React.useMemo(() => {
-    if (mode === 'batch' || solveFor === 'weight') {
-      return { label: 'Total weight', value: `${formatValue(activeWeightKg)} kg`, valid: activeWeightGrams > 0 };
-    }
-    if (solveFor === 'quantity') {
-      return { label: 'Pieces from target weight', value: simpleResult.isValid ? `${Math.floor(simpleResult.quantity)} pcs` : '—', valid: simpleResult.isValid };
-    }
-    const value = solveFor === 'thickness' ? simpleResult.thickness : solveFor === 'width' ? simpleResult.width : simpleResult.length;
-    return { label: `${solveTargetLabels[solveFor]} from target weight`, value: simpleResult.isValid ? `${formatValue(value)} ${unit}` : '—', valid: simpleResult.isValid };
-  }, [mode, solveFor, activeWeightKg, activeWeightGrams, simpleResult, unit]);
-
-  const saveCalculation = () => {
-    const label = mode === 'simple'
-      ? solveFor === 'weight'
-        ? `${selectedMaterial} • ${thickness}${unit} x ${width}${unit} x ${length}${unit} × ${quantity}`
-        : `${selectedMaterial} • Solved ${solveTargetLabels[solveFor]} from ${formatValue(parseNumber(targetWeightKg))}kg`
-      : `Batch calculation • ${rows.length} row(s)`;
-    const next: SavedCalculation = {
-      id: crypto.randomUUID?.() ?? `calc-${Date.now()}`,
-      label,
-      totalKg: Number(activeWeightKg.toFixed(3)),
-      createdAt: new Date().toISOString(),
+  /**
+   * Switching units converts what is typed, so the physical size stays the same. Relabelling
+   * alone would silently turn "0.15 mm" into "0.15 inch" — a 25× thicker strip and a weight
+   * hundreds of times larger, with nothing on screen to say why.
+   */
+  const changeUnit = (next: Unit) => {
+    if (next === unit) return;
+    const factor = next === 'inch' ? 1 / 25.4 : 25.4;
+    const convert = (value: string) => {
+      const n = parseNumber(value);
+      return n ? String(Number((n * factor).toFixed(next === 'inch' ? 5 : 3))) : value;
     };
-    const updated = [next, ...recentCalculations].slice(0, 5);
-    setRecentCalculations(updated);
-    window.localStorage.setItem('nickel-calculator-recent', JSON.stringify(updated));
-    setCopyMessage('Calculation saved to recent results');
-    window.setTimeout(() => setCopyMessage(''), 2200);
+    setThickness(convert);
+    setWidth(convert);
+    setLength(convert);
+    setUnit(next);
   };
 
-  React.useEffect(() => {
-    const stored = window.localStorage.getItem('nickel-calculator-recent');
-    if (stored) {
-      try {
-        const parsed: SavedCalculation[] = JSON.parse(stored);
-        setRecentCalculations(Array.isArray(parsed) ? parsed : []);
-      } catch {
-        setRecentCalculations([]);
-      }
+  const material = MATERIALS.find((m) => m.id === materialId) ?? MATERIALS[0];
+  const density = materialId === 'custom' ? parseNumber(customDensity) : material.density;
+
+  /**
+   * Weight (g) = t(cm) × w(cm) × l(cm) × density × pieces, solved for whichever of the four is
+   * the target. Every other value is taken as entered.
+   */
+  const result = React.useMemo(() => {
+    const t = toCm(parseNumber(thickness), unit);
+    const w = toCm(parseNumber(width), unit);
+    const l = toCm(parseNumber(length), unit);
+    const q = parseNumber(quantity);
+    const grams = parseNumber(totalKg) * 1000;
+    const none = { ok: false, t, w, l, q, grams: 0 };
+    if (!density) return none;
+
+    switch (target) {
+      case 'weight':
+        return t && w && l && q ? { ok: true, t, w, l, q, grams: t * w * l * density * q } : none;
+      case 'length':
+        return t && w && q && grams ? { ok: true, t, w, l: grams / (t * w * density * q), q, grams } : none;
+      case 'thickness':
+        return w && l && q && grams ? { ok: true, t: grams / (w * l * density * q), w, l, q, grams } : none;
+      case 'quantity':
+        return t && w && l && grams ? { ok: true, t, w, l, q: grams / (t * w * l * density), grams } : none;
     }
-  }, []);
+  }, [target, thickness, width, length, quantity, totalKg, unit, density]);
 
-  React.useEffect(() => {
-    let isActive = true;
-    fetch('/api/blog-posts?limit=3')
-      .then((res) => {
-        if (!res.ok) throw new Error('Blog load failed');
-        return res.json();
-      })
-      .then((data) => {
-        if (!isActive) return;
-        if (Array.isArray(data)) setBlogPosts(data);
-      })
-      .catch(() => {
-        if (!isActive) return;
-        setBlogPosts([]);
-      });
-    return () => { isActive = false; };
-  }, []);
+  // Per-metre and per-piece figures need only the cross-section, so they show whenever
+  // thickness and width are known — including while solving for length or pieces.
+  const gramsPerMetre = result.t && result.w && density ? result.t * result.w * 100 * density : 0;
+  const gramsPerPiece = gramsPerMetre && result.l ? (gramsPerMetre * result.l) / 100 : 0;
+  const totalKgResult = result.ok ? result.grams / 1000 : 0;
 
-  const copyResults = async () => {
-    const solvedLine = mode === 'simple' && solveFor !== 'weight'
-      ? `\nSolved ${solveTargetLabels[solveFor]}: ${livePreview.value}`
-      : '';
-    const payload = `Nickel Alloy Weight Calculator result:\n${formatValue(activeWeightG)} g | ${formatValue(activeWeightKg)} kg | ${formatValue(activeWeightTons)} t${solvedLine}`;
-    try {
-      await navigator.clipboard.writeText(payload);
-      setCopyMessage('Results copied to clipboard');
-    } catch {
-      setCopyMessage('Unable to copy. Please use browser copy.');
+  const headline = (() => {
+    if (!result.ok) return { label: 'Enter your size', value: '—' };
+    switch (target) {
+      case 'weight':
+        // Under a kilogram, grams read better than "0.011 kg".
+        return {
+          label: 'Total weight',
+          value: totalKgResult < 1 ? `${fmt(result.grams)} g` : `${fmt(totalKgResult, 3)} kg`,
+        };
+      case 'length':
+        return { label: 'Length of each piece', value: `${fmt(fromCm(result.l, unit))} ${unit}` };
+      case 'thickness':
+        return { label: 'Thickness', value: `${fmt(fromCm(result.t, unit), 3)} ${unit}` };
+      case 'quantity':
+        return { label: 'Number of pieces', value: `${Math.floor(result.q).toLocaleString('en-IN')} pcs` };
     }
-    window.setTimeout(() => setCopyMessage(''), 2200);
-  };
+  })();
 
-  const resetCalculator = () => {
-    setMode('simple');
-    setUnit('mm');
-    setSelectedMaterial(materialOptions[0].name);
-    setMaterialSearch('');
-    setShape(shapeOptions[0]);
-    setSolveFor('weight');
-    setThickness('0.15');
-    setWidth('8');
-    setLength('100');
-    setQuantity('10');
-    setTargetWeightKg('1');
-    setCustomDensity('');
-    setRows([{ id: 'row-1', thickness: '0.15', width: '8', length: '120', quantity: '10', material: materialOptions[0].name }]);
-    setCopyMessage('Calculator reset');
-    window.setTimeout(() => setCopyMessage(''), 2200);
-  };
+  // What the 5 kg minimum amounts to at this cross-section, in the terms a buyer thinks in.
+  const moqMetres = gramsPerMetre ? (MOQ_KG * 1000) / gramsPerMetre : 0;
+  const belowMoq = result.ok && totalKgResult > 0 && totalKgResult < MOQ_KG;
 
-  const addBatchRow = () => {
-    setRows((prev) => [
-      ...prev,
-      {
-        id: `row-${Date.now()}`,
-        thickness: '0.15',
-        width: '8',
-        length: '120',
-        quantity: '10',
-        material: materialOptions[0].name,
-      },
-    ]);
-  };
+  const sizeText = [
+    result.t ? `${fmt(fromCm(result.t, unit), 3)} ${unit} thick` : '',
+    result.w ? `${fmt(fromCm(result.w, unit))} ${unit} wide` : '',
+  ]
+    .filter(Boolean)
+    .join(' × ');
+  const quoteMessage = `Hello, I need a quote for ${material.id === 'custom' ? 'nickel strip' : material.label}: ${sizeText || 'size to confirm'}${
+    result.ok ? `, about ${fmt(Math.max(totalKgResult, MOQ_KG), 2)} kg` : ''
+  }. (From the weight calculator on nickelbusbar.com)`;
 
-  const updateRow = (id: string, field: keyof BatchRow, value: string) => {
-    setRows((prev) => prev.map((row) => (row.id === id ? { ...row, [field]: value } : row)));
-  };
-
-  const removeRow = (id: string) => {
-    setRows((prev) => prev.filter((row) => row.id !== id));
-  };
-
-  const exportPdf = () => {
-    window.print();
-  };
+  // The field being solved for is the answer, so it is not also shown as an input.
+  const showField = (field: SolveTarget) => target !== field;
 
   return (
     <div className="bg-[#f6f8f9] text-brand">
@@ -361,24 +209,17 @@ export const CalculatorPage: React.FC = () => {
         <link rel="canonical" href="https://www.nickelbusbar.com/calculator" />
         <meta property="og:type" content="website" />
         <meta property="og:title" content="Free Nickel Strip & Alloy Weight Conversion Calculator" />
-        <meta property="og:description" content="Free calculator for nickel strip weight, thickness, width and length. Converts mm and inch, and solves for any dimension from a known weight." />
+        <meta
+          property="og:description"
+          content="Free calculator for nickel strip weight, thickness, width and length. Converts mm and inch, and solves for any dimension from a known weight."
+        />
         <meta property="og:url" content="https://www.nickelbusbar.com/calculator" />
-        <meta property="og:image" content="https://www.nickelbusbar.com/img/logo.png" />
+        <meta property="og:image" content="https://www.nickelbusbar.com/img/og-image.png" />
         <meta name="twitter:card" content="summary_large_image" />
-        <meta name="twitter:title" content="Free Nickel Strip & Alloy Weight Conversion Calculator" />
-        <meta name="twitter:description" content="Free calculator for nickel strip weight, thickness, width and length. Converts mm and inch, and solves for any dimension from a known weight." />
-        <meta name="twitter:image" content="https://www.nickelbusbar.com/img/logo.png" />
         {/*
-          No Product entity here. This page is a free tool, not something anyone can buy, and
-          the Product it used to publish carried no offers - which is what Search Console
-          flagged on /calculator with "Either offers, review, or aggregateRating should be
-          specified". It was only visible to a rendering crawler, since the raw HTML never had
-          it.
-
-          The correct entity, a WebApplication with a zero-price Offer, is published by
-          STATIC_ROUTE_SEO["/calculator"] in seoSnapshot.ts and survives hydration: ssrHeadCleanup
-          only drops a server-rendered block when the app publishes one of the same @type, and
-          this page publishes no WebApplication.
+          No Product entity here: this is a free tool. The WebApplication with a zero-price Offer
+          is published by STATIC_ROUTE_SEO["/calculator"] in seoSnapshot.ts and survives
+          hydration, because this page publishes no WebApplication of its own.
         */}
         <script type="application/ld+json">
           {JSON.stringify({
@@ -387,544 +228,186 @@ export const CalculatorPage: React.FC = () => {
             mainEntity: faqItems.map((item) => ({
               '@type': 'Question',
               name: item.question,
-              acceptedAnswer: {
-                '@type': 'Answer',
-                text: item.answer,
-              },
+              acceptedAnswer: { '@type': 'Answer', text: item.answer },
             })),
           })}
         </script>
       </Helmet>
 
-      <section className="pt-24 sm:pt-28 pb-12 sm:pb-16 bg-white">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="rounded-3xl border border-slate-200 bg-white p-5 sm:p-8 shadow-xl shadow-slate-200/40">
-            <div className="grid gap-8 sm:gap-10 lg:grid-cols-[1.1fr_0.9fr] items-center">
-              <div>
-                <p className="text-xs font-semibold uppercase tracking-[0.3em] text-brand">Calculator Tool</p>
-                <h1 className="mt-3 text-3xl sm:text-4xl md:text-5xl font-display font-bold tracking-tight text-brand">Nickel Alloy Weight Calculator</h1>
-                <p className="mt-5 max-w-2xl text-base leading-8 text-slate-600">
-                  Instantly calculate weight for nickel strips, sheets, busbars, foil, wire and coil in mm or inches. Built for battery pack engineers, EV manufacturers and industrial metal buyers.
-                </p>
-                <div className="mt-8 flex flex-wrap gap-3">
-                  <button
-                    type="button"
-                    onClick={exportPdf}
-                    className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-brand shadow-sm transition hover:border-brand hover:text-brand-dark"
-                  >
-                    <Download size={16} /> Export to PDF
-                  </button>
-                  <a
-                    href={buildWhatsAppUrl('Hello Team, I used the weight calculator and need a quote.')}
-                    target="_blank"
-                    rel="noreferrer"
-                    onClick={() => logCallClick(`+${PRIMARY_WHATSAPP.e164}`, 'calculator_whatsapp')}
-                    className="inline-flex items-center gap-2 rounded-full border border-[#22C55E] bg-white px-5 py-3 text-sm font-semibold text-[#22C55E] shadow-sm transition hover:bg-[#ecfdf5]"
-                  >
-                    <MessageCircle size={16} /> WhatsApp Manufacturer
-                  </a>
-                </div>
-              </div>
-              <div className="rounded-3xl bg-gradient-to-br from-brand-surface to-white p-6 sm:p-8 shadow-inner border border-slate-200">
-                <div className="flex items-center justify-between gap-4">
-                  <div>
-                    <p className="text-xs uppercase tracking-[0.3em] text-slate-500">{livePreview.label}</p>
-                    <p className="mt-2 text-2xl font-semibold text-brand">{livePreview.value}</p>
-                  </div>
-                  <div className="rounded-full bg-white px-4 py-2 text-xs font-semibold uppercase tracking-[0.3em] text-brand shadow-sm">
-                    {mode === 'simple' ? 'Simple' : 'Batch'} Mode
-                  </div>
-                </div>
-                <div className="mt-8 grid gap-4">
-                  <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-                    <p className="text-xs uppercase tracking-[0.3em] text-slate-500">{mode === 'simple' && solveFor !== 'weight' ? 'Target weight used' : 'Total weight'}</p>
-                    <div className="mt-3 flex flex-wrap gap-3">
-                      <div className="rounded-full bg-slate-100 px-4 py-2 text-sm font-semibold text-brand">
-                        {formatValue(activeWeightG)} g
-                      </div>
-                      <div className="rounded-full bg-slate-100 px-4 py-2 text-sm font-semibold text-brand">
-                        {formatValue(activeWeightKg)} kg
-                      </div>
-                      <div className="rounded-full bg-slate-100 px-4 py-2 text-sm font-semibold text-brand">
-                        {formatValue(activeWeightTons)} t
-                      </div>
-                    </div>
-                  </div>
-                  <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                    <button
-                      type="button"
-                      onClick={copyResults}
-                      className="inline-flex items-center justify-center gap-2 rounded-full bg-brand px-5 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-brand-dark"
-                    >
-                      <Copy size={16} /> Copy Result
-                    </button>
-                    <button
-                      type="button"
-                      onClick={saveCalculation}
-                      className="inline-flex items-center justify-center gap-2 rounded-full border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-brand shadow-sm transition hover:border-brand hover:text-brand-dark"
-                    >
-                      <Plus size={16} /> Save Calculation
-                    </button>
-                  </div>
-                  {copyMessage ? (
-                    <p className="text-sm text-brand">{copyMessage}</p>
-                  ) : null}
-                </div>
-              </div>
-            </div>
-          </div>
+      <section className="pt-28 pb-8 sm:pt-32">
+        <div className="mx-auto max-w-5xl px-4 sm:px-6">
+          <h1 className="text-3xl font-display font-bold tracking-tight sm:text-4xl">Nickel Strip Weight Calculator</h1>
+          <p className="mt-3 max-w-2xl text-slate-600">
+            Enter a size to get the weight — or enter a weight to find the length, thickness or number of pieces.
+          </p>
         </div>
       </section>
 
-      <section className="pb-16 sm:pb-20">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid gap-6 lg:gap-8 lg:grid-cols-[1.2fr_0.8fr]">
-            <div className="rounded-3xl border border-slate-200 bg-white p-5 sm:p-8 shadow-xl shadow-slate-200/40">
-              <div className="flex flex-wrap items-center gap-3">
-                <div className="rounded-full bg-brand/10 px-4 py-2 text-sm font-semibold text-brand">Mode</div>
-                <div className="inline-flex rounded-full border border-slate-200 bg-slate-50 p-1">
+      <section className="pb-16">
+        <div className="mx-auto grid max-w-5xl gap-6 px-4 sm:px-6 lg:grid-cols-5">
+          {/* Inputs */}
+          <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm sm:p-7 lg:col-span-3">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <p className="text-sm font-semibold text-slate-700">I want to find</p>
+              <div className="inline-flex rounded-full bg-slate-100 p-1" role="group" aria-label="Units">
+                {(['mm', 'inch'] as const).map((option) => (
                   <button
+                    key={option}
                     type="button"
-                    onClick={() => setMode('simple')}
-                    className={`rounded-full px-4 py-2 text-sm font-semibold transition ${mode === 'simple' ? 'bg-brand text-white shadow-sm' : 'text-slate-500 hover:text-brand'}`}
-                  >
-                    Simple
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setMode('batch')}
-                    className={`rounded-full px-4 py-2 text-sm font-semibold transition ${mode === 'batch' ? 'bg-brand text-white shadow-sm' : 'text-slate-500 hover:text-brand'}`}
-                  >
-                    Batch
-                  </button>
-                </div>
-                <div className="ml-auto flex items-center gap-2 rounded-full bg-slate-100 px-4 py-2 text-sm text-slate-600">
-                  <span>Unit</span>
-                  <button
-                    type="button"
-                    onClick={() => setUnit('mm')}
-                    className={`rounded-full px-3 py-2 transition ${unit === 'mm' ? 'bg-brand text-white' : 'bg-white text-slate-600'}`}
-                  >mm</button>
-                  <button
-                    type="button"
-                    onClick={() => setUnit('inch')}
-                    className={`rounded-full px-3 py-2 transition ${unit === 'inch' ? 'bg-brand text-white' : 'bg-white text-slate-600'}`}
-                  >inch</button>
-                </div>
-              </div>
-
-              <div className="mt-8 space-y-6">
-                <div className="grid gap-4 lg:grid-cols-[0.9fr_1.1fr]">
-                  <div className="space-y-3">
-                    <label className="block text-sm font-semibold text-slate-700">Material selection</label>
-                    <input
-                      type="search"
-                      value={materialSearch}
-                      onChange={(event) => setMaterialSearch(event.target.value)}
-                      placeholder="Search materials"
-                      className={inputClass}
-                    />
-                    <select
-                      value={selectedMaterial}
-                      onChange={(event) => setSelectedMaterial(event.target.value)}
-                      className={selectClass}
-                    >
-                      {filteredMaterials.map((material) => (
-                        <option key={material.name} value={material.name}>{material.name}</option>
-                      ))}
-                    </select>
-                    <p className="text-sm text-slate-500">{materialOptions.find((option) => option.name === selectedMaterial)?.description}</p>
-                  </div>
-                  <div className="space-y-3">
-                    <label className="block text-sm font-semibold text-slate-700">Custom density (g/cm³)</label>
-                    <input
-                      type="text"
-                      value={customDensity}
-                      onChange={(event) => setCustomDensity(event.target.value)}
-                      placeholder={String(selectedDensity)}
-                      className={inputClass}
-                    />
-                    <p className="text-sm text-slate-500">Leave blank to use material density automatically.</p>
-                  </div>
-                </div>
-
-                <div className="space-y-3">
-                  <label className="block text-sm font-semibold text-slate-700">Shape / product type</label>
-                  <select
-                    value={shape}
-                    onChange={(event) => setShape(event.target.value)}
-                    className={selectClass}
-                  >
-                    {shapeOptions.map((option) => (
-                      <option key={option} value={option}>{option}</option>
-                    ))}
-                  </select>
-                </div>
-
-                {mode === 'simple' ? (
-                  <>
-                    <div className="space-y-3">
-                      <label className="block text-sm font-semibold text-slate-700">Solve for</label>
-                      <p className="text-sm text-slate-500">Pick the value you want calculated — the other fields become your known inputs.</p>
-                      <div className="flex flex-wrap gap-2">
-                        {(Object.keys(solveTargetLabels) as SolveTarget[]).map((target) => (
-                          <button
-                            key={target}
-                            type="button"
-                            onClick={() => setSolveFor(target)}
-                            className={`rounded-full px-4 py-2 text-sm font-semibold transition ${solveFor === target ? 'bg-brand text-white shadow-sm' : 'bg-slate-100 text-slate-600 hover:text-brand'}`}
-                          >
-                            {solveTargetLabels[target]}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-
-                    {solveFor !== 'weight' && (
-                      <div className="space-y-3">
-                        <label className="block text-sm font-semibold text-slate-700">Target weight (kg)</label>
-                        <input
-                          type="text"
-                          value={targetWeightKg}
-                          onChange={(event) => setTargetWeightKg(event.target.value)}
-                          placeholder="1"
-                          className={inputClass}
-                        />
-                        <p className="text-sm text-slate-500">Enter the known weight — {solveTargetLabels[solveFor].toLowerCase()} will be calculated from it.</p>
-                      </div>
+                    aria-pressed={unit === option}
+                    onClick={() => changeUnit(option)}
+                    className={cn(
+                      'rounded-full px-3 py-1 text-xs font-semibold transition',
+                      unit === option ? 'bg-white text-brand shadow-sm' : 'text-slate-500'
                     )}
-
-                    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-                      <div className="space-y-3">
-                        <label className="flex items-center justify-between text-sm font-semibold text-slate-700">
-                          Thickness
-                          {solveFor === 'thickness' && <span className="rounded-full bg-brand/10 px-2 py-0.5 text-xs font-semibold text-brand">Calculated</span>}
-                        </label>
-                        <input
-                          type="text"
-                          value={solveFor === 'thickness' ? (simpleResult.isValid ? String(formatValue(simpleResult.thickness)) : '') : thickness}
-                          onChange={(event) => setThickness(event.target.value)}
-                          placeholder="0.15"
-                          readOnly={solveFor === 'thickness'}
-                          className={`${inputClass} ${solveFor === 'thickness' ? 'bg-brand/5 font-semibold text-brand cursor-not-allowed' : ''}`}
-                        />
-                      </div>
-                      <div className="space-y-3">
-                        <label className="flex items-center justify-between text-sm font-semibold text-slate-700">
-                          Width
-                          {solveFor === 'width' && <span className="rounded-full bg-brand/10 px-2 py-0.5 text-xs font-semibold text-brand">Calculated</span>}
-                        </label>
-                        <input
-                          type="text"
-                          value={solveFor === 'width' ? (simpleResult.isValid ? String(formatValue(simpleResult.width)) : '') : width}
-                          onChange={(event) => setWidth(event.target.value)}
-                          placeholder="8"
-                          readOnly={solveFor === 'width'}
-                          className={`${inputClass} ${solveFor === 'width' ? 'bg-brand/5 font-semibold text-brand cursor-not-allowed' : ''}`}
-                        />
-                      </div>
-                      <div className="space-y-3">
-                        <label className="flex items-center justify-between text-sm font-semibold text-slate-700">
-                          Length
-                          {solveFor === 'length' && <span className="rounded-full bg-brand/10 px-2 py-0.5 text-xs font-semibold text-brand">Calculated</span>}
-                        </label>
-                        <input
-                          type="text"
-                          value={solveFor === 'length' ? (simpleResult.isValid ? String(formatValue(simpleResult.length)) : '') : length}
-                          onChange={(event) => setLength(event.target.value)}
-                          placeholder="100"
-                          readOnly={solveFor === 'length'}
-                          className={`${inputClass} ${solveFor === 'length' ? 'bg-brand/5 font-semibold text-brand cursor-not-allowed' : ''}`}
-                        />
-                      </div>
-                      <div className="space-y-3">
-                        <label className="flex items-center justify-between text-sm font-semibold text-slate-700">
-                          Quantity
-                          {solveFor === 'quantity' && <span className="rounded-full bg-brand/10 px-2 py-0.5 text-xs font-semibold text-brand">Calculated</span>}
-                        </label>
-                        <input
-                          type="text"
-                          value={solveFor === 'quantity' ? (simpleResult.isValid ? String(Math.floor(simpleResult.quantity)) : '') : quantity}
-                          onChange={(event) => setQuantity(event.target.value)}
-                          placeholder="10"
-                          readOnly={solveFor === 'quantity'}
-                          className={`${inputClass} ${solveFor === 'quantity' ? 'bg-brand/5 font-semibold text-brand cursor-not-allowed' : ''}`}
-                        />
-                      </div>
-                    </div>
-                  </>
-                ) : (
-                  <div className="space-y-4">
-                    {rows.map((row, index) => (
-                      <div key={row.id} className="rounded-2xl border border-slate-200 bg-slate-50 p-5 shadow-sm">
-                        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                          <div>
-                            <p className="text-sm font-semibold text-slate-700">Row {index + 1}</p>
-                            <p className="text-sm text-slate-500">Use separate rows for different strip dimensions.</p>
-                          </div>
-                          <button
-                            type="button"
-                            onClick={() => removeRow(row.id)}
-                            className="inline-flex items-center gap-2 rounded-full bg-white px-4 py-2 text-sm font-semibold text-[#c21f1f] shadow-sm transition hover:bg-slate-100 self-start sm:self-auto"
-                          >
-                            <Trash2 size={16} /> Remove
-                          </button>
-                        </div>
-                        <div className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-                          <div>
-                            <label className="block text-sm font-semibold text-slate-700">Material</label>
-                            <select
-                              value={row.material}
-                              onChange={(event) => updateRow(row.id, 'material', event.target.value)}
-                              className={selectClass}
-                            >
-                              {materialOptions.map((material) => (
-                                <option key={material.name} value={material.name}>{material.name}</option>
-                              ))}
-                              <option value="Custom Density">Custom Density</option>
-                            </select>
-                          </div>
-                          <div>
-                            <label className="block text-sm font-semibold text-slate-700">Thickness</label>
-                            <input
-                              type="text"
-                              value={row.thickness}
-                              onChange={(event) => updateRow(row.id, 'thickness', event.target.value)}
-                              placeholder="0.15"
-                              className={inputClass}
-                            />
-                          </div>
-                          <div>
-                            <label className="block text-sm font-semibold text-slate-700">Width</label>
-                            <input
-                              type="text"
-                              value={row.width}
-                              onChange={(event) => updateRow(row.id, 'width', event.target.value)}
-                              placeholder="8"
-                              className={inputClass}
-                            />
-                          </div>
-                          <div>
-                            <label className="block text-sm font-semibold text-slate-700">Length</label>
-                            <input
-                              type="text"
-                              value={row.length}
-                              onChange={(event) => updateRow(row.id, 'length', event.target.value)}
-                              placeholder="120"
-                              className={inputClass}
-                            />
-                          </div>
-                          <div>
-                            <label className="block text-sm font-semibold text-slate-700">Qty</label>
-                            <input
-                              type="text"
-                              value={row.quantity}
-                              onChange={(event) => updateRow(row.id, 'quantity', event.target.value)}
-                              placeholder="10"
-                              className={inputClass}
-                            />
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                    <button
-                      type="button"
-                      onClick={addBatchRow}
-                      className="inline-flex items-center gap-2 rounded-full border border-dashed border-brand bg-white px-5 py-3 text-sm font-semibold text-brand shadow-sm transition hover:bg-brand-surface"
-                    >
-                      <Plus size={16} /> Add row
-                    </button>
-                  </div>
-                )}
-
-                <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-                  <div className="rounded-2xl border border-slate-200 bg-slate-50 p-5 shadow-sm">
-                    <p className="text-xs uppercase tracking-[0.3em] text-slate-500">Current density</p>
-                    <p className="mt-2 text-xl font-semibold text-brand">{selectedDensity ? `${selectedDensity} g/cm³` : 'Enter density'}</p>
-                  </div>
-                  <div className="rounded-2xl border border-slate-200 bg-slate-50 p-5 shadow-sm">
-                    <p className="text-xs uppercase tracking-[0.3em] text-slate-500">Calculated volume</p>
-                    <p className="mt-2 text-xl font-semibold text-brand">
-                      {formatValue(mode === 'simple'
-                        ? dimensionToCm(resolvedSimple.thickness, unit) * dimensionToCm(resolvedSimple.width, unit) * dimensionToCm(resolvedSimple.length, unit) * (resolvedSimple.quantity || 1)
-                        : rows.reduce((sum, row) => sum + (dimensionToCm(parseNumber(row.thickness), unit) * dimensionToCm(parseNumber(row.width), unit) * dimensionToCm(parseNumber(row.length), unit) * parseNumber(row.quantity)), 0))} cm³
-                    </p>
-                  </div>
-                  <div className="rounded-2xl border border-slate-200 bg-slate-50 p-5 shadow-sm">
-                    <p className="text-xs uppercase tracking-[0.3em] text-slate-500">{mode === 'simple' ? `Output — ${solveTargetLabels[solveFor]}` : 'Output'}</p>
-                    <p className="mt-2 text-xl font-semibold text-brand">
-                      {mode === 'batch' && `${formatValue(activeWeightG)} g`}
-                      {mode === 'simple' && solveFor === 'weight' && `${formatValue(activeWeightG)} g`}
-                      {mode === 'simple' && solveFor === 'thickness' && (simpleResult.isValid ? `${formatValue(simpleResult.thickness)} ${unit}` : '—')}
-                      {mode === 'simple' && solveFor === 'width' && (simpleResult.isValid ? `${formatValue(simpleResult.width)} ${unit}` : '—')}
-                      {mode === 'simple' && solveFor === 'length' && (simpleResult.isValid ? `${formatValue(simpleResult.length)} ${unit}` : '—')}
-                      {mode === 'simple' && solveFor === 'quantity' && (simpleResult.isValid ? `${Math.floor(simpleResult.quantity)} pcs` : '—')}
-                    </p>
-                  </div>
-                </div>
-
-                <div className="mt-6 flex flex-wrap gap-3">
-                  <button
-                    type="button"
-                    onClick={resetCalculator}
-                    className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-brand shadow-sm transition hover:bg-slate-100"
                   >
-                    <RefreshCcw size={16} /> Reset
+                    {option}
                   </button>
-                  <Link
-                    to="/contact"
-                    className="inline-flex items-center gap-2 rounded-full bg-brand px-5 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-brand-dark"
-                  >
-                    Request Quote
-                    <ArrowRight size={16} />
-                  </Link>
-                  <a
-                    href={buildWhatsAppUrl('Hello Team, I used the weight calculator and need a quote.')}
-                    target="_blank"
-                    rel="noreferrer"
-                    onClick={() => logCallClick(`+${PRIMARY_WHATSAPP.e164}`, 'calculator_whatsapp')}
-                    className="inline-flex items-center gap-2 rounded-full border border-[#22C55E] bg-white px-5 py-3 text-sm font-semibold text-[#22C55E] shadow-sm transition hover:bg-[#ecfdf5]"
-                  >
-                    <MessageCircle size={16} /> WhatsApp Manufacturer
-                  </a>
-                </div>
+                ))}
               </div>
             </div>
-
-            <aside className="rounded-3xl border border-slate-200 bg-white p-5 sm:p-8 shadow-xl shadow-slate-200/40">
-              <div className="space-y-6">
-                <div className="rounded-2xl bg-gradient-to-br from-brand-surface to-white p-6 border border-slate-200">
-                  <p className="text-xs uppercase tracking-[0.3em] text-brand">Quick tips</p>
-                  <ul className="mt-4 space-y-3 text-sm text-slate-700">
-                    <li>Use "Solve for" to work backwards — enter a target weight in kg and pick Thickness, Width, Length or Quantity to calculate it automatically.</li>
-                    <li>Use mm for strip, sheet and foil work. Switch to inches for export drawings.</li>
-                    <li>Custom density helps with nickel-plated, alloy or mixed material calculations.</li>
-                    <li>Save repeated builds to recent results for fast quoting.</li>
-                    <li>Use batch mode to compare multiple strip dimensions in a single estimate.</li>
-                  </ul>
-                </div>
-                <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-                  <p className="text-xs uppercase tracking-[0.3em] text-slate-500">Recent calculations</p>
-                  {recentCalculations.length === 0 ? (
-                    <p className="mt-4 text-sm text-slate-500">No saved calculations yet. Save your first result to show recent estimates here.</p>
-                  ) : (
-                    <div className="mt-4 space-y-3">
-                      {recentCalculations.map((item) => (
-                        <div key={item.id} className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
-                          <div className="flex items-center justify-between gap-3">
-                            <p className="text-sm font-semibold text-brand">{item.label}</p>
-                            <span className="rounded-full bg-brand/10 px-3 py-1 text-xs font-semibold text-brand">{item.totalKg} kg</span>
-                          </div>
-                          <p className="mt-2 text-xs text-slate-500">{new Date(item.createdAt).toLocaleString()}</p>
-                        </div>
-                      ))}
-                    </div>
+            <div className="mt-3 grid grid-cols-4 gap-1 rounded-2xl bg-slate-100 p-1" role="group" aria-label="What to calculate">
+              {TARGETS.map((option) => (
+                <button
+                  key={option.id}
+                  type="button"
+                  aria-pressed={target === option.id}
+                  onClick={() => setTarget(option.id)}
+                  className={cn(
+                    // text-xs below sm: "Thickness" does not fit a quarter of a 375px card at text-sm.
+                    'rounded-xl px-1 py-2 text-xs font-semibold transition sm:px-2 sm:text-sm',
+                    target === option.id ? 'bg-brand text-white shadow-sm' : 'text-slate-600 hover:text-brand'
                   )}
-                </div>
-                <div className="rounded-2xl border border-slate-200 bg-white p-6">
-                  <p className="text-xs uppercase tracking-[0.3em] text-brand">Dynamic insights</p>
-                  <p className="mt-3 text-sm text-slate-700">Latest nickel strip and battery assembly articles load automatically from the site blog database.</p>
-                  <div className="mt-5 space-y-3">
-                    {blogPosts.length === 0 ? (
-                      <p className="text-sm text-slate-500">Loading blog posts…</p>
-                    ) : (
-                      blogPosts.map((post) => (
-                        <Link
-                          key={post.id}
-                          to={`/blog/${encodePathSegment(post.slug)}`}
-                          className="block rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4 text-sm text-brand transition hover:border-brand hover:bg-brand-surface"
-                        >
-                          <p className="font-semibold">{post.title}</p>
-                          <p className="mt-1 text-xs text-slate-500">{post.excerpt}</p>
-                        </Link>
-                      ))
-                    )}
-                  </div>
-                </div>
-              </div>
-            </aside>
-          </div>
-        </div>
-      </section>
+                >
+                  {option.label}
+                </button>
+              ))}
+            </div>
 
-      <section className="pb-16 sm:pb-20 bg-white text-brand">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="rounded-3xl border border-slate-200 bg-[#f6f8f9] p-6 sm:p-10 shadow-xl shadow-slate-200/40">
-            <div className="grid gap-8 lg:grid-cols-2">
-              <div>
-                <p className="text-xs font-semibold uppercase tracking-[0.3em] text-brand">How to use</p>
-                <h2 className="mt-3 text-2xl sm:text-3xl font-display font-bold text-brand">What is Nickel Strip Weight Calculator?</h2>
-                <p className="mt-4 text-base leading-8 text-slate-600">
-                  This calculator helps manufacturing teams estimate the weight of nickel strips, sheets, busbars and coils based on thickness, width, length, density and quantity.
+            <div className="mt-6 grid gap-4 sm:grid-cols-2">
+              <div className="sm:col-span-2">
+                <label htmlFor="calc-material" className="mb-1.5 block text-sm font-semibold text-slate-700">
+                  Material
+                </label>
+                <select
+                  id="calc-material"
+                  value={materialId}
+                  onChange={(event) => setMaterialId(event.target.value as MaterialId)}
+                  className={inputClass}
+                >
+                  {MATERIALS.map((option) => (
+                    <option key={option.id} value={option.id}>
+                      {option.label}
+                      {option.density ? ` — ${option.density} g/cm³` : ''}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              {materialId === 'custom' ? (
+                <div className="sm:col-span-2">
+                  <Field id="calc-density" label="Density" suffix="g/cm³" value={customDensity} onChange={setCustomDensity} />
+                </div>
+              ) : null}
+
+              {target !== 'weight' ? (
+                <div className="sm:col-span-2">
+                  <Field id="calc-total" label="Total weight" suffix="kg" value={totalKg} onChange={setTotalKg} />
+                </div>
+              ) : null}
+              {showField('thickness') ? (
+                <Field id="calc-thickness" label="Thickness" suffix={unit} value={thickness} onChange={setThickness} />
+              ) : null}
+              <Field id="calc-width" label="Width" suffix={unit} value={width} onChange={setWidth} />
+              {showField('length') ? (
+                <Field id="calc-length" label="Length of each piece" suffix={unit} value={length} onChange={setLength} />
+              ) : null}
+              {showField('quantity') ? (
+                <Field id="calc-quantity" label="Number of pieces" suffix="pcs" value={quantity} onChange={setQuantity} />
+              ) : null}
+            </div>
+          </div>
+
+          {/* Result */}
+          <div className="lg:col-span-2">
+            <div className="rounded-3xl bg-brand p-6 text-white shadow-lg sm:p-7 lg:sticky lg:top-28" aria-live="polite">
+              <p className="text-sm text-white/70">{headline.label}</p>
+              <p className="mt-1 text-4xl font-display font-bold tracking-tight">{headline.value}</p>
+
+              <dl className="mt-6 space-y-2 border-t border-white/15 pt-5 text-sm">
+                {target !== 'weight' && result.ok ? (
+                  <div className="flex justify-between gap-4">
+                    <dt className="text-white/70">Total weight</dt>
+                    <dd className="font-semibold">{fmt(totalKgResult, 3)} kg</dd>
+                  </div>
+                ) : null}
+                <div className="flex justify-between gap-4">
+                  <dt className="text-white/70">Weight per metre</dt>
+                  <dd className="font-semibold">{gramsPerMetre ? `${fmt(gramsPerMetre)} g/m` : '—'}</dd>
+                </div>
+                <div className="flex justify-between gap-4">
+                  <dt className="text-white/70">Weight per piece</dt>
+                  <dd className="font-semibold">{gramsPerPiece ? `${fmt(gramsPerPiece, 3)} g` : '—'}</dd>
+                </div>
+              </dl>
+
+              {moqMetres ? (
+                <p className={cn('mt-5 rounded-xl px-3 py-2 text-xs', belowMoq ? 'bg-amber-300/20 text-amber-100' : 'bg-white/10 text-white/80')}>
+                  {belowMoq ? 'Below our 5 kg minimum order. ' : 'Minimum order is 5 kg. '}
+                  At this size, 5 kg is about {fmt(moqMetres, moqMetres < 10 ? 1 : 0)} {moqMetres >= 0.95 && moqMetres < 1.05 ? 'metre' : 'metres'}.
                 </p>
-                <div className="mt-6 space-y-4 text-sm text-slate-600">
-                  <p><strong>Weight formula:</strong> Weight = Thickness × Width × Length × Density × Quantity.</p>
-                  <p><strong>Unit conversion:</strong> If using mm, convert dimensions to cm by dividing by 10. If using inches, multiply by 2.54.</p>
-                  <p><strong>Density:</strong> Nickel 200 and Nickel 201 use 8.89 g/cm³. Nickel Plated Steel uses 7.85 g/cm³, and custom density can be entered for special alloys.</p>
-                </div>
-              </div>
-              <div className="grid gap-4">
-                <div className="rounded-2xl bg-white p-6 shadow-sm">
-                  <h3 className="text-lg font-semibold text-brand">Nickel strip applications</h3>
-                  <ul className="mt-4 list-disc space-y-2 pl-5 text-sm text-slate-600">
-                    <li>Battery tab and connector fabrication for lithium-ion cells.</li>
-                    <li>EV battery module busbars and high-current connectors.</li>
-                    <li>Industrial plating, foil manufacturing and welded assemblies.</li>
-                  </ul>
-                </div>
-                <div className="rounded-2xl bg-white p-6 shadow-sm">
-                  <h3 className="text-lg font-semibold text-brand">Battery pack applications</h3>
-                  <ul className="mt-4 list-disc space-y-2 pl-5 text-sm text-slate-600">
-                    <li>18650 and 21700 cell seams, tabs and interconnects.</li>
-                    <li>EV and ESS busbar networks where precise weight matters.</li>
-                    <li>Custom stack and module designs used in manufacturing quotes.</li>
-                  </ul>
-                </div>
-              </div>
+              ) : null}
+
+              <a
+                href={buildWhatsAppUrl(quoteMessage)}
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={() => logCallClick(`+${PRIMARY_WHATSAPP.e164}`, 'calculator_whatsapp')}
+                className="mt-6 inline-flex w-full items-center justify-center gap-2 rounded-full bg-white px-5 py-3 text-sm font-semibold text-brand transition hover:bg-white/90"
+              >
+                <MessageCircle size={16} /> Get a price for this size
+              </a>
+              <Link
+                to="/products"
+                className="mt-3 inline-flex w-full items-center justify-center gap-1.5 text-sm font-semibold text-white/85 hover:text-white"
+              >
+                Browse nickel strip <ArrowRight size={14} />
+              </Link>
             </div>
           </div>
         </div>
       </section>
 
-      <section className="pb-20 sm:pb-24 bg-[#f6f8f9] text-brand">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="rounded-3xl border border-slate-200 bg-white p-6 sm:p-10 shadow-xl shadow-slate-200/40">
-            <div className="grid gap-8 lg:grid-cols-2">
-              <div>
-                <p className="text-xs font-semibold uppercase tracking-[0.3em] text-brand">FAQ</p>
-                <h2 className="mt-3 text-2xl sm:text-3xl font-display font-bold text-brand">Common Nickel Strip Weight Questions</h2>
-                <div className="mt-8 space-y-4 text-sm text-slate-600">
-                  {faqItems.map((faq) => (
-                    <details key={faq.question} className="rounded-2xl border border-slate-200 bg-slate-50 p-5">
-                      <summary className="cursor-pointer font-semibold text-brand">{faq.question}</summary>
-                      <p className="mt-3">{faq.answer}</p>
-                    </details>
-                  ))}
-                </div>
-              </div>
-              <div className="rounded-2xl border border-slate-200 bg-slate-50 p-6 sm:p-8 shadow-sm">
-                <p className="text-xs uppercase tracking-[0.3em] text-brand">Calculator highlights</p>
-                <ul className="mt-6 space-y-3 text-sm text-slate-600">
-                  <li>Live calculation updates while typing for instant quoting.</li>
-                  <li>Batch row support for multiple products and dimensions.</li>
-                  <li>Export estimates to PDF and save recent calculations locally.</li>
-                  <li>Built for engineering teams, battery OEMs, and nickel strip manufacturers.</li>
-                </ul>
-                <div className="mt-8 space-y-4">
-                  <Link
-                    to="/products?search=nickel"
-                    className="inline-flex w-full items-center justify-center rounded-full bg-brand px-6 py-4 text-sm font-semibold text-white shadow-sm transition hover:bg-brand-dark"
-                  >
-                    Browse Nickel Products
-                  </Link>
-                  <Link
-                    to="/contact"
-                    className="inline-flex w-full items-center justify-center rounded-full border border-brand bg-white px-6 py-4 text-sm font-semibold text-brand shadow-sm transition hover:bg-slate-100"
-                  >
-                    Contact Manufacturer
-                  </Link>
-                </div>
-              </div>
+      {/* The explanatory copy and FAQ stay: they are what the page ranks on (566 impressions in
+          Search Console), and they answer the question in text for anyone who will not type. */}
+      <section className="border-t border-slate-200 bg-white py-16">
+        <div className="mx-auto grid max-w-5xl gap-10 px-4 sm:px-6 lg:grid-cols-2">
+          <div>
+            <h2 className="text-2xl font-display font-bold">How the weight is calculated</h2>
+            <p className="mt-4 text-slate-600">
+              <strong className="text-brand">Weight = Thickness × Width × Length × Density × Quantity</strong>, with every
+              dimension converted to centimetres first (mm ÷ 10, or inches × 2.54).
+            </p>
+            <ul className="mt-4 space-y-1 text-sm text-slate-600">
+              <li>Pure nickel (Nickel 200 / 201): 8.89 g/cm³</li>
+              <li>Nickel-plated steel: 7.85 g/cm³</li>
+            </ul>
+            <p className="mt-4 text-sm text-slate-600">
+              Nickel strip is priced per kilogram, so this weight is what a quotation is built from.{' '}
+              <Link to="/h-type-nickel-strip" className="font-semibold text-brand underline underline-offset-2">
+                H type nickel strip
+              </Link>{' '}
+              and plain strip are made in any size from 5 kg.
+            </p>
+          </div>
+          <div>
+            <h2 className="text-2xl font-display font-bold">Common questions</h2>
+            <div className="mt-4 space-y-3">
+              {faqItems.map((faq) => (
+                <details key={faq.question} className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                  <summary className="cursor-pointer font-semibold text-brand">{faq.question}</summary>
+                  <p className="mt-2 text-sm text-slate-600">{faq.answer}</p>
+                </details>
+              ))}
             </div>
           </div>
         </div>

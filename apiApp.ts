@@ -32,6 +32,8 @@ import {
   type MerchantFeedProduct,
 } from "./src/lib/merchantFeed.js";
 import { localProductImagePath } from "./src/lib/productImageLocal.js";
+// .js is required: Node loads this directly (see the note in src/lib/productImage.ts).
+import { formatSpec, normaliseSpec, specKey } from "./src/lib/stripSpec.js";
 import dotenv from "dotenv";
 import nodemailer from "nodemailer";
 import twilio from "twilio";
@@ -195,7 +197,7 @@ const sendEnquiryNotifications = (payload: EnquiryNotificationPayload) =>
 type QuoteNotificationPayload = {
   id: number;
   customer: Record<string, unknown>;
-  items: Array<{ product_name?: string; quantity?: number | string; unit_price?: number | string; line_total?: number | string }>;
+  items: Array<{ product_name?: string; quantity?: number | string; unit_price?: number | string; line_total?: number | string; spec?: unknown }>;
   summary: Record<string, unknown>;
 };
 
@@ -212,7 +214,7 @@ const formatQuoteMessage = (payload: QuoteNotificationPayload) => {
     `Items:`,
     ...items.map(
       (item) =>
-        `- ${item.product_name || "Unnamed product"} | Qty: ${item.quantity ?? "N/A"} | Unit Price: ${item.unit_price ?? "N/A"} | Total: ${item.line_total ?? "N/A"}`
+        `- ${item.product_name || "Unnamed product"} | Size: ${item.spec ? formatSpec(normaliseSpec(item.spec)) : "not given"} | Qty: ${item.quantity ?? "N/A"} | Unit Price: ${item.unit_price ?? "N/A"} | Total: ${item.line_total ?? "N/A"}`
     ),
     ``,
     `Subtotal: ${summary.subtotal ?? "N/A"}`,
@@ -1205,17 +1207,23 @@ export function createApiApp() {
 
     try {
       const items = await query(
-        `SELECT p.*, ci.quantity
+        `SELECT p.*, ci.quantity, ci.spec
          FROM cart_items ci
          JOIN products p ON p.id = ci.product_id
          WHERE ci.user_id = $1
          ORDER BY ci.created_at ASC`,
         [userId]
       );
-      res.json(items.map((item) => ({
-        ...normalizeProductRow(item as Record<string, unknown>),
-        quantity: toFiniteInteger((item as Record<string, unknown>).quantity, 1),
-      })));
+      res.json(items.map((item) => {
+        const row = item as Record<string, unknown>;
+        const { spec, ...product } = row;
+        return {
+          ...normalizeProductRow(product),
+          quantity: toFiniteInteger(row.quantity, 1),
+          // Re-sanitised on the way out as well as in: this is data a browser wrote.
+          ...(spec ? { spec: normaliseSpec(spec) } : {}),
+        };
+      }));
     } catch (error) {
       console.error("Failed to load cart", error);
       res.status(500).json({ error: "Failed to load cart" });
@@ -1233,22 +1241,29 @@ export function createApiApp() {
       return res.status(400).json({ error: `A cart cannot contain more than ${MAX_CART_ITEMS} items.` });
     }
 
-    const parsed = rawItems
-      .map((item: any) => ({
-        product_id: Number(item?.product_id ?? item?.productId ?? item?.id),
-        // Capped as well as floored: quantity lands in an `integer` column, so a value like
-        // 1e308 would clear the isFinite check below and then overflow on INSERT.
-        quantity: Math.min(MAX_CART_QUANTITY, Math.max(1, Math.floor(Number(item?.quantity ?? 0)))),
-      }))
-      .filter((item: { product_id: number; quantity: number }) =>
+    type ParsedCartItem = { product_id: number; quantity: number; spec: ReturnType<typeof normaliseSpec> | null; spec_key: string };
+    const parsed: ParsedCartItem[] = rawItems
+      .map((item: any) => {
+        const spec = item?.spec ? normaliseSpec(item.spec) : null;
+        return {
+          product_id: Number(item?.product_id ?? item?.productId ?? item?.id),
+          // Capped as well as floored: quantity lands in an `integer` column, so a value like
+          // 1e308 would clear the isFinite check below and then overflow on INSERT.
+          quantity: Math.min(MAX_CART_QUANTITY, Math.max(1, Math.floor(Number(item?.quantity ?? 0)))),
+          spec,
+          spec_key: specKey(spec),
+        };
+      })
+      .filter((item: ParsedCartItem) =>
         Number.isFinite(item.product_id) && item.product_id > 0 && Number.isFinite(item.quantity) && item.quantity > 0
       );
 
-    // cart_items is unique on (user_id, product_id), so the same product listed twice would
-    // abort the whole transaction. Collapse duplicates to the last quantity seen instead.
-    const deduped = new Map<number, { product_id: number; quantity: number }>();
+    // A line is a product *in a size*: cart_items is unique on (user_id, product_id, spec_key),
+    // so the same product in two sizes is two rows, and an exact repeat would abort the whole
+    // transaction. Collapse exact repeats to the last quantity seen.
+    const deduped = new Map<string, ParsedCartItem>();
     for (const item of parsed) {
-      deduped.set(item.product_id, item);
+      deduped.set(`${item.product_id}:${item.spec_key}`, item);
     }
     const items = [...deduped.values()];
 
@@ -1258,10 +1273,13 @@ export function createApiApp() {
       await client.query("DELETE FROM cart_items WHERE user_id = $1", [userId]);
 
       for (const item of items) {
+        // Plain INSERT: the DELETE above has already emptied this user's rows and the map above
+        // removed exact repeats, so there is nothing to conflict with. It also means this does
+        // not name a constraint, which matters while the database carries both the old and new
+        // unique keys (see supabase/cart-sizes-phase2.sql).
         await client.query(
-          `INSERT INTO cart_items (user_id, product_id, quantity) VALUES ($1, $2, $3)
-           ON CONFLICT (user_id, product_id) DO UPDATE SET quantity = EXCLUDED.quantity, updated_at = now()`,
-          [userId, item.product_id, item.quantity]
+          `INSERT INTO cart_items (user_id, product_id, quantity, spec, spec_key) VALUES ($1, $2, $3, $4, $5)`,
+          [userId, item.product_id, item.quantity, item.spec ? JSON.stringify(item.spec) : null, item.spec_key]
         );
       }
 
@@ -2041,8 +2059,8 @@ export function createApiApp() {
       for (const item of items) {
         await client.query(
           `INSERT INTO quote_request_items
-            (quote_request_id, product_id, product_name, category_name, quantity, unit_price, line_total)
-           VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+            (quote_request_id, product_id, product_name, category_name, quantity, unit_price, line_total, spec, spec_summary)
+           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
           [
             quote.id,
             item.product_id ?? null,
@@ -2051,6 +2069,10 @@ export function createApiApp() {
             item.quantity ?? null,
             item.unit_price ?? null,
             item.line_total ?? null,
+            // The size the buyer chose, sanitised here rather than trusted: it is free text from
+            // a browser and it ends up in the sales team's view of the order.
+            item.spec ? JSON.stringify(normaliseSpec(item.spec)) : null,
+            item.spec ? formatSpec(normaliseSpec(item.spec)) : null,
           ]
         );
       }

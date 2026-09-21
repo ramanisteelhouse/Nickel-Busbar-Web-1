@@ -9,6 +9,7 @@ import { calculateOrderTotals } from '../lib/tax';
 import { getProductUnitLabel, normalizeProductUnit } from '../lib/utils';
 import { PRIMARY_WHATSAPP } from '../lib/contact';
 import { flushPendingQuotes, saveQuoteRequest } from '../lib/quoteQueue';
+import { formatSpec, isSpecComplete, takesStripSize } from '../lib/stripSpec';
 
 interface CheckoutPageProps {
   cart: CartItem[];
@@ -22,6 +23,8 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({ cart }) => {
   // Previously an unconditional 18%, which inflated every export total. See src/lib/tax.ts.
   const { gst, total, gstApplicable, gstLabel } = calculateOrderTotals(subtotal, country);
   const convertAmount = (amount: number) => Number((amount * exchangeRate).toFixed(2));
+  // Same rule as the cart page: nickel strip lines must carry a size before they can be quoted.
+  const linesMissingSize = cart.filter((item) => takesStripSize(item) && !isSpecComplete(item.spec)).length;
   const totalItems = useMemo(
     () => cart.reduce((acc, item) => acc + item.quantity, 0),
     [cart]
@@ -117,6 +120,11 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({ cart }) => {
     const trimmedName = customerName.trim();
     const trimmedEmail = customerEmail.trim();
 
+    // The cart page already blocks this, but /checkout is reachable directly by URL.
+    if (linesMissingSize > 0) {
+      setSaveError('Some items have no size yet. Go back to the cart and add the size for each item.');
+      return;
+    }
     // The RFQ is a sales lead, so it is worthless without a way to reply.
     if (!trimmedName || !trimmedEmail || !phoneNumber.trim()) {
       setSaveError('Name, email and mobile number are required to continue.');
@@ -144,6 +152,12 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({ cart }) => {
 
     cart.forEach((item, index) => {
       message += `${index + 1}. *${item.name}*%0A`;
+      // Encoded, unlike the lines around it: the size includes the buyer's own free-text notes,
+      // and a "&" or "#" typed there would otherwise end the wa.me URL and cut the message off.
+      if (item.spec) {
+        message += `   Size: ${encodeURIComponent(formatSpec(item.spec))}%0A`;
+        if (item.spec.notes) message += `   Design notes: ${encodeURIComponent(item.spec.notes)}%0A`;
+      }
       message += `   Qty: ${item.quantity} ${normalizeProductUnit(item.unit)}%0A`;
       message += `   Unit Price: ${formatPrice(item.price)} ${getProductUnitLabel(item.unit)}%0A`;
       message += `   Category: ${item.category_name}%0A`;
@@ -186,6 +200,7 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({ cart }) => {
             quantity: item.quantity,
             unit_price: convertAmount(item.price),
             line_total: convertAmount(item.price * item.quantity),
+            spec: item.spec ?? null,
           })),
           meta: {
             source: 'whatsapp_rfq',
@@ -403,11 +418,17 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({ cart }) => {
             <button
               onClick={handleWhatsAppRFQ}
               className="w-full bg-[#22C55E] text-white py-4 rounded-full font-bold hover:bg-[#16A34A] transition-all flex items-center justify-center gap-2 disabled:opacity-60"
-              disabled={isSavingQuote || !phoneNumber.trim()}
+              disabled={isSavingQuote || !phoneNumber.trim() || linesMissingSize > 0}
             >
               <MessageCircle size={20} />
               {isSavingQuote ? t('checkout.savingQuote') : t('checkout.placeRfq')}
             </button>
+            {linesMissingSize > 0 ? (
+              <p className="text-xs text-amber-700 mt-3">
+                {linesMissingSize === 1 ? 'One item needs a size.' : `${linesMissingSize} items need a size.`}{' '}
+                <Link to="/cart" className="font-semibold underline underline-offset-2">Add it in the cart</Link>
+              </p>
+            ) : null}
             {saveError ? (
               <p className="text-xs text-red-600 mt-3">{saveError}</p>
             ) : null}

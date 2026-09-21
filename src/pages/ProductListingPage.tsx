@@ -7,6 +7,7 @@ import { Product, Category } from '../types';
 import { cn, getProductUnitLabel, getStrikePrice } from '../lib/utils';
 import { ProductThumbnail } from '../components/ProductThumbnail';
 import { showToast } from '../components/Toast';
+import { takesStripSize } from '../lib/stripSpec';
 import { useLanguage } from '../i18n/LanguageProvider';
 
 type ProductListingPageProps = {
@@ -343,7 +344,11 @@ export const ProductListingPage: React.FC<ProductListingPageProps> = ({ onAddToC
                               type="button"
                               onClick={() => {
                                 onAddToCart(product);
-                                showToast(t('productDetail.addToCart'), product.name);
+                                // Added without a size: the grid has no room for the picker, so the cart asks for it.
+                                showToast(
+                                  t('productDetail.addToCart'),
+                                  takesStripSize(product) ? `${product.name} — add your size in the cart` : product.name
+                                );
                               }}
                               className="flex flex-1 items-center justify-center gap-1.5 rounded-full bg-zinc-900 px-3 py-2 text-xs font-semibold text-white whitespace-nowrap transition-colors hover:bg-zinc-800"
                             >
