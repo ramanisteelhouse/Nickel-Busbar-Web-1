@@ -29,7 +29,12 @@
     "apiApp.ts",
     "api/**/*.ts",
     "db.ts",
-    "vite.config.ts"
+    "vite.config.ts",
+    "server/**/*.ts",
+    "worker/**/*.ts",
+    "seoSnapshot.ts",
+    "ssrHandler.ts",
+    "crm.ts"
   ],
   "exclude": [
     "node_modules",

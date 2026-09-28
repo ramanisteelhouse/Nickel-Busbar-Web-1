@@ -519,6 +519,8 @@ alter table if exists public.blog_posts add column if not exists status text not
 alter table if exists public.blog_posts add column if not exists meta_title text;
 alter table if exists public.blog_posts add column if not exists meta_description text;
 alter table if exists public.blog_posts add column if not exists faq_items jsonb;
+-- A short direct answer to the question the title asks, shown above the article (see BlogPostPage).
+alter table if exists public.blog_posts add column if not exists key_answer text;
 alter table if exists public.blog_posts add column if not exists published_at timestamptz;
 alter table if exists public.blog_posts add column if not exists updated_at timestamptz not null default now();
 

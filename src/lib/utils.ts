@@ -164,6 +164,23 @@ const RICH_TEXT_ALLOWED_TAGS = new Set([
   'img',
   'figure',
   'figcaption',
+  // Tables. A comparison or specification table is one of the formats Google lifts into a
+  // featured snippet and that answer engines quote from most reliably, and a technical blog
+  // about thicknesses, densities and current ratings is mostly comparisons. Without these the
+  // sanitiser unwrapped a <table> into its bare cell text, so a table written in the CMS
+  // rendered as a run-together paragraph for readers — while the crawler snapshot, which
+  // injects post content as raw HTML, showed the real table. Same content, two different pages.
+  //
+  // No attributes are allowed on any of them (see RICH_TEXT_ALLOWED_ATTRS), so colspan, style
+  // and event handlers are all dropped; these tags carry structure only.
+  'table',
+  'thead',
+  'tbody',
+  'tfoot',
+  'tr',
+  'th',
+  'td',
+  'caption',
 ]);
 
 const RICH_TEXT_ALLOWED_ATTRS: Record<string, Set<string>> = {

@@ -43,6 +43,8 @@ import { HeritageBadge } from '../components/HeritageBadge';
 import { FOUNDED_YEAR, countYearsInBusiness } from '../lib/heritage';
 import { ProductThumbnail } from '../components/ProductThumbnail';
 import { productImagePath } from '../lib/productImage';
+import { ShowcaseVideo } from '../components/ShowcaseVideo';
+import { SHOWCASE_VIDEO, showcaseVideoJsonLd } from '../lib/showcaseVideo';
 
 // Derived, not typed in (see lib/heritage): the hero is the worst place on the site for a number
 // that quietly goes stale once a year.
@@ -303,6 +305,11 @@ export const HomePage: React.FC = () => {
         <meta name="twitter:title" content={HOME_SEO.title} />
         <meta name="twitter:description" content={HOME_SEO.socialDescription} />
         <meta name="twitter:image" content="https://www.nickelbusbar.com/img/og-image.png" />
+        {/* VideoObject: a video can be its own result in Google, but only when the markup
+            gives it a name, description, thumbnail, upload date and duration. */}
+        <script type="application/ld+json">
+          {JSON.stringify(showcaseVideoJsonLd('https://www.nickelbusbar.com', productImagePath(HERO_PRODUCT_SLUG)))}
+        </script>
       </Helmet>
 
       <section className="relative overflow-hidden bg-gradient-to-br from-brand to-brand-light text-white">
@@ -462,7 +469,7 @@ export const HomePage: React.FC = () => {
               { label: `${yearsInBusiness}+ Years Experience`, value: `Since ${FOUNDED_YEAR}`, icon: Factory },
               { label: 'ISO Certified', value: 'Quality assured', icon: ShieldCheck },
               { label: 'Global Exporter', value: '17+ countries', icon: Globe },
-              { label: 'High Purity Nickel', value: '99.6%', icon: BadgeCheck },
+              { label: 'High Purity Nickel', value: '99.8%', icon: BadgeCheck },
             ].map((item, index) => (
               <Reveal key={item.label} delay={index * 0.08}>
                 <Tilt3D maxTilt={8} liftZ={12} className="h-full rounded-2xl">
@@ -576,6 +583,33 @@ export const HomePage: React.FC = () => {
               })}
             </ul>
           </div>
+        </div>
+      </section>
+
+      {/* The showcase reel. Click-to-play: the file is 19MB, so it is never downloaded for a
+          visitor who does not ask for it. See components/ShowcaseVideo. */}
+      <section className="bg-brand py-16 text-white">
+        <div className="mx-auto grid max-w-7xl items-center gap-10 px-4 sm:px-6 lg:grid-cols-2 lg:px-8">
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-[0.3em] text-emerald-200">See the product</p>
+            <h2 className="mt-3 text-3xl font-display font-bold md:text-4xl">Nickel strip and busbar, made in Mumbai</h2>
+            <p className="mt-4 max-w-xl text-white/85">{SHOWCASE_VIDEO.description}</p>
+            <div className="mt-6 flex flex-wrap gap-3">
+              <Link
+                to="/products"
+                className="inline-flex items-center gap-2 rounded-full bg-white px-5 py-3 text-sm font-semibold text-brand hover:bg-white/90"
+              >
+                Browse the range <ArrowRight size={16} />
+              </Link>
+              <Link
+                to="/contact"
+                className="inline-flex items-center gap-2 rounded-full border border-white/30 px-5 py-3 text-sm font-semibold text-white hover:bg-white/10"
+              >
+                Send your size or drawing
+              </Link>
+            </div>
+          </div>
+          <ShowcaseVideo />
         </div>
       </section>
 

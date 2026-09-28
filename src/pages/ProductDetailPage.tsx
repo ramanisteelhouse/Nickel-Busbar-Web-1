@@ -28,6 +28,7 @@ import {
 } from '../lib/productSeo';
 import { EXPORT_PATH, PRODUCT_EXPORT_LEAD, PRODUCT_EXPORT_TERMS } from '../lib/exportEnquiry';
 import { buildProductSpecs, NICKEL_PURITY_RANGE } from '../lib/productSpecs';
+import { buildProductFaqs, productFaqJsonLd } from '../lib/productFaq';
 import { useLanguage } from '../i18n/LanguageProvider';
 
 export const ProductDetailPage: React.FC<{ onAddToCart: (p: Product, spec?: StripSpec) => void }> = ({ onAddToCart }) => {
@@ -165,6 +166,9 @@ export const ProductDetailPage: React.FC<{ onAddToCart: (p: Product, spec?: Stri
 
   const canonicalUrl = `${siteUrl}/product/${product.slug}`;
   const parentCategory = parentCategoryFor(product);
+  // Answers the questions a buyer (and an answer engine) asks of this product; see lib/productFaq.
+  const productFaqs = buildProductFaqs(product);
+  const faqJsonLd = productFaqJsonLd(productFaqs);
   // Enquiry-only products carry no price; publishing `price: 0` would advertise them as free
   // in structured data, so the Offer node is omitted instead. Mirrored in seoSnapshot.ts.
   const numericPrice = Number(product.price);
@@ -258,6 +262,9 @@ export const ProductDetailPage: React.FC<{ onAddToCart: (p: Product, spec?: Stri
               : {}),
           })}
         </script>
+        {faqJsonLd ? (
+          <script type="application/ld+json">{JSON.stringify(faqJsonLd)}</script>
+        ) : null}
         <script type="application/ld+json">
           {JSON.stringify({
             '@context': 'https://schema.org',
@@ -480,6 +487,24 @@ export const ProductDetailPage: React.FC<{ onAddToCart: (p: Product, spec?: Stri
               defaultThickness={productSpecs.find((row) => row.label === 'Thickness')?.value}
             />
           </div>
+
+          {/* The questions this product is asked, answered on the page rather than only
+              implied by the spec table. Same source as the FAQPage markup above. */}
+          {productFaqs.length ? (
+            <section aria-labelledby="product-faq-heading" className="mt-12 border-t border-zinc-100 pt-8">
+              <h2 id="product-faq-heading" className="text-xl font-bold text-zinc-900">
+                Frequently asked questions
+              </h2>
+              <div className="mt-4 space-y-3">
+                {productFaqs.map((faq) => (
+                  <details key={faq.question} className="rounded-2xl border border-zinc-200 bg-zinc-50 p-4">
+                    <summary className="cursor-pointer text-sm font-semibold text-zinc-900">{faq.question}</summary>
+                    <p className="mt-2 text-sm leading-relaxed text-zinc-600">{faq.answer}</p>
+                  </details>
+                ))}
+              </div>
+            </section>
+          ) : null}
 
           {/* Trust Badges */}
           <div className="grid grid-cols-3 gap-6 pt-8 border-t border-zinc-100">

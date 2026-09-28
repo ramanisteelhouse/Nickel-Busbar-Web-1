@@ -1,0 +1,35 @@
+{
+  // Cloudflare Workers deployment.
+  //
+  // Routing lives in worker/index.ts, not in a _redirects file: Cloudflare rejects Netlify's
+  // syntax (`301!` parses as status 0, and 404 is not a valid redirect status), which is what
+  // made the first Cloudflare build fail. `npm run build:cloudflare` therefore removes
+  // dist/_redirects after the build — the file is still generated for Netlify.
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "nickel-busbar-web-1",
+  "main": "worker/index.ts",
+  // node-postgres needs nodejs_compat, and Hyperdrive requires a compatibility date at or after
+  // its release. pg 8.16.3 is the minimum version Hyperdrive supports; package.json pins ^8.16.3.
+  "compatibility_date": "2026-09-26",
+  "compatibility_flags": ["nodejs_compat"],
+  "assets": {
+    "directory": "./dist",
+    "binding": "ASSETS",
+    // The Worker decides everything: it answers /api/*, renders the crawler snapshots, and only
+    // then falls through to a real file. Without this, Cloudflare would serve dist/index.html for
+    // every path and no crawler would ever see a snapshot.
+    "run_worker_first": true
+  },
+  "hyperdrive": [
+    {
+      "binding": "HYPERDRIVE",
+      // Replace with the Hyperdrive config id created for the Supabase pooler connection:
+      //   npx wrangler hyperdrive create nickelbusbar-db --connection-string="postgres://..."
+      // Use the Session Pooler URL (port 5432), not the direct db.<ref>.supabase.co host.
+      "id": "REPLACE_WITH_HYPERDRIVE_ID"
+    }
+  ],
+  "observability": {
+    "enabled": true
+  }
+}

@@ -5,6 +5,29 @@ import jwt from "jsonwebtoken";
 import bcrypt from "bcryptjs";
 import { randomUUID, timingSafeEqual } from "crypto";
 import pool, { query, queryOne } from "./db.js";
+import {
+  toFiniteNumber,
+  toFiniteInteger,
+  normalizeImageSource,
+  normalizeStringArray,
+  normalizeProductRow,
+  toSearchTokens,
+  searchHaystackSql,
+  normalizeAdRow,
+  normalizeFaqItems,
+  normalizeBlogRow,
+} from "./server/rows.js";
+import {
+  getActiveAds,
+  getBlogPostBySlug,
+  getProductBySlug,
+  getProductSuggestions,
+  getRelatedProducts,
+  listBlogPosts,
+  listCategories,
+  listProducts,
+} from "./server/catalog.js";
+
 import { answerFromKnowledgeBase } from "./chatKnowledgeBase.js";
 import type { CrmLead } from "./crm.js";
 import {
@@ -104,7 +127,6 @@ const whatsappClient =
   TWILIO_ACCOUNT_SID && TWILIO_AUTH_TOKEN
     ? twilio(TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN)
     : null;
-let adsTableMissingWarned = false;
 const exchangeRateCache = new Map<string, { expiresAt: number; payload: Record<string, unknown> }>();
 const localizationCache = new Map<string, { expiresAt: number; payload: Record<string, string> }>();
 // This cache is keyed by client IP, so without pruning it grows for the life of the process
@@ -288,143 +310,6 @@ const fetchJson = async <T>(url: string): Promise<T> => {
   return response.json() as Promise<T>;
 };
 
-const toFiniteNumber = (value: unknown, fallback = 0) => {
-  if (typeof value === "number" && Number.isFinite(value)) {
-    return value;
-  }
-  if (typeof value === "string") {
-    const normalized = value.trim().replace(/,/g, "");
-    const parsed = Number(normalized);
-    if (Number.isFinite(parsed)) {
-      return parsed;
-    }
-  }
-  return fallback;
-};
-
-const toFiniteInteger = (value: unknown, fallback = 0) => {
-  const parsed = toFiniteNumber(value, fallback);
-  return Number.isFinite(parsed) ? Math.trunc(parsed) : fallback;
-};
-
-const normalizeImageSource = (value: unknown) => {
-  if (typeof value !== "string") {
-    return "";
-  }
-
-  const compact = value.replace(/\u0000/g, "").trim();
-  if (!compact) {
-    return "";
-  }
-
-  // Some rows contain accidental multi-line image content. Keep the first usable source.
-  const candidates = compact
-    .split(/[\r\n]+/)
-    .map((entry) => entry.trim())
-    .filter(Boolean);
-
-  const firstUsable =
-    candidates.find((entry) => /^https?:\/\//i.test(entry) || entry.startsWith("/")) ||
-    candidates[0] ||
-    "";
-
-  const cleaned = firstUsable.trim();
-  if (cleaned.includes("images.unsplash.com/photo-1535813548-6601f6945379")) {
-    return "/img/icon-logo.jpg";
-  }
-
-  if (/^https?:\/\//i.test(cleaned) || cleaned.startsWith("/")) {
-    return cleaned;
-  }
-
-  return `/${encodeURI(cleaned)}`;
-};
-
-const normalizeStringArray = (value: unknown) => {
-  const raw = typeof value === "string" ? (() => {
-    try {
-      return JSON.parse(value);
-    } catch {
-      return null;
-    }
-  })() : value;
-
-  if (!Array.isArray(raw)) return null;
-
-  const items = raw
-    .map((item) => (typeof item === "string" ? item.trim() : ""))
-    .filter((item) => item.length > 0);
-
-  return items.length > 0 ? items : null;
-};
-
-const normalizeProductRow = (row: Record<string, unknown>) => ({
-  ...row,
-  id: toFiniteInteger(row.id, 0),
-  category_id: toFiniteInteger(row.category_id, 0),
-  price: toFiniteNumber(row.price, 0),
-  stock: toFiniteInteger(row.stock, 0),
-  image: normalizeImageSource(row.image),
-  applications: normalizeStringArray(row.applications),
-});
-
-/**
- * Product search matched a single contiguous `ILIKE '%<raw query>%'`, so the separator a
- * buyer happened to type decided whether they got results: every H-Type product is named
- * with a hyphen ("Ni 18650 2P H-Type Nickel Strip"), so "H-Type Nickel Strip" returned three
- * products and "H Type Nickel Strip" returned none. Word order was just as brittle —
- * "nickel strip h type" matched nothing either.
- *
- * Both sides are now flattened to lowercase alphanumeric words and every word has to appear
- * somewhere in the row, in any order. "H Type", "H-Type" and "h_type" all reduce to the same
- * two tokens, and a longer phrase narrows the result set instead of emptying it.
- */
-const SEARCH_TOKEN_SEPARATORS = /[^a-z0-9]+/g;
-
-const toSearchTokens = (value: string) =>
-  value.toLowerCase().replace(SEARCH_TOKEN_SEPARATORS, " ").trim().split(" ").filter(Boolean);
-
-/**
- * The same flattening applied to the row, as a SQL expression. `columns` are concatenated
- * before normalizing so a phrase spanning two fields ("nickel strip" in `name` plus "ASTM" in
- * `astm_value`) still matches.
- */
-const searchHaystackSql = (columns: string[]) =>
-  `regexp_replace(lower(${columns.map((column) => `coalesce(${column}::text, '')`).join(" || ' ' || ")}), '[^a-z0-9]+', ' ', 'g')`;
-
-const normalizeAdRow = (row: Record<string, unknown>) => ({
-  ...row,
-  id: toFiniteInteger(row.id, 0),
-  priority: toFiniteInteger(row.priority, 0),
-  discount_percent:
-    row.discount_percent == null ? null : toFiniteInteger(row.discount_percent, 0),
-  image_url: normalizeImageSource(row.image_url),
-});
-
-const normalizeFaqItems = (value: unknown) => {
-  const raw = typeof value === "string" ? (() => {
-    try {
-      return JSON.parse(value);
-    } catch {
-      return null;
-    }
-  })() : value;
-
-  if (!Array.isArray(raw)) return null;
-
-  const items = raw
-    .map((item) => {
-      if (!item || typeof item !== "object") return null;
-      const question = String((item as Record<string, unknown>).question || "").trim();
-      const answer = String((item as Record<string, unknown>).answer || "").trim();
-      if (!question || !answer) return null;
-      return { question, answer };
-    })
-    .filter((item): item is { question: string; answer: string } => item !== null);
-
-  return items.length > 0 ? items : null;
-};
-
 // Addresses are stored lowercased and trimmed from here on. Lookups still compare with
 // lower(email) rather than an exact match, so accounts created before this normalization
 // (which may hold mixed case or stray whitespace) can still sign in.
@@ -448,22 +333,6 @@ const slugify = (value: string) =>
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/^-+|-+$/g, "")
     .slice(0, 200);
-
-const normalizeBlogRow = (row: Record<string, unknown>) => ({
-  ...row,
-  id: toFiniteInteger(row.id, 0),
-  title: String(row.title || "").trim(),
-  slug: String(row.slug || "").trim(),
-  excerpt: row.excerpt == null ? null : String(row.excerpt),
-  content: row.content == null ? null : String(row.content),
-  cover_image_url: normalizeImageSource(row.cover_image_url),
-  cover_image_alt: row.cover_image_alt == null ? null : String(row.cover_image_alt).trim() || null,
-  author_name: row.author_name == null ? null : String(row.author_name),
-  status: row.status == null ? null : String(row.status),
-  meta_title: row.meta_title == null ? null : String(row.meta_title),
-  meta_description: row.meta_description == null ? null : String(row.meta_description),
-  faq_items: normalizeFaqItems(row.faq_items),
-});
 
 const getExchangeRates = async (baseCurrency: string) => {
   const base = baseCurrency.toUpperCase();
@@ -1333,51 +1202,16 @@ export function createApiApp() {
   // --- Product Routes ---
   app.get("/api/products", asyncHandler(async (req, res) => {
     const { category, featured, search } = req.query;
-    let sql = "SELECT p.*, c.name as category_name FROM products p LEFT JOIN categories c ON p.category_id = c.id WHERE 1=1";
-    const params: any[] = [];
-
-    // Type-guarded like `search` below: a repeated query param (?category=a&category=b)
-    // arrives as an array, which pg encodes as a Postgres array literal and Postgres then
-    // rejects against a text column, turning a bad request into a 500.
-    if (typeof category === "string" && category.trim()) {
-      params.push(category.trim());
-      sql += ` AND c.slug = $${params.length}`;
-    }
-    if (featured !== undefined) {
-      sql += " AND p.is_featured = true";
-    }
-    if (typeof search === "string" && search.trim()) {
-      const tokens = toSearchTokens(search);
-      // A non-empty query that normalizes to nothing has no match, and must not fall through
-      // to "no filter". `toSearchTokens` keeps only [a-z0-9], so a query written in Chinese,
-      // Arabic or Devanagari - or one that is pure punctuation - produces zero tokens. Skipping
-      // the clause in that case returned the *entire catalogue*, telling a buyer searching in
-      // their own script that all 17 products matched. Zero results is the honest answer.
-      if (!tokens.length) {
-        return res.json([]);
-      }
-      {
-        params.push(tokens);
-        const tokensParam = `$${params.length}`;
-        const haystack = searchHaystackSql([
-          "p.name",
-          "p.description",
-          "p.astm_value",
-          "p.uns_value",
-          "p.dimensions",
-          "p.price",
-          "c.name",
-        ]);
-        sql += ` AND (
-          SELECT bool_and(${haystack} LIKE '%' || token || '%')
-          FROM unnest(${tokensParam}::text[]) AS token
-        )`;
-      }
-    }
-
     try {
-      const products = await query(sql, params);
-      res.json(products.map((product) => normalizeProductRow(product as Record<string, unknown>)));
+      // Type-guarded: a repeated query param (?category=a&category=b) arrives as an array,
+      // which pg encodes as a Postgres array literal and Postgres then rejects against a text
+      // column, turning a bad request into a 500.
+      const products = await listProducts({
+        category: typeof category === "string" ? category : null,
+        featured: featured !== undefined,
+        search: typeof search === "string" ? search : null,
+      });
+      res.json(products ?? []);
     } catch (e) {
       console.error("Failed to fetch products", e);
       res.status(500).json({ error: "Failed to fetch products" });
@@ -1387,45 +1221,10 @@ export function createApiApp() {
   app.get("/api/products/suggestions", asyncHandler(async (req, res) => {
     const rawQuery = typeof req.query.q === "string" ? req.query.q.trim() : "";
     const limit = Math.min(Math.max(Number(req.query.limit) || 8, 1), 20);
-
-    if (!rawQuery) {
-      return res.json([]);
-    }
-
-    // Same separator-insensitive matching as /api/products, so the dropdown cannot go empty
-    // on a phrase the results page would have matched. Tokens match as substrings, which is
-    // what a typeahead needs: it fires mid-word, and a half-typed word is a prefix of the
-    // real one. Names that *start* with what was typed still sort first.
-    const tokens = toSearchTokens(rawQuery);
-    if (!tokens.length) {
-      return res.json([]);
-    }
+    if (!rawQuery) return res.json([]);
 
     try {
-      const nameHaystack = searchHaystackSql(["p.name"]);
-      const prefixPattern = `${tokens.join(" ")}%`;
-      const suggestions = await query(
-        // `image` is selected only so the client can pick the file extension for the
-        // /api/product-image path; the URL itself is never rendered.
-        `SELECT
-          p.id,
-          p.slug,
-          p.name,
-          p.image,
-          c.name AS category_name
-         FROM products p
-         LEFT JOIN categories c ON c.id = p.category_id
-         WHERE (
-           SELECT bool_and(${nameHaystack} LIKE '%' || token || '%')
-           FROM unnest($1::text[]) AS token
-         )
-         ORDER BY
-           CASE WHEN ${nameHaystack} LIKE $2 THEN 0 ELSE 1 END,
-           p.name ASC
-         LIMIT $3`,
-        [tokens, prefixPattern, limit],
-      );
-      res.json(suggestions);
+      res.json(await getProductSuggestions(rawQuery, limit));
     } catch (error) {
       console.error("Failed to fetch product suggestions", error);
       res.status(500).json({ error: "Failed to fetch product suggestions" });
@@ -1434,12 +1233,9 @@ export function createApiApp() {
 
   app.get("/api/products/:slug", asyncHandler(async (req, res) => {
     try {
-      const product = await queryOne(
-        "SELECT p.*, c.name as category_name FROM products p LEFT JOIN categories c ON p.category_id = c.id WHERE p.slug = $1",
-        [req.params.slug]
-      );
+      const product = await getProductBySlug(req.params.slug);
       if (!product) return res.status(404).json({ error: "Product not found" });
-      res.json(normalizeProductRow(product as Record<string, unknown>));
+      res.json(product);
     } catch (e) {
       console.error("Failed to fetch product", e);
       res.status(500).json({ error: "Failed to fetch product" });
@@ -1451,28 +1247,8 @@ export function createApiApp() {
   // the same six products instead of drifting apart.
   app.get("/api/products/:slug/related", asyncHandler(async (req, res) => {
     try {
-      const product = await queryOne<{ category_id: number | null }>(
-        "SELECT category_id FROM products WHERE slug = $1",
-        [req.params.slug]
-      );
-      if (!product) return res.status(404).json({ error: "Product not found" });
-
-      const related = await query(
-        // Same category first, then fill from the rest of the catalogue rather than filtering to
-        // it: "Plain Nickel Strips" and "Copper Busbar" are each alone in their category, so a
-        // category-only filter left the two pages that most needed a way onward as dead ends.
-        //
-        // IS NOT DISTINCT FROM, not `=`: a product with no category would otherwise compare NULL
-        // to NULL, get NULL rather than true, and lose its own category grouping.
-        `SELECT p.slug, p.name, p.image, p.dimensions, p.seo_heading
-           FROM products p
-          WHERE p.slug <> $1
-          ORDER BY (p.category_id IS NOT DISTINCT FROM $2::bigint) DESC,
-                   p.is_featured DESC,
-                   p.name
-          LIMIT 6`,
-        [req.params.slug, product.category_id ?? null]
-      );
+      const related = await getRelatedProducts(req.params.slug);
+      if (related === null) return res.status(404).json({ error: "Product not found" });
       res.json(related);
     } catch (e) {
       console.error("Failed to fetch related products", e);
@@ -1482,8 +1258,7 @@ export function createApiApp() {
 
   app.get("/api/categories", asyncHandler(async (req, res) => {
     try {
-      const categories = await query("SELECT * FROM categories ORDER BY id");
-      res.json(categories);
+      res.json(await listCategories());
     } catch (e) {
       console.error("Failed to fetch categories", e);
       res.status(500).json({ error: "Failed to fetch categories" });
@@ -1493,34 +1268,8 @@ export function createApiApp() {
   // --- Blog Routes ---
   app.get("/api/blog-posts", asyncHandler(async (req, res) => {
     const limit = Math.min(Math.max(Number(req.query.limit) || 6, 1), 50);
-
     try {
-      const posts = await query(
-        `SELECT
-          id,
-          title,
-          slug,
-          -- The backslash must be doubled: this SQL lives in a JS template literal, where a
-          -- lone \s collapses to a bare "s" and Postgres would strip the letter s from every
-          -- generated excerpt instead of collapsing whitespace.
-          COALESCE(NULLIF(excerpt, ''), LEFT(REGEXP_REPLACE(content, '\\s+', ' ', 'g'), 180)) AS excerpt,
-          cover_image_url,
-          cover_image_alt,
-          author_name,
-          status,
-          meta_title,
-          meta_description,
-          published_at,
-          created_at,
-          updated_at
-         FROM blog_posts
-         WHERE status = 'published'
-           AND (published_at IS NULL OR published_at <= now())
-         ORDER BY published_at DESC NULLS LAST, created_at DESC
-         LIMIT $1`,
-        [limit]
-      );
-      res.json(posts.map((post) => normalizeBlogRow(post as Record<string, unknown>)));
+      res.json(await listBlogPosts(limit));
     } catch (error) {
       console.error("Failed to fetch blog posts", error);
       res.status(500).json({ error: "Failed to fetch blog posts" });
@@ -1529,6 +1278,8 @@ export function createApiApp() {
 
   app.get("/api/blog-posts/:slug", asyncHandler(async (req, res) => {
     const rawSlug = String(req.params.slug || "").trim();
+    // A slug arrives percent-encoded from the router; decode it before matching, but fall back
+    // to the raw value if it is not valid encoding rather than throwing a 500.
     const normalizedSlug = (() => {
       if (!rawSlug) return rawSlug;
       try {
@@ -1539,156 +1290,24 @@ export function createApiApp() {
     })();
 
     try {
-      const post = await queryOne(
-        `SELECT
-          id,
-          title,
-          slug,
-          excerpt,
-          content,
-          cover_image_url,
-          cover_image_alt,
-          author_name,
-          status,
-          meta_title,
-          meta_description,
-          faq_items,
-          published_at,
-          created_at,
-          updated_at
-         FROM blog_posts
-         WHERE slug = $1
-           AND status = 'published'
-           AND (published_at IS NULL OR published_at <= now())
-         LIMIT 1`,
-        [normalizedSlug]
-      );
-      if (!post) {
-        return res.status(404).json({ error: "Blog post not found" });
-      }
-      res.json(normalizeBlogRow(post as Record<string, unknown>));
+      const post = await getBlogPostBySlug(normalizedSlug);
+      if (!post) return res.status(404).json({ error: "Blog post not found" });
+      res.json(post);
     } catch (error) {
       console.error("Failed to fetch blog post", error);
       res.status(500).json({ error: "Failed to fetch blog post" });
     }
   }));
 
-  // --- Blog Admin (API-key protected, used by the scheduled content routine) ---
-  const blogAdminLimiter = rateLimit({
-    windowMs: 60 * 60 * 1000,
-    limit: 10,
-    standardHeaders: true,
-    legacyHeaders: false,
-    message: { error: "Too many requests. Please try again later." },
-  });
-
-  const isValidAdminKey = (provided: string) => {
-    const expected = (process.env.BLOG_ADMIN_API_KEY || "").trim();
-    if (!expected || !provided) return false;
-    const providedBuf = Buffer.from(provided);
-    const expectedBuf = Buffer.from(expected);
-    if (providedBuf.length !== expectedBuf.length) return false;
-    return timingSafeEqual(providedBuf, expectedBuf);
-  };
-
-  app.post("/api/admin/blog-posts", blogAdminLimiter, asyncHandler(async (req, res) => {
-    const providedKey = String(req.headers["x-admin-api-key"] || "");
-    if (!isValidAdminKey(providedKey)) {
-      return res.status(401).json({ error: "Unauthorized" });
-    }
-
-    const title = typeof req.body?.title === "string" ? req.body.title.trim() : "";
-    const content = typeof req.body?.content === "string" ? req.body.content.trim() : "";
-    if (!title || !content) {
-      return res.status(400).json({ error: "title and content are required" });
-    }
-
-    const slug = (typeof req.body?.slug === "string" && req.body.slug.trim() ? slugify(req.body.slug) : slugify(title));
-    if (!slug) {
-      return res.status(400).json({ error: "Could not derive a valid slug from title" });
-    }
-
-    const excerpt = typeof req.body?.excerpt === "string" ? req.body.excerpt.trim() || null : null;
-    const coverImageUrl = typeof req.body?.coverImageUrl === "string" ? req.body.coverImageUrl.trim() || null : null;
-    const coverImageAlt = typeof req.body?.coverImageAlt === "string" ? req.body.coverImageAlt.trim() || null : null;
-    const metaTitle = typeof req.body?.metaTitle === "string" ? req.body.metaTitle.trim() || null : null;
-    const metaDescription = typeof req.body?.metaDescription === "string" ? req.body.metaDescription.trim() || null : null;
-    const status = req.body?.status === "draft" ? "draft" : "published";
-    const faqItems = Array.isArray(req.body?.faqItems) ? JSON.stringify(req.body.faqItems) : null;
-
-    try {
-      const post = await queryOne(
-        `INSERT INTO blog_posts (
-           title, slug, excerpt, content, cover_image_url, cover_image_alt,
-           status, meta_title, meta_description, faq_items, published_at
-         )
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, CASE WHEN $7 = 'published' THEN now() ELSE NULL END)
-         ON CONFLICT (slug) DO UPDATE SET
-           title = excluded.title,
-           excerpt = excluded.excerpt,
-           content = excluded.content,
-           cover_image_url = excluded.cover_image_url,
-           cover_image_alt = excluded.cover_image_alt,
-           status = excluded.status,
-           meta_title = excluded.meta_title,
-           meta_description = excluded.meta_description,
-           faq_items = excluded.faq_items,
-           published_at = CASE WHEN excluded.status = 'published' THEN COALESCE(blog_posts.published_at, now()) ELSE blog_posts.published_at END,
-           updated_at = now()
-         RETURNING id, slug, status`,
-        [title, slug, excerpt, content, coverImageUrl, coverImageAlt, status, metaTitle, metaDescription, faqItems]
-      );
-      res.status(201).json(post);
-    } catch (error) {
-      console.error("Failed to create blog post", error);
-      res.status(500).json({ error: "Failed to create blog post" });
-    }
-  }));
-
-  // --- Ads ---
   app.get("/api/ads/active", asyncHandler(async (_req, res) => {
     try {
-      const ads = await query(
-        `SELECT *
-         FROM ads
-         WHERE is_active = true
-           AND (start_at IS NULL OR start_at <= now())
-           AND (end_at IS NULL OR end_at >= now())
-         ORDER BY priority DESC, created_at DESC`
-      );
-      res.json(ads.map((ad) => normalizeAdRow(ad as Record<string, unknown>)));
+      res.json(await getActiveAds());
     } catch (e) {
-      const error = e as { code?: string };
-      if (error?.code === "42P01") {
-        if (!adsTableMissingWarned) {
-          console.warn("Ads table missing. Run supabase/setup.sql to create and seed it.");
-          adsTableMissingWarned = true;
-        }
-        return res.json([]);
-      }
       console.error("Failed to fetch ads", e);
       res.status(500).json({ error: "Failed to fetch ads" });
     }
   }));
 
-  // --- Chatbot (offline keyword matcher over site data — no external API) ---
-  app.post("/api/ai/chat", chatLimiter, asyncHandler(async (req, res) => {
-    const message = typeof req.body?.message === "string" ? req.body.message.trim() : "";
-
-    if (!message) {
-      return res.status(400).json({ error: "Message is required" });
-    }
-
-    try {
-      const text = await answerFromKnowledgeBase(message);
-      res.json({ text });
-    } catch (e) {
-      console.error("Chatbot error", e);
-      res.status(500).json({ error: "Chatbot error" });
-    }
-  }));
-
-  // --- Analytics ---
   app.post("/api/analytics/log", analyticsLimiter, asyncHandler(async (req, res) => {
     const { path, referrer, userAgent, geo, visitorId } = req.body ?? {};
     // Unauthenticated write path: every field is length-capped so a caller can't push
@@ -2124,6 +1743,104 @@ export function createApiApp() {
       client.release();
     }
   }));
+
+  const blogAdminLimiter = rateLimit({
+    windowMs: 60 * 60 * 1000,
+    limit: 10,
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: { error: "Too many requests. Please try again later." },
+  });
+
+  const isValidAdminKey = (provided: string) => {
+    const expected = (process.env.BLOG_ADMIN_API_KEY || "").trim();
+    if (!expected || !provided) return false;
+    const providedBuf = Buffer.from(provided);
+    const expectedBuf = Buffer.from(expected);
+    if (providedBuf.length !== expectedBuf.length) return false;
+    return timingSafeEqual(providedBuf, expectedBuf);
+  };
+
+  app.post("/api/admin/blog-posts", blogAdminLimiter, asyncHandler(async (req, res) => {
+    const providedKey = String(req.headers["x-admin-api-key"] || "");
+    if (!isValidAdminKey(providedKey)) {
+      return res.status(401).json({ error: "Unauthorized" });
+    }
+
+    const title = typeof req.body?.title === "string" ? req.body.title.trim() : "";
+    const content = typeof req.body?.content === "string" ? req.body.content.trim() : "";
+    if (!title || !content) {
+      return res.status(400).json({ error: "title and content are required" });
+    }
+
+    const slug = (typeof req.body?.slug === "string" && req.body.slug.trim() ? slugify(req.body.slug) : slugify(title));
+    if (!slug) {
+      return res.status(400).json({ error: "Could not derive a valid slug from title" });
+    }
+
+    const excerpt = typeof req.body?.excerpt === "string" ? req.body.excerpt.trim() || null : null;
+    const coverImageUrl = typeof req.body?.coverImageUrl === "string" ? req.body.coverImageUrl.trim() || null : null;
+    const coverImageAlt = typeof req.body?.coverImageAlt === "string" ? req.body.coverImageAlt.trim() || null : null;
+    const metaTitle = typeof req.body?.metaTitle === "string" ? req.body.metaTitle.trim() || null : null;
+    const metaDescription = typeof req.body?.metaDescription === "string" ? req.body.metaDescription.trim() || null : null;
+    // The answer-first paragraph. Capped rather than free-length: it is meant to be the ~60-word
+    // answer a snippet can carry, and a long one stops being extractable.
+    const keyAnswer = typeof req.body?.keyAnswer === "string" ? req.body.keyAnswer.trim().slice(0, 600) || null : null;
+    // Only http(s): this value becomes an href, so a javascript: or data: URL must not survive.
+    const rawSocialUrl = typeof req.body?.socialPostUrl === "string" ? req.body.socialPostUrl.trim() : "";
+    const socialPostUrl = /^https?:\/\//i.test(rawSocialUrl) ? rawSocialUrl.slice(0, 500) : null;
+    const status = req.body?.status === "draft" ? "draft" : "published";
+    const faqItems = Array.isArray(req.body?.faqItems) ? JSON.stringify(req.body.faqItems) : null;
+
+    try {
+      const post = await queryOne(
+        `INSERT INTO blog_posts (
+           title, slug, excerpt, content, cover_image_url, cover_image_alt,
+           status, meta_title, meta_description, faq_items, key_answer, social_post_url, published_at
+         )
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, CASE WHEN $7 = 'published' THEN now() ELSE NULL END)
+         ON CONFLICT (slug) DO UPDATE SET
+           title = excluded.title,
+           excerpt = excluded.excerpt,
+           content = excluded.content,
+           cover_image_url = excluded.cover_image_url,
+           cover_image_alt = excluded.cover_image_alt,
+           status = excluded.status,
+           meta_title = excluded.meta_title,
+           meta_description = excluded.meta_description,
+           faq_items = excluded.faq_items,
+           key_answer = excluded.key_answer,
+           social_post_url = excluded.social_post_url,
+           published_at = CASE WHEN excluded.status = 'published' THEN COALESCE(blog_posts.published_at, now()) ELSE blog_posts.published_at END,
+           updated_at = now()
+         RETURNING id, slug, status`,
+        [title, slug, excerpt, content, coverImageUrl, coverImageAlt, status, metaTitle, metaDescription, faqItems, keyAnswer, socialPostUrl]
+      );
+      res.status(201).json(post);
+    } catch (error) {
+      console.error("Failed to create blog post", error);
+      res.status(500).json({ error: "Failed to create blog post" });
+    }
+  }));
+
+  // --- Ads ---
+  app.post("/api/ai/chat", chatLimiter, asyncHandler(async (req, res) => {
+    const message = typeof req.body?.message === "string" ? req.body.message.trim() : "";
+
+    if (!message) {
+      return res.status(400).json({ error: "Message is required" });
+    }
+
+    try {
+      const text = await answerFromKnowledgeBase(message);
+      res.json({ text });
+    } catch (e) {
+      console.error("Chatbot error", e);
+      res.status(500).json({ error: "Chatbot error" });
+    }
+  }));
+
+  // --- Analytics ---
 
   // --- CRM / ERP sync ---
   // Used by the CRM when it cannot receive inbound webhooks, and for replaying

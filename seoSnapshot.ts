@@ -22,7 +22,9 @@ import {
 } from "./src/lib/returnPolicy.js";
 import { getLandingPageByPathname, parentCategoryFor, STATE_LANDING_PAGES } from "./src/lib/landingPages.js";
 import { blogCtaFor } from "./src/lib/blogCta.js";
-import { productImageUrl } from "./src/lib/productImage.js";
+import { buildProductFaqs, productFaqJsonLd } from "./src/lib/productFaq.js";
+import { SHOWCASE_VIDEO, showcaseVideoJsonLd } from "./src/lib/showcaseVideo.js";
+import { productImagePath, productImageUrl } from "./src/lib/productImage.js";
 import {
   fillKeywordParagraphs,
   resolveProductKeywordBlock,
@@ -354,7 +356,7 @@ export async function renderBlogSnapshot(template: string, slug: string): Promis
   // to be resolved somewhere that compares strings case-sensitively, which is here.
   const post = await queryOne<Record<string, unknown>>(
     `SELECT title, slug, excerpt, content, cover_image_url, author_name, meta_title,
-            meta_description, faq_items, published_at, created_at, updated_at
+            meta_description, faq_items, key_answer, social_post_url, published_at, created_at, updated_at
      FROM blog_posts
      WHERE lower(slug) = lower($1) AND status = 'published' AND (published_at IS NULL OR published_at <= now())
      LIMIT 1`,
@@ -516,12 +518,20 @@ export async function renderBlogSnapshot(template: string, slug: string): Promis
   // Same topic-matched next step as BlogPostPage renders; see src/lib/blogCta.
   const cta = blogCtaFor(String(post.slug ?? slug));
   const ctaHtml = `<section><h2>${escapeHtml(cta.heading)}</h2><p>${escapeHtml(cta.body)}</p><p><a href="${SITE_URL}${cta.link.path}">${escapeHtml(cta.link.label)}</a></p></section>`;
+  // The answer-first paragraph, above everything but the heading: this is what a featured
+  // snippet or an assistant quotes, and it cannot be quoted from halfway down the article.
+  const keyAnswer = typeof post.key_answer === "string" ? post.key_answer.trim() : "";
+  const keyAnswerHtml = keyAnswer ? `<p><strong>${escapeHtml(keyAnswer)}</strong></p>` : "";
   const snapshotBody = `<article>
     <h1>${escapeHtml(post.title as string)}</h1>
+    ${keyAnswerHtml}
     ${coverImageHtml}
     ${(post.content as string) || ""}
     ${ctaHtml}
     ${faqHtml}
+    ${typeof post.social_post_url === "string" && /^https?:\/\//i.test(post.social_post_url)
+      ? `<p><a href="${escapeAttr(post.social_post_url)}" rel="noopener">See this on LinkedIn</a></p>`
+      : ""}
     ${relatedProductsHtml}
     ${relatedPostsHtml}
     <p><a href="${SITE_URL}/blog">All nickel strip guides and technical articles</a> &middot; <a href="${SITE_URL}/products">Nickel strip and busbar products</a></p>
@@ -686,6 +696,8 @@ const STATIC_ROUTE_SEO: Record<StaticSnapshotRoute, { title: string; description
     title: HOME_SEO.title,
     description: HOME_SEO.description,
     jsonLd: [
+      // The showcase reel, so Google can index it as a video result in its own right.
+      showcaseVideoJsonLd(SITE_URL, productImagePath(HERO_PRODUCT_SLUG)),
       {
         "@context": "https://schema.org",
         "@type": "FAQPage",
@@ -734,6 +746,9 @@ const STATIC_ROUTE_SEO: Record<StaticSnapshotRoute, { title: string; description
     ${TRADE_ROLES_SECTION.paragraphs.map((paragraph) => `<p>${escapeHtml(paragraph)}</p>`).join("")}
     <ul>${TRADE_ROLES_SECTION.bullets.map((bullet) => `<li>${escapeHtml(bullet)}</li>`).join("")}</ul>
     <p>Buying to resell or in small lots? <a href="${SITE_URL}/nickel-strip-wholesaler-and-distributor">Nickel strip wholesaler and distributor</a> — stock sizes, 5 kg MOQ and trade enquiries.</p>
+    <h2>${escapeHtml(SHOWCASE_VIDEO.name)}</h2>
+    <p>${escapeHtml(SHOWCASE_VIDEO.description)}</p>
+    <video src="${SITE_URL}${SHOWCASE_VIDEO.src}" poster="${productImageUrl(SITE_URL, HERO_PRODUCT_SLUG)}" width="${SHOWCASE_VIDEO.width}" height="${SHOWCASE_VIDEO.height}" controls preload="none"></video>
     <h2>Nickel strip specifications</h2>
     <table>
       <tbody>${HOME_SPECIFICATIONS.map(
@@ -1543,6 +1558,13 @@ export async function renderProductSnapshot(template: string, slug: string): Pro
         .join("")}</ul>`
     : "";
 
+  const productFaqs = buildProductFaqs(product as Record<string, string | null>);
+  const productFaqHtml = productFaqs.length
+    ? `<h2>Frequently asked questions</h2>${productFaqs
+        .map((faq) => `<h3>${escapeHtml(faq.question)}</h3><p>${escapeHtml(faq.answer)}</p>`)
+        .join("")}`
+    : "";
+
   const snapshotBody = `<article>
     <nav aria-label="Breadcrumb"><a href="${SITE_URL}/">Home</a> › <a href="${SITE_URL}${parent.path}">${escapeHtml(parent.name)}</a> › ${escapeHtml(name)}</nav>
     <h1>${escapeHtml(name)}</h1>
@@ -1555,6 +1577,7 @@ export async function renderProductSnapshot(template: string, slug: string): Pro
         ? `<h2>Applications</h2><ul>${applications.map((app) => `<li>${escapeHtml(app)}</li>`).join("")}</ul>`
         : ""
     }
+    ${productFaqHtml}
     <h2>Export supply</h2>
     <p>${escapeHtml(PRODUCT_EXPORT_LEAD)}</p>
     <p><a href="${SITE_URL}${EXPORT_PATH}">Nickel strip and busbar export enquiry</a> &mdash; send your specification, quantity and destination port for a quotation.</p>
@@ -1571,7 +1594,7 @@ export async function renderProductSnapshot(template: string, slug: string): Pro
     canonical,
     ogImage: imageUrl,
     keywords: [...(keywordBlock?.keywords ?? []), ...BUYER_ROLE_KEYWORDS],
-    jsonLd: [productJsonLd, breadcrumbJsonLd],
+    jsonLd: [productJsonLd, breadcrumbJsonLd, ...(productFaqJsonLd(productFaqs) ? [productFaqJsonLd(productFaqs)!] : [])],
     snapshotBody,
   });
 

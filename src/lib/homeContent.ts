@@ -50,7 +50,7 @@ export const HERO_PRODUCT_SLUG = 'ni-18650-2p-h-type';
 export const HOME_SEO = {
   title: 'Nickel Strip Manufacturer & Stockist India | 5 kg MOQ',
   description:
-    'Nickel strip and busbar manufacturer in Mumbai, also a stockist, wholesaler and distributor. 99.6% pure nickel from 5 kg MOQ, custom made to your drawing.',
+    'Nickel strip and busbar manufacturer in Mumbai, also a stockist, wholesaler and distributor. 99.8% pure nickel from 5 kg MOQ, custom made to your drawing.',
   socialDescription:
     'Manufacturer of pure nickel strip, H type strip and nickel busbar since 1974, also a stockist, wholesaler and distributor. 5 kg MOQ; custom strips and tooling to your drawing.',
   keywords: [
@@ -139,7 +139,7 @@ export const qualityPoints = [
 ] as const;
 
 export const productSpecifications = [
-  { label: 'Nickel Purity', value: '99.6%' },
+  { label: 'Nickel Purity', value: '99.8%' },
   { label: 'Thickness Range', value: '0.10mm – 0.50mm' },
   { label: 'Width Range', value: '2mm – 50mm' },
   { label: 'Surface Finish', value: 'Bright, matte, nickel-plated' },
@@ -149,7 +149,7 @@ export const productSpecifications = [
 export const productVariants = [
   {
     title: 'Pure Nickel Strips',
-    spec: '99.6% purity | 0.10mm - 0.50mm',
+    spec: '99.8% purity | 0.10mm - 0.50mm',
     note: 'High conductivity for battery tabs and precision welding.',
     cta: '/products?search=pure+nickel+strip',
   },

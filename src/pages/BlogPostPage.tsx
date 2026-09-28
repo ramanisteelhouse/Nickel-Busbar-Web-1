@@ -5,6 +5,7 @@ import type { BlogPost } from '../types';
 import { buildImageAlt, encodePathSegment, sanitizeRichHtml, resolveImageSrc } from '../lib/utils';
 import { BlogFaqSection } from '../components/BlogFaqSection';
 import { BlogCtaBar, BlogCtaBlock } from '../components/BlogCtaBlock';
+import { BlogShare } from '../components/BlogShare';
 import { blogCtaFor } from '../lib/blogCta';
 
 const SITE_URL = 'https://www.nickelbusbar.com';
@@ -107,6 +108,7 @@ export const BlogPostPage: React.FC = () => {
   const publishedIso = post.published_at || post.created_at || null;
   const modifiedIso = post.updated_at || publishedIso;
   const faqItems = post.faq_items || [];
+  const keyAnswer = post.key_answer?.trim();
   // The next step for a reader of this article; see lib/blogCta.
   const cta = blogCtaFor(post.slug || decodedSlug);
 
@@ -198,12 +200,22 @@ export const BlogPostPage: React.FC = () => {
           </figure>
         ) : null}
 
+        {/* The answer to the question in the title, before the article rather than inside it.
+            Mirrored by the crawler snapshot; see lib/blogCta for the CTA that follows. */}
+        {keyAnswer ? (
+          <p className="mt-8 rounded-2xl border-l-4 border-brand bg-slate-50 px-5 py-4 text-base font-medium leading-relaxed text-brand">
+            {keyAnswer}
+          </p>
+        ) : null}
+
         <BlogCtaBar cta={cta} />
 
         <div
-          className="mt-10 text-base leading-relaxed text-slate-700 [&_h2]:mt-10 [&_h2]:text-2xl [&_h2]:font-bold [&_h2]:text-brand [&_h3]:mt-8 [&_h3]:text-xl [&_h3]:font-semibold [&_p]:mt-4 [&_ul]:mt-4 [&_ul]:list-disc [&_ul]:pl-6 [&_ol]:mt-4 [&_ol]:list-decimal [&_ol]:pl-6 [&_li]:mt-2 [&_a]:font-semibold [&_a]:text-brand [&_a]:underline [&_strong]:font-semibold [&_blockquote]:mt-6 [&_blockquote]:border-l-4 [&_blockquote]:border-brand/30 [&_blockquote]:pl-4 [&_blockquote]:italic [&_pre]:mt-4 [&_pre]:overflow-x-auto [&_pre]:rounded-xl [&_pre]:bg-slate-100 [&_pre]:p-4 [&_code]:rounded [&_code]:bg-slate-100 [&_code]:px-1.5 [&_code]:py-0.5 [&_img]:mt-6 [&_img]:rounded-2xl [&_img]:border [&_img]:border-slate-200 [&_img]:w-full [&_img]:h-auto [&_figure]:mt-6 [&_figure]:mb-2 [&_figcaption]:mt-2 [&_figcaption]:text-center [&_figcaption]:text-sm [&_figcaption]:text-slate-500"
+          className="mt-10 text-base leading-relaxed text-slate-700 [&_h2]:mt-10 [&_h2]:text-2xl [&_h2]:font-bold [&_h2]:text-brand [&_h3]:mt-8 [&_h3]:text-xl [&_h3]:font-semibold [&_p]:mt-4 [&_ul]:mt-4 [&_ul]:list-disc [&_ul]:pl-6 [&_ol]:mt-4 [&_ol]:list-decimal [&_ol]:pl-6 [&_li]:mt-2 [&_a]:font-semibold [&_a]:text-brand [&_a]:underline [&_strong]:font-semibold [&_blockquote]:mt-6 [&_blockquote]:border-l-4 [&_blockquote]:border-brand/30 [&_blockquote]:pl-4 [&_blockquote]:italic [&_pre]:mt-4 [&_pre]:overflow-x-auto [&_pre]:rounded-xl [&_pre]:bg-slate-100 [&_pre]:p-4 [&_code]:rounded [&_code]:bg-slate-100 [&_code]:px-1.5 [&_code]:py-0.5 [&_img]:mt-6 [&_img]:rounded-2xl [&_img]:border [&_img]:border-slate-200 [&_img]:w-full [&_img]:h-auto [&_figure]:mt-6 [&_figure]:mb-2 [&_figcaption]:mt-2 [&_figcaption]:text-center [&_figcaption]:text-sm [&_figcaption]:text-slate-500 [&_table]:mt-6 [&_table]:w-full [&_table]:block [&_table]:overflow-x-auto sm:[&_table]:table [&_table]:border-collapse [&_table]:text-sm [&_th]:border [&_th]:border-slate-200 [&_th]:bg-slate-50 [&_th]:px-3 [&_th]:py-2 [&_th]:text-left [&_th]:font-semibold [&_th]:text-brand [&_td]:border [&_td]:border-slate-200 [&_td]:px-3 [&_td]:py-2 [&_caption]:mt-2 [&_caption]:caption-bottom [&_caption]:text-sm [&_caption]:text-slate-500"
           dangerouslySetInnerHTML={{ __html: sanitizedContent }}
         />
+
+        <BlogShare url={canonical} title={post.title} socialPostUrl={post.social_post_url} />
 
         <BlogCtaBlock cta={cta} />
 

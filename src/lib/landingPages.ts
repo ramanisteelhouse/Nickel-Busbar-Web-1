@@ -54,7 +54,7 @@ export type LandingPage = {
 };
 
 const SPEC_BULLETS = [
-  'Nickel purity 99.6%, with material test certificates on request',
+  'Nickel purity 99.8%, with material test certificates on request',
   `Thickness ${STANDARD_THICKNESSES_MM.join(', ')} mm standard, other thicknesses to order`,
   `Width ${WIDTH_RANGE_MM.min}–${WIDTH_RANGE_MM.max} mm, cut to your drawing`,
   `For ${CELL_FORMATS.filter((cell) => /^\d/.test(cell)).join(', ')} cells and custom pack layouts`,
@@ -413,10 +413,10 @@ const TRADE_BUYER_PAGE: LandingPage = {
   slug: 'nickel-strip-wholesaler-and-distributor',
   title: 'Nickel Strip Wholesaler & Distributor India | 5 kg MOQ',
   description:
-    'Nickel strip wholesaler, stockist and distributor backed by our own Mumbai manufacturing. 99.6% pure nickel from 5 kg for small battery makers and traders.',
+    'Nickel strip wholesaler, stockist and distributor backed by our own Mumbai manufacturing. 99.8% pure nickel from 5 kg for small battery makers and traders.',
   h1: 'Nickel Strip Wholesaler, Stockist & Distributor in India',
   intro:
-    'Ramani Steel House is a nickel strip manufacturer in Mumbai that also sells as a wholesaler, stockist and distributor. Manufacturing is the core of the business, and because the strip is made and slit in-house, the same 99.6% pure nickel is available in small lots: orders start at 5 kg, which suits small battery manufacturers, pack assemblers and traders as well as volume buyers.',
+    'Ramani Steel House is a nickel strip manufacturer in Mumbai that also sells as a wholesaler, stockist and distributor. Manufacturing is the core of the business, and because the strip is made and slit in-house, the same 99.8% pure nickel is available in small lots: orders start at 5 kg, which suits small battery manufacturers, pack assemblers and traders as well as volume buyers.',
   keywords: [
     'Nickel Strip Wholesaler',
     'Nickel Strip Distributor',
@@ -515,7 +515,7 @@ const STRIP_SIZES: readonly StripSize[] = [
     width: '10 mm',
     title: 'Pure Nickel Strip 0.15mm x 10mm | Manufacturer',
     description:
-      'Pure nickel strip 0.15mm thick x 10mm wide, 99.6% nickel, UNS N02201. Made in Mumbai for 18650 and 21700 battery pack welding. 5 kg MOQ, 7 day delivery.',
+      'Pure nickel strip 0.15mm thick x 10mm wide, 99.8% nickel, UNS N02201. Made in Mumbai for 18650 and 21700 battery pack welding. 5 kg MOQ, 7 day delivery.',
     suitedTo:
       'the most widely used gauge for 18650 pack assembly. It spot welds cleanly on a mid-range resistance welder without the electrode force a thicker strip needs, which is why it is the size most builders standardise on for 2P and 3P layouts.',
     cellFormats: '18650, 21700',
@@ -526,7 +526,7 @@ const STRIP_SIZES: readonly StripSize[] = [
     width: '15 mm',
     title: 'Pure Nickel Strip 0.20mm x 15mm | Manufacturer',
     description:
-      'Pure nickel strip 0.20mm x 15mm wide, 99.6% nickel, UNS N02201. Higher current capacity for 21700 and 32700 packs. 5 kg MOQ, 7 day delivery from Mumbai.',
+      'Pure nickel strip 0.20mm x 15mm wide, 99.8% nickel, UNS N02201. Higher current capacity for 21700 and 32700 packs. 5 kg MOQ, 7 day delivery from Mumbai.',
     suitedTo:
       'packs that draw more current per cell than 0.15 mm comfortably carries. The larger cross-section — thicker and wider — lowers resistance through the interconnect, at the cost of needing more weld energy than a 0.15 mm strip.',
     cellFormats: '21700, 32650, 32700',
@@ -538,7 +538,7 @@ const stripSizePage = (size: StripSize): LandingPage => ({
   title: size.title,
   description: size.description,
   h1: `Pure Nickel Strip ${size.thickness} × ${size.width}`,
-  intro: `Pure nickel strip in ${size.thickness} thickness and ${size.width} width, manufactured by Ramani Steel House in Mumbai since 1974. Supplied at 99.6% nickel to UNS N02201, slit to width from coil, for battery pack builders working with ${size.cellFormats} cells. Minimum order 5 kg, despatched in 7 days PAN India and exported to 17+ countries.`,
+  intro: `Pure nickel strip in ${size.thickness} thickness and ${size.width} width, manufactured by Ramani Steel House in Mumbai since 1974. Supplied at 99.8% nickel to UNS N02201, slit to width from coil, for battery pack builders working with ${size.cellFormats} cells. Minimum order 5 kg, despatched in 7 days PAN India and exported to 17+ countries.`,
   keywords: [
     `Pure Nickel Strip ${size.thickness} x ${size.width}`,
     `Nickel Strip ${size.thickness}`,
@@ -552,7 +552,7 @@ const stripSizePage = (size: StripSize): LandingPage => ({
       heading: `Specification — ${size.thickness} × ${size.width}`,
       bullets: [
         `Thickness ${size.thickness}, width ${size.width}`,
-        'Purity 99.6% pure nickel',
+        'Purity 99.8% pure nickel',
         'Grade Nickel 201, UNS N02201 (DIN 2.4068)',
         `Suited to ${size.cellFormats} cell formats`,
         'Supplied as strip or coil, slit to width',
@@ -566,7 +566,7 @@ const stripSizePage = (size: StripSize): LandingPage => ({
     },
     {
       heading: 'Ordering this size',
-      body: `${size.thickness} × ${size.width} is a stocked size, so it ships from coil rather than being rolled to order. If your pack needs a different width, the same 99.6% material is slit to any width from 2 mm to 50 mm against your drawing — send the pitch and cell layout and it is cut to that instead.`,
+      body: `${size.thickness} × ${size.width} is a stocked size, so it ships from coil rather than being rolled to order. If your pack needs a different width, the same 99.8% material is slit to any width from 2 mm to 50 mm against your drawing — send the pitch and cell layout and it is cut to that instead.`,
     },
   ],
   faqs: [
@@ -577,7 +577,7 @@ const stripSizePage = (size: StripSize): LandingPage => ({
     {
       question: `Is ${size.thickness} × ${size.width} nickel strip pure nickel or nickel-plated steel?`,
       answer:
-        'Pure nickel, at 99.6%, to UNS N02201. Nickel-plated steel is supplied separately and is a different material — it is cheaper but has substantially higher resistance, so it is not interchangeable where conductivity matters.',
+        'Pure nickel, at 99.8%, to UNS N02201. Nickel-plated steel is supplied separately and is a different material — it is cheaper but has substantially higher resistance, so it is not interchangeable where conductivity matters.',
     },
     {
       question: `What is the minimum order for ${size.thickness} × ${size.width} strip?`,
@@ -607,10 +607,10 @@ const APPLICATION_PAGES: readonly LandingPage[] = [
     slug: 'nickel-strip-for-battery-pack-welding',
     title: 'Nickel Strip for Battery Pack Welding | Supplier',
     description:
-      'Nickel strip for battery pack spot welding: 99.6% pure nickel, 0.10-0.50mm, cut to cell pitch. Welds cleanly on 18650, 21700 and 32700 packs. Made in Mumbai.',
+      'Nickel strip for battery pack spot welding: 99.8% pure nickel, 0.10-0.50mm, cut to cell pitch. Welds cleanly on 18650, 21700 and 32700 packs. Made in Mumbai.',
     h1: 'Nickel Strip for Battery Pack Welding',
     intro:
-      'Nickel strip for battery pack welding, manufactured in Mumbai by Ramani Steel House. Spot welding is what the material has to survive: 99.6% pure nickel takes a weld nugget cleanly at moderate electrode force, and the strip is slit and cut to your cell pitch so it seats on the pack without hand alignment.',
+      'Nickel strip for battery pack welding, manufactured in Mumbai by Ramani Steel House. Spot welding is what the material has to survive: 99.8% pure nickel takes a weld nugget cleanly at moderate electrode force, and the strip is slit and cut to your cell pitch so it seats on the pack without hand alignment.',
     keywords: [
       'Nickel Strip for Battery Pack Welding',
       'Spot Welding Nickel Strip',
@@ -627,7 +627,7 @@ const APPLICATION_PAGES: readonly LandingPage[] = [
       {
         heading: 'What we supply for welding',
         bullets: [
-          'Purity 99.6% pure nickel, Nickel 201 / UNS N02201',
+          'Purity 99.8% pure nickel, Nickel 201 / UNS N02201',
           'Thickness 0.10mm – 0.50mm; 0.15mm is the common welding gauge',
           'Width 2mm – 50mm, slit to your drawing',
           'H-type, zig-zag, honeycomb, fuse-type and plain patterns',
@@ -665,7 +665,7 @@ const APPLICATION_PAGES: readonly LandingPage[] = [
     slug: 'nickel-strip-for-lithium-ion-battery-manufacturers',
     title: 'Nickel Strip for Lithium-Ion Battery Manufacturers',
     description:
-      'Bulk nickel strip for lithium-ion battery manufacturers: 99.6% pure nickel, custom slitting, test certificates, PAN India supply and export to 17+ countries.',
+      'Bulk nickel strip for lithium-ion battery manufacturers: 99.8% pure nickel, custom slitting, test certificates, PAN India supply and export to 17+ countries.',
     h1: 'Nickel Strip for Lithium-Ion Battery Manufacturers',
     intro:
       'Ramani Steel House supplies nickel strip to lithium-ion battery manufacturers across India and in 17+ export markets, from its Mumbai works. What a manufacturer needs beyond the material itself is repeatability, traceable batches and a supplier who can hold a delivery schedule — the strip is slit in-house, tested batch-wise, and despatched in 7 days.',
@@ -725,7 +725,7 @@ const APPLICATION_PAGES: readonly LandingPage[] = [
       'Nickel busbar for battery applications: pure nickel interconnects for EV, storage and industrial packs. Custom width and thickness, made in Mumbai since 1974.',
     h1: 'Nickel Busbar for Battery Applications',
     intro:
-      'Nickel busbar for battery applications, manufactured in Mumbai by Ramani Steel House. Where a strip interconnects cells, a busbar carries the combined current of a module — so the cross-section, not the weld pattern, is the governing dimension. Supplied in pure nickel at 99.6%, cut to the width and thickness your module drawing calls for.',
+      'Nickel busbar for battery applications, manufactured in Mumbai by Ramani Steel House. Where a strip interconnects cells, a busbar carries the combined current of a module — so the cross-section, not the weld pattern, is the governing dimension. Supplied in pure nickel at 99.8%, cut to the width and thickness your module drawing calls for.',
     keywords: [
       'Nickel Busbar for Battery Applications',
       'Nickel Busbar Manufacturer India',
@@ -743,7 +743,7 @@ const APPLICATION_PAGES: readonly LandingPage[] = [
       {
         heading: 'What we supply',
         bullets: [
-          'Pure nickel busbar at 99.6% purity, Nickel 201 / UNS N02201',
+          'Pure nickel busbar at 99.8% purity, Nickel 201 / UNS N02201',
           'Nickel-plated and copper busbar where conductivity or cost dictates',
           'Width and thickness cut to your module drawing',
           'Hole patterns and terminations to spec',

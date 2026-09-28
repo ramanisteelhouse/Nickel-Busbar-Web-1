@@ -93,6 +93,10 @@ export interface BlogPost {
   status?: string | null;
   meta_title?: string | null;
   meta_description?: string | null;
+  /** A short direct answer to the question the title asks, rendered above the article. */
+  key_answer?: string | null;
+  /** The LinkedIn (or other) post covering the same material, linked from the article. */
+  social_post_url?: string | null;
   faq_items?: BlogFaqItem[] | null;
   published_at?: string | null;
   created_at?: string | null;

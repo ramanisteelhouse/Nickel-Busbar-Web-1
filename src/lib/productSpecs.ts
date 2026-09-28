@@ -15,18 +15,25 @@
 import { CELL_FORMATS, STANDARD_THICKNESSES_MM, WIDTH_RANGE_MM } from './stripSizes.js';
 
 /**
- * The purity of the nickel supplied — 99.6%, confirmed directly by the company.
+ * The purity of the nickel supplied — 99.8%, as stated by the company on 2026-09-26.
  *
- * This figure has moved four times: "99.8%+", then "99.6% - 99.8%", then "99.2%" (inferred from
- * an IndiaMART listing and from Nickel 200/201 specifying 99.0% minimum), and now 99.6% on the
- * owner's confirmation. The inference was wrong, and inferring it was the mistake: a mill test
- * certificate states the assay, and nothing else should be used to set this value.
+ * This figure has now moved five times: "99.8%+", then "99.6% - 99.8%", then "99.2%" (inferred
+ * from an IndiaMART listing and from Nickel 200/201 specifying 99.0% minimum), then "99.6%" on
+ * the owner's correction, and now 99.8%. Only the 99.2% was ever inferred rather than supplied,
+ * and inferring it was the mistake: a mill test certificate states the assay, and nothing else
+ * should be used to set this value.
+ *
+ * The owner also notes that purity varies material to material, which this single constant
+ * cannot express — it publishes one figure on every nickel product. If different grades really
+ * do assay differently, the honest fix is a per-product purity column populated from each
+ * batch's MTC, with this constant kept only as the fallback. Until then, this number is applied
+ * to every nickel item in the catalogue, so it must be one that is true of all of them.
  *
  * It is the number a buyer checks against their drawing and the number an answer engine quotes,
  * so it is the worst place on the site to be either optimistic or approximate. Change it only
  * against an MTC, and change it here — every other surface reads from this constant.
  */
-export const NICKEL_PURITY_RANGE = '99.6% pure nickel';
+export const NICKEL_PURITY_RANGE = '99.8% pure nickel';
 
 /** Material test certificates are issued on request, not automatically with every despatch. */
 export const MTC_AVAILABILITY = 'Material test certificate provided on request';

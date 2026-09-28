@@ -15,6 +15,7 @@ import {
   isNoindexSnapshotRoute,
   isLandingSnapshotRoute,
 } from "./seoSnapshot.js";
+import { renderSnapshotResponse } from "./server/renderSnapshot.js";
 
 /**
  * The server-rendered crawler snapshot, as a plain Node request listener.
@@ -75,58 +76,29 @@ function resolvePathname(req: IncomingMessage): string {
   return rawUrl.split("?")[0].replace(/\/+$/, "") || "/";
 }
 
+/**
+ * The Node adapter: Vercel's api/render.ts and Netlify's netlify/functions/render.ts both call
+ * this. All of the decisions live in renderSnapshotResponse; this only maps the result onto a
+ * ServerResponse.
+ */
 export default async function handleSsrRequest(req: IncomingMessage, res: ServerResponse) {
   const template = loadTemplate();
   const pathname = resolvePathname(req);
+  const result = await renderSnapshotResponse(pathname, template);
 
-  try {
-    let result: { status: number; html: string; location?: string };
+  res.setHeader("Cache-Control", result.cacheControl);
+  if (result.noindex) res.setHeader("X-Robots-Tag", "noindex, nofollow, noarchive");
 
-    if (isNoindexSnapshotRoute(pathname)) {
-      result = renderNoindexSnapshot(template, pathname);
-    } else if (pathname === "/blog/nickel-strips-lithium-batteries") {
-      result = await renderNickelStripsLithiumSnapshot(template);
-    } else if (pathname === "/products" || pathname === "/categories") {
-      result = await renderProductListSnapshot(template, pathname === "/categories");
-    } else if (pathname === "/blog") {
-      result = await renderBlogListSnapshot(template);
-    } else if (isStaticSnapshotRoute(pathname)) {
-      result = await renderStaticRouteSnapshot(template, pathname);
-    } else if (isLandingSnapshotRoute(pathname)) {
-      result = await renderLandingSnapshot(template, pathname);
-    } else {
-      const blogMatch = pathname.match(/^\/blog\/([^/]+)$/);
-      const productMatch = pathname.match(/^\/product\/([^/]+)$/);
-      if (blogMatch) {
-        result = await renderBlogSnapshot(template, decodeURIComponent(blogMatch[1]));
-      } else if (productMatch) {
-        result = await renderProductSnapshot(template, decodeURIComponent(productMatch[1]));
-      } else {
-        result = { status: 200, html: template };
-      }
-    }
-
-    // A snapshot renderer can ask for a redirect: a blog post requested under an old or
-    // wrongly-cased slug resolves to its canonical URL rather than serving a duplicate.
-    if (result.location) {
-      res.setHeader("Location", result.location);
-      res.statusCode = result.status;
-      res.end();
-      return;
-    }
-
-    if (result.status === 404) {
-      res.setHeader("X-Robots-Tag", "noindex, nofollow, noarchive");
-    }
-    res.setHeader("Content-Type", "text/html; charset=utf-8");
+  if (result.location) {
+    res.setHeader("Location", result.location);
     res.statusCode = result.status;
-    res.end(result.html);
-  } catch (error) {
-    console.error("SSR snapshot render failed; serving 503 rather than a shell that canonicalises to the homepage", error);
-    const { status, html } = renderUnavailableShell(template, pathname);
-    res.setHeader("Content-Type", "text/html; charset=utf-8");
-    res.setHeader("Retry-After", "120");
-    res.statusCode = status;
-    res.end(html);
+    res.end();
+    return;
   }
+
+  // Never cache a failure: the edge would keep serving 503 after the cause had cleared.
+  if (result.status === 503) res.setHeader("Retry-After", "120");
+  res.setHeader("Content-Type", "text/html; charset=utf-8");
+  res.statusCode = result.status;
+  res.end(result.html);
 }
