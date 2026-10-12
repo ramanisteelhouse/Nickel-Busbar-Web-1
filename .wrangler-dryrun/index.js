@@ -5651,6 +5651,16 @@ async function queryOne(text, params = []) {
   return rows[0] ?? null;
 }
 __name(queryOne, "queryOne");
+var lazyPool = {
+  connect: /* @__PURE__ */ __name(() => getPool().connect(), "connect"),
+  end: /* @__PURE__ */ __name(async () => {
+    if (!pool) return;
+    const current = pool;
+    pool = null;
+    await current.end();
+  }, "end")
+};
+var db_default = lazyPool;
 
 // src/lib/contact.ts
 var PHONE_NUMBERS = [
@@ -6306,9 +6316,9 @@ var LANDING_PAGES = [
 ];
 var LANDING_PAGES_BY_SLUG = new Map(LANDING_PAGES.map((page) => [page.slug, page]));
 function getLandingPage(slug) {
-  const clean = slug?.trim().replace(/^\/+|\/+$/g, "").toLowerCase();
-  if (!clean) return null;
-  return LANDING_PAGES_BY_SLUG.get(clean) ?? null;
+  const clean2 = slug?.trim().replace(/^\/+|\/+$/g, "").toLowerCase();
+  if (!clean2) return null;
+  return LANDING_PAGES_BY_SLUG.get(clean2) ?? null;
 }
 __name(getLandingPage, "getLandingPage");
 function getLandingPageByPathname(pathname) {
@@ -6622,9 +6632,9 @@ var LOCAL_PRODUCT_IMAGE_SLUGS = new Set(
   LOCAL_PRODUCT_IMAGE_FILES.keys()
 );
 function localProductImagePath(slug) {
-  const clean = slug?.trim();
-  if (!clean) return null;
-  const file = LOCAL_PRODUCT_IMAGE_FILES.get(clean);
+  const clean2 = slug?.trim();
+  if (!clean2) return null;
+  const file = LOCAL_PRODUCT_IMAGE_FILES.get(clean2);
   return file ? `/img/products/${file}.webp` : null;
 }
 __name(localProductImagePath, "localProductImagePath");
@@ -8461,9 +8471,268 @@ async function getActiveAds() {
 }
 __name(getActiveAds, "getActiveAds");
 
+// src/lib/stripSpec.ts
+var MAX_FIELD = 40;
+var MAX_NOTES = 500;
+var clean = /* @__PURE__ */ __name((value, max = MAX_FIELD) => typeof value === "string" ? value.replace(/\s+/g, " ").trim().slice(0, max) : "", "clean");
+function millimetres(raw) {
+  const match = /(\d+(?:\.\d+)?)/.exec(raw ?? "");
+  return match ? match[1] : "";
+}
+__name(millimetres, "millimetres");
+function normaliseThickness(raw) {
+  const n = Number(raw);
+  return Number.isFinite(n) && n > 0 ? n.toFixed(2) : raw;
+}
+__name(normaliseThickness, "normaliseThickness");
+function normaliseSpec(input) {
+  const raw = input && typeof input === "object" ? input : {};
+  const thickness = clean(raw.thickness);
+  return {
+    thickness: thickness ? normaliseThickness(millimetres(thickness) || thickness) : "",
+    width: millimetres(clean(raw.width)) || clean(raw.width),
+    adviseWidth: raw.adviseWidth === true,
+    form: clean(raw.form),
+    length: clean(raw.length),
+    cellFormat: clean(raw.cellFormat),
+    customDesign: raw.customDesign === true,
+    notes: clean(raw.notes, MAX_NOTES)
+  };
+}
+__name(normaliseSpec, "normaliseSpec");
+function formatSpec(spec2) {
+  if (!spec2) return "Size not specified";
+  const s = normaliseSpec(spec2);
+  const parts = [];
+  const size = [
+    s.thickness ? `${s.thickness} mm` : "thickness ?",
+    s.adviseWidth ? "width to be recommended" : s.width ? `${s.width} mm` : "width ?"
+  ].join(" \xD7 ");
+  parts.push(size);
+  if (s.form) parts.push(s.form === "Cut lengths" && s.length ? `Cut lengths of ${s.length} mm` : s.form);
+  if (s.cellFormat) parts.push(/^\d/.test(s.cellFormat) ? `${s.cellFormat} cells` : s.cellFormat);
+  if (s.customDesign) parts.push("New design / tooling");
+  return parts.join(" \xB7 ");
+}
+__name(formatSpec, "formatSpec");
+
+// server/quotes.ts
+var MAX_QUOTE_ITEMS = 200;
+function validateQuoteBody(body) {
+  const items = body?.items;
+  if (!Array.isArray(items) || items.length === 0) return { error: "Cart items are required." };
+  if (items.length > MAX_QUOTE_ITEMS) {
+    return { error: `A quote cannot contain more than ${MAX_QUOTE_ITEMS} items.` };
+  }
+  return null;
+}
+__name(validateQuoteBody, "validateQuoteBody");
+async function createQuoteRequest(body, userId) {
+  const customer = body.customer ?? {};
+  const items = body.items ?? [];
+  const summary = body.summary ?? {};
+  const meta = body.meta ?? {};
+  const itemsCount = items.reduce((acc, item) => acc + (Number(item.quantity) || 0), 0);
+  const client = await db_default.connect();
+  try {
+    await client.query("BEGIN");
+    const quoteResult = await client.query(
+      // full_name and email are stored, not just forwarded to the notification. Checkout
+      // makes both mandatory, and for an anonymous buyer there is no users row to recover
+      // them from later — without these columns the request landed in the table with no way
+      // to reply to it except the WhatsApp thread.
+      `INSERT INTO quote_requests
+          (user_id, full_name, email, phone_country_code, phone_number, phone_full, gst_number, pin_code,
+           shipping_option, subtotal, gst, total, currency, locale, items_count, source, user_agent)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17)
+         RETURNING id`,
+      [
+        userId ?? null,
+        customer.full_name ?? null,
+        customer.email ?? null,
+        customer.phone_country_code ?? null,
+        customer.phone_number ?? null,
+        customer.phone_full ?? null,
+        customer.gst_number ?? null,
+        customer.pin_code ?? null,
+        body.shipping_option ?? null,
+        summary.subtotal ?? null,
+        summary.gst ?? null,
+        summary.total ?? null,
+        summary.currency ?? null,
+        summary.locale ?? null,
+        itemsCount,
+        meta.source ?? null,
+        meta.user_agent ?? null
+      ]
+    );
+    const quote = quoteResult.rows[0];
+    if (!quote) throw new Error("Failed to create quote request");
+    for (const item of items) {
+      await client.query(
+        `INSERT INTO quote_request_items
+            (quote_request_id, product_id, product_name, category_name, quantity, unit_price, line_total, spec, spec_summary)
+           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
+        [
+          quote.id,
+          item.product_id ?? null,
+          item.product_name ?? null,
+          item.category_name ?? null,
+          item.quantity ?? null,
+          item.unit_price ?? null,
+          item.line_total ?? null,
+          // The size the buyer chose, sanitised here rather than trusted: it is free text from
+          // a browser and it ends up in the sales team's view of the order.
+          item.spec ? JSON.stringify(normaliseSpec(item.spec)) : null,
+          item.spec ? formatSpec(normaliseSpec(item.spec)) : null
+        ]
+      );
+    }
+    await client.query("COMMIT");
+    const account = userId ? await queryOne("SELECT name, email FROM users WHERE id = $1", [userId]) : null;
+    const leadBody = {
+      ...body,
+      customer: {
+        ...customer,
+        full_name: customer.full_name ?? account?.name ?? null,
+        email: customer.email ?? account?.email ?? null
+      }
+    };
+    return { id: quote.id, itemsCount, leadBody };
+  } catch (error) {
+    try {
+      await client.query("ROLLBACK");
+    } catch (rollbackError) {
+      console.error("Failed to roll back quote request transaction", rollbackError);
+    }
+    throw error;
+  } finally {
+    client.release();
+  }
+}
+__name(createQuoteRequest, "createQuoteRequest");
+
+// server/notifyMessages.ts
+var formatQuoteMessage = /* @__PURE__ */ __name((payload) => {
+  const { customer, items, summary } = payload;
+  const lines = [
+    `New quote / cart request received (#${payload.id})`,
+    `Name: ${customer.full_name || "N/A"}`,
+    `Email: ${customer.email || "N/A"}`,
+    `Phone: ${customer.phone_full || customer.phone_number || "N/A"}`,
+    `GST Number: ${customer.gst_number || "N/A"}`,
+    `Pin Code: ${customer.pin_code || "N/A"}`,
+    ``,
+    `Items:`,
+    ...items.map(
+      (item) => `- ${item.product_name || "Unnamed product"} | Size: ${item.spec ? formatSpec(normaliseSpec(item.spec)) : "not given"} | Qty: ${item.quantity ?? "N/A"} | Unit Price: ${item.unit_price ?? "N/A"} | Total: ${item.line_total ?? "N/A"}`
+    ),
+    ``,
+    `Subtotal: ${summary.subtotal ?? "N/A"}`,
+    `GST: ${summary.gst ?? "N/A"}`,
+    `Total: ${summary.total ?? "N/A"} ${summary.currency ?? ""}`.trim(),
+    `Received at: ${(/* @__PURE__ */ new Date()).toISOString()}`
+  ];
+  return lines.join("\n");
+}, "formatQuoteMessage");
+
+// server/notify.ts
+var recipients = /* @__PURE__ */ __name((value) => (value || "").split(",").map((entry) => entry.trim()).filter(Boolean), "recipients");
+async function sendWithResend(env, message, to) {
+  const response = await fetch("https://api.resend.com/emails", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${env.RESEND_API_KEY}`,
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({
+      from: env.SMTP_FROM || "noreply@nickelbusbar.com",
+      to,
+      subject: message.subject,
+      text: message.text
+    })
+  });
+  if (!response.ok) {
+    throw new Error(`Resend returned ${response.status}: ${(await response.text()).slice(0, 300)}`);
+  }
+}
+__name(sendWithResend, "sendWithResend");
+async function sendWithSendgrid(env, message, to) {
+  const response = await fetch("https://api.sendgrid.com/v3/mail/send", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${env.SENDGRID_API_KEY}`,
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({
+      personalizations: [{ to: to.map((email) => ({ email })) }],
+      from: { email: env.SMTP_FROM || "noreply@nickelbusbar.com" },
+      subject: message.subject,
+      content: [{ type: "text/plain", value: message.text }]
+    })
+  });
+  if (!response.ok) {
+    throw new Error(`SendGrid returned ${response.status}: ${(await response.text()).slice(0, 300)}`);
+  }
+}
+__name(sendWithSendgrid, "sendWithSendgrid");
+async function sendNotificationEmail(env, message) {
+  const to = recipients(env.ENQUIRY_NOTIFY_EMAILS);
+  if (!to.length) return false;
+  if (env.RESEND_API_KEY) {
+    await sendWithResend(env, message, to);
+    return true;
+  }
+  if (env.SENDGRID_API_KEY) {
+    await sendWithSendgrid(env, message, to);
+    return true;
+  }
+  console.warn(
+    "[notify] No RESEND_API_KEY or SENDGRID_API_KEY set; email notification skipped. SMTP is not available on this runtime."
+  );
+  return false;
+}
+__name(sendNotificationEmail, "sendNotificationEmail");
+async function sendNotificationWhatsApp(env, body) {
+  const sid = env.TWILIO_ACCOUNT_SID;
+  const token = env.TWILIO_AUTH_TOKEN;
+  const from = env.TWILIO_WHATSAPP_FROM;
+  const to = recipients(env.ENQUIRY_NOTIFY_WHATSAPP);
+  if (!sid || !token || !from || !to.length) return false;
+  const form = /* @__PURE__ */ __name((recipient) => new URLSearchParams({
+    From: from.startsWith("whatsapp:") ? from : `whatsapp:${from}`,
+    To: recipient.startsWith("whatsapp:") ? recipient : `whatsapp:${recipient}`,
+    Body: body
+  }), "form");
+  for (const recipient of to) {
+    const response = await fetch(`https://api.twilio.com/2010-04-01/Accounts/${sid}/Messages.json`, {
+      method: "POST",
+      headers: {
+        Authorization: `Basic ${btoa(`${sid}:${token}`)}`,
+        "Content-Type": "application/x-www-form-urlencoded"
+      },
+      body: form(recipient).toString()
+    });
+    if (!response.ok) {
+      throw new Error(`Twilio returned ${response.status}: ${(await response.text()).slice(0, 300)}`);
+    }
+  }
+  return true;
+}
+__name(sendNotificationWhatsApp, "sendNotificationWhatsApp");
+async function notifyOrder(env, message) {
+  const results = await Promise.allSettled([
+    sendNotificationEmail(env, message),
+    sendNotificationWhatsApp(env, message.text)
+  ]);
+  for (const result of results) {
+    if (result.status === "rejected") console.error("[notify] notification failed", result.reason);
+  }
+}
+__name(notifyOrder, "notifyOrder");
+
 // worker/index.ts
 var UNPORTED_API_PREFIXES = [
-  "/api/quotes",
   "/api/enquiries",
   "/api/cart",
   "/api/auth",
@@ -8480,6 +8749,58 @@ var json = /* @__PURE__ */ __name((body, status = 200, cacheControl = "public, m
   status,
   headers: { "Content-Type": "application/json; charset=utf-8", "Cache-Control": cacheControl }
 }), "json");
+var PRODUCT_IMAGE_EXTENSION = /\.(jpe?g|png|webp|avif|gif)$/i;
+var PRODUCT_IMAGE_CONTENT_TYPES = /* @__PURE__ */ new Set([
+  "image/jpeg",
+  "image/png",
+  "image/webp",
+  "image/avif",
+  "image/gif"
+]);
+var PRODUCT_IMAGE_MAX_BYTES = 8 * 1024 * 1024;
+var seeOther = /* @__PURE__ */ __name((location) => new Response(null, { status: 302, headers: { Location: location, "Cache-Control": "public, max-age=0, s-maxage=60" } }), "seeOther");
+async function handleProductImage(file) {
+  const slug = file.replace(PRODUCT_IMAGE_EXTENSION, "");
+  if (!slug) return seeOther(PRODUCT_IMAGE_PLACEHOLDER);
+  const fallback = localProductImagePath(slug) ?? PRODUCT_IMAGE_PLACEHOLDER;
+  let product = null;
+  try {
+    product = await queryOne("SELECT image FROM products WHERE slug = $1", [slug]);
+  } catch (error) {
+    console.error(`[product-image] product lookup failed for ${slug}; serving local copy`, error);
+    return seeOther(fallback);
+  }
+  const source = product?.image?.trim();
+  if (!source) return seeOther(fallback);
+  if (!/^https?:\/\//i.test(source)) return seeOther(source.startsWith("/") ? source : fallback);
+  let upstream;
+  try {
+    upstream = await fetch(source, { redirect: "follow" });
+  } catch (error) {
+    console.error(`[product-image] upstream fetch failed for ${slug}; serving local copy`, error);
+    return seeOther(fallback);
+  }
+  const contentType = (upstream.headers.get("content-type") || "").split(";")[0].trim().toLowerCase();
+  if (!upstream.ok || !PRODUCT_IMAGE_CONTENT_TYPES.has(contentType)) {
+    console.warn(`[product-image] upstream returned ${upstream.status} ${contentType || "(no type)"} for ${slug}`);
+    return seeOther(fallback);
+  }
+  const declaredLength = Number(upstream.headers.get("content-length"));
+  if (Number.isFinite(declaredLength) && declaredLength > PRODUCT_IMAGE_MAX_BYTES) return seeOther(source);
+  const body = await upstream.arrayBuffer();
+  if (body.byteLength > PRODUCT_IMAGE_MAX_BYTES) return seeOther(source);
+  return new Response(body, {
+    headers: {
+      "Content-Type": contentType,
+      "Content-Length": String(body.byteLength),
+      // The header this route exists to set: the Supabase original says "none".
+      "X-Robots-Tag": "all",
+      "Cache-Control": "public, max-age=86400, s-maxage=31536000, stale-while-revalidate=604800",
+      "Cross-Origin-Resource-Policy": "cross-origin"
+    }
+  });
+}
+__name(handleProductImage, "handleProductImage");
 var templateCache = null;
 async function loadTemplate(env, request) {
   if (templateCache) return templateCache;
@@ -8493,7 +8814,26 @@ function isSnapshotRoute(pathname) {
   return pathname === "/" || pathname === "/products" || pathname === "/categories" || pathname === "/blog" || isStaticSnapshotRoute(pathname) || isNoindexSnapshotRoute(pathname) || isLandingSnapshotRoute(pathname) || /^\/blog\/[^/]+$/.test(pathname) || /^\/product\/[^/]+$/.test(pathname);
 }
 __name(isSnapshotRoute, "isSnapshotRoute");
-async function handleApi(pathname, url) {
+async function handleApi(pathname, url, request, env, ctx) {
+  if (pathname === "/api/quotes" && request.method === "POST") {
+    const body = await request.json().catch(() => null);
+    if (!body || typeof body !== "object") return json({ error: "Invalid request body" }, 400, "no-store");
+    const invalid = validateQuoteBody(body);
+    if (invalid) return json({ error: invalid.error }, 400, "no-store");
+    const result = await createQuoteRequest(body, null);
+    ctx.waitUntil(
+      notifyOrder(env, {
+        subject: `New Quote Request #${result.id}`,
+        text: formatQuoteMessage({
+          id: result.id,
+          customer: result.leadBody.customer,
+          items: body.items ?? [],
+          summary: body.summary ?? {}
+        })
+      })
+    );
+    return json({ id: result.id }, 201, "no-store");
+  }
   const number = /* @__PURE__ */ __name((value, fallback, min, max) => Math.min(Math.max(Number(value) || fallback, min), max), "number");
   if (pathname === "/api/health") return json({ ok: true, runtime: "cloudflare-worker" });
   if (pathname === "/api/products") {
@@ -8509,6 +8849,8 @@ async function handleApi(pathname, url) {
     if (!q) return json([]);
     return json(await getProductSuggestions(q, number(url.searchParams.get("limit"), 8, 1, 20)));
   }
+  const image = pathname.match(/^\/api\/product-image\/(.+)$/);
+  if (image) return handleProductImage(decodeURIComponent(image[1]));
   if (pathname === "/api/categories") return json(await listCategories());
   if (pathname === "/api/ads/active") return json(await getActiveAds());
   if (pathname === "/api/blog-posts") {
@@ -8558,7 +8900,7 @@ var index_default = {
     }
     if (pathname.startsWith("/api/") || pathname === "/merchant-feed.xml") {
       try {
-        const response = await handleApi(pathname, url);
+        const response = await handleApi(pathname, url, request, env, ctx);
         if (response) return response;
         return json({ error: "Not found" }, 404, "no-store");
       } catch (error) {
@@ -8581,6 +8923,16 @@ var index_default = {
     }
     const asset = await env.ASSETS.fetch(request);
     if (asset.status !== 404) return asset;
+    const legacyImage = pathname.match(/^\/img\/products\/([^/]+\.webp)$/i);
+    if (legacyImage) {
+      return new Response(null, {
+        status: 301,
+        headers: {
+          Location: `${url.origin}/api/product-image/${legacyImage[1]}`,
+          "Cache-Control": "public, max-age=0, s-maxage=600"
+        }
+      });
+    }
     const notFound = await env.ASSETS.fetch(new URL("/404.html", request.url));
     return new Response(await notFound.text(), {
       status: 404,

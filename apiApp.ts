@@ -27,6 +27,8 @@ import {
   listCategories,
   listProducts,
 } from "./server/catalog.js";
+import { createQuoteRequest, validateQuoteBody } from "./server/quotes.js";
+import { formatQuoteMessage, type QuoteNotificationPayload } from "./server/notifyMessages.js";
 
 import { answerFromKnowledgeBase } from "./chatKnowledgeBase.js";
 import type { CrmLead } from "./crm.js";
@@ -215,37 +217,6 @@ const sendNotification = async (subject: string, message: string) => {
 
 const sendEnquiryNotifications = (payload: EnquiryNotificationPayload) =>
   sendNotification(`New Product Enquiry - ${payload.productName || "General"}`, formatEnquiryMessage(payload));
-
-type QuoteNotificationPayload = {
-  id: number;
-  customer: Record<string, unknown>;
-  items: Array<{ product_name?: string; quantity?: number | string; unit_price?: number | string; line_total?: number | string; spec?: unknown }>;
-  summary: Record<string, unknown>;
-};
-
-const formatQuoteMessage = (payload: QuoteNotificationPayload) => {
-  const { customer, items, summary } = payload;
-  const lines = [
-    `New quote / cart request received (#${payload.id})`,
-    `Name: ${customer.full_name || "N/A"}`,
-    `Email: ${customer.email || "N/A"}`,
-    `Phone: ${customer.phone_full || customer.phone_number || "N/A"}`,
-    `GST Number: ${customer.gst_number || "N/A"}`,
-    `Pin Code: ${customer.pin_code || "N/A"}`,
-    ``,
-    `Items:`,
-    ...items.map(
-      (item) =>
-        `- ${item.product_name || "Unnamed product"} | Size: ${item.spec ? formatSpec(normaliseSpec(item.spec)) : "not given"} | Qty: ${item.quantity ?? "N/A"} | Unit Price: ${item.unit_price ?? "N/A"} | Total: ${item.line_total ?? "N/A"}`
-    ),
-    ``,
-    `Subtotal: ${summary.subtotal ?? "N/A"}`,
-    `GST: ${summary.gst ?? "N/A"}`,
-    `Total: ${summary.total ?? "N/A"} ${summary.currency ?? ""}`.trim(),
-    `Received at: ${new Date().toISOString()}`,
-  ];
-  return lines.join("\n");
-};
 
 const sendQuoteNotifications = (payload: QuoteNotificationPayload) =>
   sendNotification(`New Quote Request #${payload.id}`, formatQuoteMessage(payload));
@@ -1622,125 +1593,31 @@ export function createApiApp() {
 
   // --- Quote Requests (Cart/RFQ) ---
   app.post("/api/quotes", enquiryLimiter, asyncHandler(async (req, res) => {
-    const { customer = {}, items = [], summary = {}, shipping_option, meta = {} } = req.body ?? {};
-
-    if (!Array.isArray(items) || items.length === 0) {
-      return res.status(400).json({ error: "Cart items are required." });
-    }
-    // Each item becomes its own INSERT inside one transaction, so an oversized array would
-    // hold a pooled connection open for thousands of round trips.
-    if (items.length > MAX_QUOTE_ITEMS) {
-      return res.status(400).json({ error: `A quote cannot contain more than ${MAX_QUOTE_ITEMS} items.` });
-    }
-
     const userId = getSessionUserId(req);
-    const itemsCount = items.reduce((acc: number, item: any) => acc + (Number(item.quantity) || 0), 0);
-
-    const client = await pool.connect();
     try {
-      await client.query("BEGIN");
-      const quoteResult = await client.query<{ id: number }>(
-        // full_name and email are stored, not just forwarded to the notification. Checkout
-        // makes both mandatory, and for an anonymous buyer there is no users row to recover
-        // them from later — without these columns the request landed in the table with no way
-        // to reply to it except the WhatsApp thread.
-        `INSERT INTO quote_requests
-          (user_id, full_name, email, phone_country_code, phone_number, phone_full, gst_number, pin_code,
-           shipping_option, subtotal, gst, total, currency, locale, items_count, source, user_agent)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17)
-         RETURNING id`,
-        [
-          userId ?? null,
-          customer.full_name ?? null,
-          customer.email ?? null,
-          customer.phone_country_code ?? null,
-          customer.phone_number ?? null,
-          customer.phone_full ?? null,
-          customer.gst_number ?? null,
-          customer.pin_code ?? null,
-          shipping_option ?? null,
-          summary.subtotal ?? null,
-          summary.gst ?? null,
-          summary.total ?? null,
-          summary.currency ?? null,
-          summary.locale ?? null,
-          itemsCount,
-          meta.source ?? null,
-          meta.user_agent ?? null,
-        ]
-      );
+      const invalid = validateQuoteBody(req.body ?? {});
+      if (invalid) return res.status(400).json({ error: invalid.error });
 
-      const quote = quoteResult.rows[0];
-      if (!quote) {
-        throw new Error("Failed to create quote request");
-      }
-
-      for (const item of items) {
-        await client.query(
-          `INSERT INTO quote_request_items
-            (quote_request_id, product_id, product_name, category_name, quantity, unit_price, line_total, spec, spec_summary)
-           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
-          [
-            quote.id,
-            item.product_id ?? null,
-            item.product_name ?? null,
-            item.category_name ?? null,
-            item.quantity ?? null,
-            item.unit_price ?? null,
-            item.line_total ?? null,
-            // The size the buyer chose, sanitised here rather than trusted: it is free text from
-            // a browser and it ends up in the sales team's view of the order.
-            item.spec ? JSON.stringify(normaliseSpec(item.spec)) : null,
-            item.spec ? formatSpec(normaliseSpec(item.spec)) : null,
-          ]
-        );
-      }
-
-      await client.query("COMMIT");
-
-      // The checkout form may only collect phone/GST/PIN, so fall back to the
-      // signed-in account for a usable contact name and email.
-      const account = userId
-        ? await queryOne<{ name: string; email: string }>(
-            "SELECT name, email FROM users WHERE id = $1",
-            [userId]
-          )
-        : null;
-
-      const leadBody = {
-        ...(req.body ?? {}),
-        customer: {
-          ...customer,
-          full_name: customer.full_name ?? account?.name ?? null,
-          email: customer.email ?? account?.email ?? null,
-        },
-      };
+      const result = await createQuoteRequest(req.body ?? {}, userId ?? null);
 
       runAfterResponse(
-        enqueueLead("quote", quote.id, buildQuoteLead(quote.id, leadBody, userId ?? null, itemsCount))
+        enqueueLead("quote", result.id, buildQuoteLead(result.id, result.leadBody, userId ?? null, result.itemsCount))
       );
 
-      sendQuoteNotifications({ id: quote.id, customer: leadBody.customer, items, summary }).catch(
-        (notifyError) => {
-          console.error("Failed to send quote notification", notifyError);
-        }
-      );
+      sendQuoteNotifications({
+        id: result.id,
+        customer: result.leadBody.customer,
+        items: req.body?.items ?? [],
+        summary: req.body?.summary ?? {},
+      }).catch((notifyError) => {
+        console.error("Failed to send quote notification", notifyError);
+      });
 
-      res.status(201).json({ id: quote.id });
+      res.status(201).json({ id: result.id });
     } catch (e) {
-      // A dropped connection is the usual reason the transaction failed in the first place,
-      // and ROLLBACK will then fail too. Unguarded, that second error escapes this catch
-      // block entirely and takes the process down.
-      try {
-        await client.query("ROLLBACK");
-      } catch (rollbackError) {
-        console.error("Failed to roll back quote request transaction", rollbackError);
-      }
       console.error("Failed to save quote request", e);
       // The raw driver message can carry schema and constraint details - keep it in the log.
       res.status(500).json({ error: "Failed to save quote request" });
-    } finally {
-      client.release();
     }
   }));
 

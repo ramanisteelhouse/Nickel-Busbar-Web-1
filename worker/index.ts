@@ -16,6 +16,12 @@ import {
   isNoindexSnapshotRoute,
   isStaticSnapshotRoute,
 } from "../seoSnapshot.js";
+import { queryOne } from "../db.js";
+import { PRODUCT_IMAGE_PLACEHOLDER } from "../src/lib/productImage.js";
+import { localProductImagePath } from "../src/lib/productImageLocal.js";
+import { createQuoteRequest, validateQuoteBody } from "../server/quotes.js";
+import { formatQuoteMessage } from "../server/notifyMessages.js";
+import { notifyOrder } from "../server/notify.js";
 
 /**
  * The Cloudflare Worker.
@@ -57,7 +63,6 @@ export interface Env {
 
 /** Write endpoints that still live only in Express. Listed so the 501 can name them. */
 const UNPORTED_API_PREFIXES = [
-  "/api/quotes",
   "/api/enquiries",
   "/api/cart",
   "/api/auth",
@@ -76,6 +81,81 @@ const json = (body: unknown, status = 200, cacheControl = "public, max-age=0, s-
     status,
     headers: { "Content-Type": "application/json; charset=utf-8", "Cache-Control": cacheControl },
   });
+
+const PRODUCT_IMAGE_EXTENSION = /\.(jpe?g|png|webp|avif|gif)$/i;
+const PRODUCT_IMAGE_CONTENT_TYPES = new Set([
+  "image/jpeg",
+  "image/png",
+  "image/webp",
+  "image/avif",
+  "image/gif",
+]);
+/** Matches the Express proxy: anything larger is redirected to the source rather than buffered. */
+const PRODUCT_IMAGE_MAX_BYTES = 8 * 1024 * 1024;
+
+const seeOther = (location: string) =>
+  new Response(null, { status: 302, headers: { Location: location, "Cache-Control": "public, max-age=0, s-maxage=60" } });
+
+/**
+ * The product photo proxy, ported from apiApp.ts.
+ *
+ * Supabase Storage answers every object with `X-Robots-Tag: none`, which disqualifies a product
+ * photo from Google Images however correct the Product markup around it is. Serving the same
+ * bytes from our own origin under our own headers is the entire point of this route, so it has
+ * to exist on Cloudflare too — without it every product photo that has not been synced locally
+ * would 404.
+ */
+async function handleProductImage(file: string): Promise<Response> {
+  const slug = file.replace(PRODUCT_IMAGE_EXTENSION, "");
+  if (!slug) return seeOther(PRODUCT_IMAGE_PLACEHOLDER);
+
+  // The downloaded copy stands in before the generic mark, so a storage outage degrades to a
+  // slightly stale photo rather than a grid of identical logos.
+  const fallback = localProductImagePath(slug) ?? PRODUCT_IMAGE_PLACEHOLDER;
+
+  let product: { image: string | null } | null = null;
+  try {
+    product = await queryOne<{ image: string | null }>("SELECT image FROM products WHERE slug = $1", [slug]);
+  } catch (error) {
+    console.error(`[product-image] product lookup failed for ${slug}; serving local copy`, error);
+    return seeOther(fallback);
+  }
+
+  const source = product?.image?.trim();
+  if (!source) return seeOther(fallback);
+  if (!/^https?:\/\//i.test(source)) return seeOther(source.startsWith("/") ? source : fallback);
+
+  let upstream: Response;
+  try {
+    upstream = await fetch(source, { redirect: "follow" });
+  } catch (error) {
+    console.error(`[product-image] upstream fetch failed for ${slug}; serving local copy`, error);
+    return seeOther(fallback);
+  }
+
+  const contentType = (upstream.headers.get("content-type") || "").split(";")[0].trim().toLowerCase();
+  if (!upstream.ok || !PRODUCT_IMAGE_CONTENT_TYPES.has(contentType)) {
+    console.warn(`[product-image] upstream returned ${upstream.status} ${contentType || "(no type)"} for ${slug}`);
+    return seeOther(fallback);
+  }
+
+  const declaredLength = Number(upstream.headers.get("content-length"));
+  if (Number.isFinite(declaredLength) && declaredLength > PRODUCT_IMAGE_MAX_BYTES) return seeOther(source);
+
+  const body = await upstream.arrayBuffer();
+  if (body.byteLength > PRODUCT_IMAGE_MAX_BYTES) return seeOther(source);
+
+  return new Response(body, {
+    headers: {
+      "Content-Type": contentType,
+      "Content-Length": String(body.byteLength),
+      // The header this route exists to set: the Supabase original says "none".
+      "X-Robots-Tag": "all",
+      "Cache-Control": "public, max-age=86400, s-maxage=31536000, stale-while-revalidate=604800",
+      "Cross-Origin-Resource-Policy": "cross-origin",
+    },
+  });
+}
 
 /** The built shell, fetched once per isolate from the asset store rather than from disk. */
 let templateCache: string | null = null;
@@ -102,7 +182,40 @@ function isSnapshotRoute(pathname: string): boolean {
   );
 }
 
-async function handleApi(pathname: string, url: URL): Promise<Response | null> {
+async function handleApi(
+  pathname: string,
+  url: URL,
+  request: Request,
+  env: Env,
+  ctx: ExecutionContext
+): Promise<Response | null> {
+  if (pathname === "/api/quotes" && request.method === "POST") {
+    const body = await request.json().catch(() => null);
+    if (!body || typeof body !== "object") return json({ error: "Invalid request body" }, 400, "no-store");
+
+    const invalid = validateQuoteBody(body as Record<string, unknown>);
+    if (invalid) return json({ error: invalid.error }, 400, "no-store");
+
+    // Anonymous only for now: sessions are part of the auth port, so a signed-in buyer is
+    // recorded by the contact details on the request rather than by user_id.
+    const result = await createQuoteRequest(body as Record<string, unknown>, null);
+
+    // After the response: the order is saved, and the buyer should not wait for a notification.
+    ctx.waitUntil(
+      notifyOrder(env as unknown as Record<string, string | undefined>, {
+        subject: `New Quote Request #${result.id}`,
+        text: formatQuoteMessage({
+          id: result.id,
+          customer: result.leadBody.customer,
+          items: (body as { items?: unknown[] }).items ?? [],
+          summary: (body as { summary?: Record<string, unknown> }).summary ?? {},
+        }),
+      })
+    );
+
+    return json({ id: result.id }, 201, "no-store");
+  }
+
   const number = (value: string | null, fallback: number, min: number, max: number) =>
     Math.min(Math.max(Number(value) || fallback, min), max);
 
@@ -122,6 +235,9 @@ async function handleApi(pathname: string, url: URL): Promise<Response | null> {
     if (!q) return json([]);
     return json(await getProductSuggestions(q, number(url.searchParams.get("limit"), 8, 1, 20)));
   }
+
+  const image = pathname.match(/^\/api\/product-image\/(.+)$/);
+  if (image) return handleProductImage(decodeURIComponent(image[1]));
 
   if (pathname === "/api/categories") return json(await listCategories());
   if (pathname === "/api/ads/active") return json(await getActiveAds());
@@ -185,7 +301,7 @@ export default {
 
     if (pathname.startsWith("/api/") || pathname === "/merchant-feed.xml") {
       try {
-        const response = await handleApi(pathname, url);
+        const response = await handleApi(pathname, url, request, env, ctx);
         if (response) return response;
         return json({ error: "Not found" }, 404, "no-store");
       } catch (error) {
@@ -211,6 +327,22 @@ export default {
     // A real file (assets, images, the video, robots.txt, sitemap.xml) or nothing.
     const asset = await env.ASSETS.fetch(request);
     if (asset.status !== 404) return asset;
+
+    // Only once the file is known to be missing: photos were saved as <slug>.webp before they
+    // were renamed to descriptive filenames, so a URL indexed under the old name must still
+    // resolve. The old name is the slug, which is what the proxy takes. Checking the asset
+    // first is what keeps a current filename being served as a file rather than redirected —
+    // the same order vercel.json uses, where `handle: filesystem` precedes the rule.
+    const legacyImage = pathname.match(/^\/img\/products\/([^/]+\.webp)$/i);
+    if (legacyImage) {
+      return new Response(null, {
+        status: 301,
+        headers: {
+          Location: `${url.origin}/api/product-image/${legacyImage[1]}`,
+          "Cache-Control": "public, max-age=0, s-maxage=600",
+        },
+      });
+    }
 
     // Matching the other hosts: an unknown URL is a real 404, not the SPA shell, so it is never
     // indexed as a soft 404.
