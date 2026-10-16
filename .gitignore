@@ -17,3 +17,7 @@ public/version.json
 /blob-report/
 /playwright/.cache/
 /playwright/.auth/
+
+# Wrangler scratch output, rewritten on every local `wrangler dev` / `deploy --dry-run`.
+# These were tracked by mistake and churned the diff on every Cloudflare run.
+.wrangler/
