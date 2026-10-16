@@ -20,6 +20,11 @@ import {
   RETURN_POLICY_LINES,
   RETURN_POLICY_SCHEMA,
 } from "./src/lib/returnPolicy.js";
+import {
+  buildShippingSchema,
+  SHIPPING_HEADING,
+  SHIPPING_LINES,
+} from "./src/lib/shippingPolicy.js";
 import { getLandingPageByPathname, parentCategoryFor, STATE_LANDING_PAGES } from "./src/lib/landingPages.js";
 import { blogCtaFor } from "./src/lib/blogCta.js";
 import { buildProductFaqs, productFaqJsonLd } from "./src/lib/productFaq.js";
@@ -1401,6 +1406,8 @@ export async function renderProductSnapshot(template: string, slug: string): Pro
   // absent price means "no offer to advertise", so the Offer node is omitted entirely.
   const numericPrice = Number(product.price);
   const hasPrice = Number.isFinite(numericPrice) && numericPrice > 0;
+  // null until the freight figure is confirmed - see the gate in shippingPolicy.ts.
+  const shippingDetails = buildShippingSchema();
 
   const keywordValues = { name, price: hasPrice ? formatInr(numericPrice) : null };
   const description =
@@ -1452,6 +1459,11 @@ export async function renderProductSnapshot(template: string, slug: string): Pro
             // Answers Search Console's "Missing field hasMerchantReturnPolicy (in offers)".
             // The copy backing this claim is rendered below, in the snapshot body.
             hasMerchantReturnPolicy: RETURN_POLICY_SCHEMA,
+            // The companion merchant-listing enhancement. Spread rather than assigned, because
+            // the builder returns null until the freight figure is known: an Offer carrying a
+            // shippingDetails without shippingRate is a reported invalid item, not a silently
+            // missing recommendation. Mirrored in ProductDetailPage.tsx.
+            ...(shippingDetails ? { shippingDetails } : {}),
             // Points at the Organization @id published in index.html rather than repeating the
             // company as a second, rival entity.
             seller: { "@id": `${SITE_URL}/#organization` },
@@ -1583,6 +1595,8 @@ export async function renderProductSnapshot(template: string, slug: string): Pro
     <p><a href="${SITE_URL}${EXPORT_PATH}">Nickel strip and busbar export enquiry</a> &mdash; send your specification, quantity and destination port for a quotation.</p>
     <h2>${escapeHtml(RETURN_POLICY_HEADING)}</h2>
     ${RETURN_POLICY_LINES.map((line) => `<p>${escapeHtml(line)}</p>`).join("")}
+    <h2>${escapeHtml(SHIPPING_HEADING)}</h2>
+    ${SHIPPING_LINES.map((line) => `<p>${escapeHtml(line)}</p>`).join("")}
     ${relatedHtml}
     ${catalogueHtml}
     <p><a href="${SITE_URL}/products">All nickel strip and busbar products</a></p>

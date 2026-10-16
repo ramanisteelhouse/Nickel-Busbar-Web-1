@@ -48,7 +48,7 @@ const CHECKS: Check[] = [
   { path: "/export-enquiry", covers: "STATIC_ROUTE_SEO", canonical: "/export-enquiry" },
   { path: "/products", covers: "renderProductListSnapshot + product cards", canonical: "/products", contains: ["<img", "/product/"] },
   { path: "/categories", covers: "renderProductListSnapshot (categories variant)", canonical: "/products" },
-  { path: "/product/Plain-Nickel-Strips", covers: "renderProductSnapshot + Offer", canonical: "/product/Plain-Nickel-Strips", contains: ['"Product"', '"offers"', "hasMerchantReturnPolicy"] },
+  { path: "/product/Plain-Nickel-Strips", covers: "renderProductSnapshot + Offer", canonical: "/product/Plain-Nickel-Strips", contains: ['"Product"', '"offers"', "hasMerchantReturnPolicy", "Orders are delivered within"] },
   { path: "/blog", covers: "renderBlogListSnapshot", canonical: "/blog" },
   { path: "/blog/why-nickel-purity-matters", covers: "renderBlogSnapshot", canonical: "/blog/why-nickel-purity-matters" },
   { path: "/h-type-nickel-strip", covers: "renderLandingSnapshot (bespoke page)", canonical: "/h-type-nickel-strip" },

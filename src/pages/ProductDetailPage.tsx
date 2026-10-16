@@ -18,6 +18,7 @@ import {
   RETURN_POLICY_LINES,
   RETURN_POLICY_SCHEMA,
 } from '../lib/returnPolicy';
+import { buildShippingSchema, SHIPPING_HEADING, SHIPPING_LINES } from '../lib/shippingPolicy';
 import {
   fillKeywordParagraphs,
   resolveProductKeywordBlock,
@@ -173,6 +174,8 @@ export const ProductDetailPage: React.FC<{ onAddToCart: (p: Product, spec?: Stri
   // in structured data, so the Offer node is omitted instead. Mirrored in seoSnapshot.ts.
   const numericPrice = Number(product.price);
   const hasPrice = Number.isFinite(numericPrice) && numericPrice > 0;
+  // null until the freight figure is confirmed — see the gate in shippingPolicy.ts.
+  const shippingDetails = buildShippingSchema();
 
   // Head and copy below mirror renderProductSnapshot() in seoSnapshot.ts. They have to: this
   // component's tags replace the SSR ones on mount, so anything the snapshot says and the
@@ -249,6 +252,11 @@ export const ProductDetailPage: React.FC<{ onAddToCart: (p: Product, spec?: Stri
                     // offers)". Mirrored in seoSnapshot.ts, and backed by the returns copy
                     // rendered further down this page.
                     hasMerchantReturnPolicy: RETURN_POLICY_SCHEMA,
+                    // The companion merchant-listing enhancement. Spread rather than assigned,
+                    // because the builder returns null until the freight figure is known: an
+                    // Offer carrying shippingDetails without shippingRate is a reported invalid
+                    // item, not a silently missing recommendation. Mirrors seoSnapshot.ts.
+                    ...(shippingDetails ? { shippingDetails } : {}),
                     // An Offer with no stated region reads as domestic-only. These say the
                     // catalogue ships worldwide, and point `seller` at the Organization @id
                     // from index.html rather than declaring a second, rival company entity.
@@ -605,6 +613,16 @@ export const ProductDetailPage: React.FC<{ onAddToCart: (p: Product, spec?: Stri
       <section className="mt-16 rounded-3xl border border-zinc-100 bg-zinc-50 p-8">
         <h2 className="text-lg font-bold text-zinc-900">{RETURN_POLICY_HEADING}</h2>
         {RETURN_POLICY_LINES.map((line) => (
+          <p key={line} className="mt-3 text-sm leading-relaxed text-zinc-600">
+            {line}
+          </p>
+        ))}
+
+        {/* Same reasoning, same section: this is the copy backing shippingDetails, and it has to
+            be in the DOM for a crawler that never clicks a tab. It states the delivery
+            commitment always and the freight charge only once there is a real figure. */}
+        <h2 className="mt-8 text-lg font-bold text-zinc-900">{SHIPPING_HEADING}</h2>
+        {SHIPPING_LINES.map((line) => (
           <p key={line} className="mt-3 text-sm leading-relaxed text-zinc-600">
             {line}
           </p>
