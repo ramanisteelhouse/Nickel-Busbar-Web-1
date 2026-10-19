@@ -29,7 +29,7 @@
  *     one from the other, so deliveryTime stays out until both halves are confirmed.
  */
 
-import { DELIVERY_TIME } from './productSpecs';
+import { DELIVERY_TIME } from './productSpecs.js';
 
 /** Matches APPLICABLE_COUNTRY in returnPolicy.ts and eligibleRegion on the Offer. */
 const SHIPPING_DESTINATION_COUNTRY = 'IN';
