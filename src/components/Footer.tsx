@@ -10,160 +10,175 @@ import { GROUP_SITES } from '../lib/groupSites';
 
 export const Footer: React.FC = () => {
   return (
-    <footer className="bg-white border-t border-slate-200 pt-14 pb-10">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-10">
-          <div className="md:col-span-2 space-y-4">
-            <h3 className="text-2xl font-display font-bold text-brand">Ramani Nickel Strips</h3>
-            <p className="text-sm text-slate-600">
-              Premium nickel strips manufacturer serving lithium-ion battery producers worldwide.
+    <>
+      {/* The catalogue, regional and group-identity links sit in their own section ABOVE the
+          footer rather than inside it. They are site-wide internal linking, not footer
+          furniture: the footer proper is contact details, navigation and the copyright line.
+          Keeping them separate also means the links are not buried under three stacked
+          dividers at the very bottom of the document, where both readers and crawlers weight
+          them least. The component still renders both, so no page layout had to change. */}
+      <section
+        aria-label="Nickel strip catalogue and supply regions"
+        className="bg-white border-t border-slate-200 pt-12 pb-12"
+      >
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          {/* The catalogue, linked from every page. A product URL used to be reachable only from
+              /products, from the sitemap, and from the related block on its siblings, so each one
+              sat three clicks from the homepage with no site-wide entry point. Anchor text is the
+              product's own name, because that is what tells a search engine which query the
+              destination answers. PRODUCT_LINKS is generated at build time (see
+              scripts/generate-product-links.ts) rather than fetched, so this stays free of
+              a network request on every page view. */}
+          <div>
+            <p className="text-xs uppercase tracking-[0.3em] text-slate-400 mb-4">Nickel Strip &amp; Busbar Catalogue</p>
+            <ul className="flex flex-wrap gap-x-4 gap-y-2 text-sm text-slate-600">
+              {PRODUCT_LINKS.map((product) => (
+                <li key={product.slug}>
+                  <Link to={`/product/${encodeURIComponent(product.slug)}`} className="inline-block py-1 hover:text-brand">
+                    {product.name}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </div>
+          {/* Crawlable links to the state landing pages. Without an entry point in site-wide
+              navigation these URLs would be reachable only from the sitemap and from each other,
+              which is a weak enough signal that Google often leaves such a cluster uncrawled. */}
+          <div className="mt-10 border-t border-slate-200 pt-8">
+            <p className="text-xs uppercase tracking-[0.3em] text-slate-400 mb-4">Nickel Strip Supply Across India</p>
+            <ul className="flex flex-wrap gap-x-4 gap-y-2 text-sm text-slate-600">
+              {STATE_LANDING_PAGES.map((state) => (
+                <li key={state.path}>
+                  <Link to={state.path} className="inline-block py-1 hover:text-brand">{state.name}</Link>
+                </li>
+              ))}
+            </ul>
+          </div>
+          {/* The company's other web properties, as crawlable links rather than only as `sameAs`
+              in the JSON-LD. Both matter and they do different jobs: the markup asserts "these are
+              one company", while a real anchor is what a crawler follows and what an answer engine
+              reads as rendered text. Ramani Steel House publishes under several domains and none
+              of them linked to any other, so each one looked like a separate business.
+
+              It names the company, not the group's other product lines. This site is nickel strip
+              and nickel busbar only; titanium, duplex, stainless and the powders belong to the
+              other domains. Listing them here would dilute the one thing this domain is topically
+              about, which is the opposite of what the cross-link is for. */}
+          <div className="mt-10 border-t border-slate-200 pt-8">
+            <p className="text-xs uppercase tracking-[0.3em] text-slate-400 mb-3">Part of Ramani Steel House</p>
+            <p className="text-sm text-slate-600 max-w-3xl">
+              NickelBusbar.com is the nickel strip and nickel busbar catalogue of Ramani Steel House,
+              Mumbai, established 1974. Company websites:{' '}
+              {GROUP_SITES.map((site, index) => (
+                <React.Fragment key={site.href}>
+                  {index > 0 ? (index === GROUP_SITES.length - 1 ? ' and ' : ', ') : ''}
+                  <a
+                    href={site.href}
+                    target="_blank"
+                    rel="noopener"
+                    className="underline underline-offset-2 hover:text-brand"
+                  >
+                    {site.label}
+                  </a>
+                </React.Fragment>
+              ))}
+              .
             </p>
-            <p className="text-sm text-slate-600">{YEARS_IN_BUSINESS}+ years of metallurgical excellence | Mumbai, India</p>
-            {/* PostalAddress microdata, not a sentence. The SEO audit's Local SEO check reported
-                the address as missing while this printed it as one unlabelled line — nothing in
-                the markup identified any part of it as an address. The values come from
-                lib/contact so the visible address and the JSON-LD cannot drift apart. */}
-            <address
-              className="text-sm not-italic text-slate-600"
-              itemScope
-              itemType="https://schema.org/PostalAddress"
-            >
-              Office address:{' '}
-              <span itemProp="streetAddress">{POSTAL_ADDRESS.streetAddress}</span>,{' '}
-              <span itemProp="addressLocality">{POSTAL_ADDRESS.addressLocality}</span>,{' '}
-              <span itemProp="addressRegion">{POSTAL_ADDRESS.addressRegion}</span>{' '}
-              <span itemProp="postalCode">{POSTAL_ADDRESS.postalCode}</span>,{' '}
-              <span itemProp="addressCountry">{POSTAL_ADDRESS.countryName}</span>
-            </address>
-            <div className="flex flex-wrap items-center gap-3 pt-3">
-              <a href="https://www.linkedin.com/company/ramani-steel-house/" target="_blank" rel="noopener noreferrer" className="inline-block py-1 text-sm text-slate-600 hover:text-brand">LinkedIn</a>
-              <a href="https://www.facebook.com/profile.php?id=61550731232092" target="_blank" rel="noopener noreferrer" className="inline-block py-1 text-sm text-slate-600 hover:text-brand">Facebook</a>
-              <a href="https://www.instagram.com/ramanisteelhouse/" target="_blank" rel="noopener noreferrer" className="inline-block py-1 text-sm text-slate-600 hover:text-brand">Instagram</a>
-              <a href="https://in.pinterest.com/ramanisteel2023/" target="_blank" rel="noopener noreferrer" className="inline-block py-1 text-sm text-slate-600 hover:text-brand">Pinterest</a>
-              <a href="https://x.com/SteelHouse69101" target="_blank" rel="noopener noreferrer" className="inline-block py-1 text-sm text-slate-600 hover:text-brand">X</a>
+          </div>
+        </div>
+      </section>
+      <footer className="bg-white border-t border-slate-200 pt-14 pb-10">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-10">
+            <div className="md:col-span-2 space-y-4">
+              <h3 className="text-2xl font-display font-bold text-brand">Ramani Nickel Strips</h3>
+              <p className="text-sm text-slate-600">
+                Premium nickel strips manufacturer serving lithium-ion battery producers worldwide.
+              </p>
+              <p className="text-sm text-slate-600">{YEARS_IN_BUSINESS}+ years of metallurgical excellence | Mumbai, India</p>
+              {/* PostalAddress microdata, not a sentence. The SEO audit's Local SEO check reported
+                  the address as missing while this printed it as one unlabelled line — nothing in
+                  the markup identified any part of it as an address. The values come from
+                  lib/contact so the visible address and the JSON-LD cannot drift apart. */}
+              <address
+                className="text-sm not-italic text-slate-600"
+                itemScope
+                itemType="https://schema.org/PostalAddress"
+              >
+                Office address:{' '}
+                <span itemProp="streetAddress">{POSTAL_ADDRESS.streetAddress}</span>,{' '}
+                <span itemProp="addressLocality">{POSTAL_ADDRESS.addressLocality}</span>,{' '}
+                <span itemProp="addressRegion">{POSTAL_ADDRESS.addressRegion}</span>{' '}
+                <span itemProp="postalCode">{POSTAL_ADDRESS.postalCode}</span>,{' '}
+                <span itemProp="addressCountry">{POSTAL_ADDRESS.countryName}</span>
+              </address>
+              <div className="flex flex-wrap items-center gap-3 pt-3">
+                <a href="https://www.linkedin.com/company/ramani-steel-house/" target="_blank" rel="noopener noreferrer" className="inline-block py-1 text-sm text-slate-600 hover:text-brand">LinkedIn</a>
+                <a href="https://www.facebook.com/profile.php?id=61550731232092" target="_blank" rel="noopener noreferrer" className="inline-block py-1 text-sm text-slate-600 hover:text-brand">Facebook</a>
+                <a href="https://www.instagram.com/ramanisteelhouse/" target="_blank" rel="noopener noreferrer" className="inline-block py-1 text-sm text-slate-600 hover:text-brand">Instagram</a>
+                <a href="https://in.pinterest.com/ramanisteel2023/" target="_blank" rel="noopener noreferrer" className="inline-block py-1 text-sm text-slate-600 hover:text-brand">Pinterest</a>
+                <a href="https://x.com/SteelHouse69101" target="_blank" rel="noopener noreferrer" className="inline-block py-1 text-sm text-slate-600 hover:text-brand">X</a>
+              </div>
+            </div>
+            <div>
+              <p className="text-xs uppercase tracking-[0.3em] text-slate-400 mb-4">Quick Links</p>
+              <ul className="space-y-3 text-sm text-slate-600">
+                <li><Link className="inline-block py-1" to="/">Home</Link></li>
+                <li><Link className="inline-block py-1" to="/products?search=nickel">Nickel Strips</Link></li>
+                <li><Link className="inline-block py-1" to="/h-type-nickel-strip">H Type Nickel Strip</Link></li>
+                <li><Link className="inline-block py-1" to="/nickel-strip-wholesaler-and-distributor">Wholesale &amp; Distribution</Link></li>
+                <li><Link className="inline-block py-1" to="/products">Products</Link></li>
+                <li><Link className="inline-block py-1" to="/about">About Us</Link></li>
+                <li><Link className="inline-block py-1" to="/calculator">Weight Calculator</Link></li>
+                <li><Link className="inline-block py-1" to="/blog">Blog</Link></li>
+                <li><Link className="inline-block py-1" to="/export-enquiry">Export Enquiry</Link></li>
+                <li><Link className="inline-block py-1" to="/contact">Contact</Link></li>
+                <li>
+                  <a
+                    href={BROCHURE.path}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="inline-block py-1 hover:text-brand"
+                  >
+                    {BROCHURE.label} <span className="text-xs text-slate-400">({BROCHURE.sizeLabel})</span>
+                  </a>
+                </li>
+              </ul>
+            </div>
+            <div>
+              <p className="text-xs uppercase tracking-[0.3em] text-slate-400 mb-4">Contact</p>
+              <ul className="space-y-3 text-sm text-slate-600">
+                {EMAIL_ADDRESSES.map((email) => (
+                  <li key={email}>
+                    <a
+                      href={`mailto:${email}`}
+                      onClick={() => logCallClick(email, 'footer_email')}
+                      className="inline-block py-1 hover:text-brand"
+                    >
+                      {email}
+                    </a>
+                  </li>
+                ))}
+                {PHONE_NUMBERS.map((number) => (
+                  <li key={number.e164}>
+                    <a
+                      href={telHref(number)}
+                      onClick={() => logCallClick(`+${number.e164}`, 'footer')}
+                      className="inline-block py-1 hover:text-brand"
+                    >
+                      {number.display}
+                    </a>
+                  </li>
+                ))}
+                <li>PAN India + international supply support</li>
+              </ul>
             </div>
           </div>
-          <div>
-            <p className="text-xs uppercase tracking-[0.3em] text-slate-400 mb-4">Quick Links</p>
-            <ul className="space-y-3 text-sm text-slate-600">
-              <li><Link className="inline-block py-1" to="/">Home</Link></li>
-              <li><Link className="inline-block py-1" to="/products?search=nickel">Nickel Strips</Link></li>
-              <li><Link className="inline-block py-1" to="/h-type-nickel-strip">H Type Nickel Strip</Link></li>
-              <li><Link className="inline-block py-1" to="/nickel-strip-wholesaler-and-distributor">Wholesale &amp; Distribution</Link></li>
-              <li><Link className="inline-block py-1" to="/products">Products</Link></li>
-              <li><Link className="inline-block py-1" to="/about">About Us</Link></li>
-              <li><Link className="inline-block py-1" to="/calculator">Weight Calculator</Link></li>
-              <li><Link className="inline-block py-1" to="/blog">Blog</Link></li>
-              <li><Link className="inline-block py-1" to="/export-enquiry">Export Enquiry</Link></li>
-              <li><Link className="inline-block py-1" to="/contact">Contact</Link></li>
-              <li>
-                <a
-                  href={BROCHURE.path}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="inline-block py-1 hover:text-brand"
-                >
-                  {BROCHURE.label} <span className="text-xs text-slate-400">({BROCHURE.sizeLabel})</span>
-                </a>
-              </li>
-            </ul>
-          </div>
-          <div>
-            <p className="text-xs uppercase tracking-[0.3em] text-slate-400 mb-4">Contact</p>
-            <ul className="space-y-3 text-sm text-slate-600">
-              {EMAIL_ADDRESSES.map((email) => (
-                <li key={email}>
-                  <a
-                    href={`mailto:${email}`}
-                    onClick={() => logCallClick(email, 'footer_email')}
-                    className="inline-block py-1 hover:text-brand"
-                  >
-                    {email}
-                  </a>
-                </li>
-              ))}
-              {PHONE_NUMBERS.map((number) => (
-                <li key={number.e164}>
-                  <a
-                    href={telHref(number)}
-                    onClick={() => logCallClick(`+${number.e164}`, 'footer')}
-                    className="inline-block py-1 hover:text-brand"
-                  >
-                    {number.display}
-                  </a>
-                </li>
-              ))}
-              <li>PAN India + international supply support</li>
-            </ul>
+          <div className="mt-10 border-t border-slate-200 pt-6 text-xs text-slate-500">
+            <p>Copyright 2026 Ramani Steel House. All rights reserved.</p>
           </div>
         </div>
-        {/* The catalogue, linked from every page. A product URL used to be reachable only from
-            /products, from the sitemap, and from the related block on its siblings, so each one
-            sat three clicks from the homepage with no site-wide entry point. Anchor text is the
-            product's own name, because that is what tells a search engine which query the
-            destination answers. PRODUCT_LINKS is generated at build time (see
-            scripts/generate-product-links.ts) rather than fetched, so the footer stays free of
-            a network request on every page view. */}
-        <div className="mt-10 border-t border-slate-200 pt-8">
-          <p className="text-xs uppercase tracking-[0.3em] text-slate-400 mb-4">Nickel Strip &amp; Busbar Catalogue</p>
-          <ul className="flex flex-wrap gap-x-4 gap-y-2 text-sm text-slate-600">
-            {PRODUCT_LINKS.map((product) => (
-              <li key={product.slug}>
-                <Link to={`/product/${encodeURIComponent(product.slug)}`} className="inline-block py-1 hover:text-brand">
-                  {product.name}
-                </Link>
-              </li>
-            ))}
-          </ul>
-        </div>
-        {/* Crawlable links to the state landing pages. Without an entry point in site-wide
-            navigation these URLs would be reachable only from the sitemap and from each other,
-            which is a weak enough signal that Google often leaves such a cluster uncrawled. */}
-        <div className="mt-10 border-t border-slate-200 pt-8">
-          <p className="text-xs uppercase tracking-[0.3em] text-slate-400 mb-4">Nickel Strip Supply Across India</p>
-          <ul className="flex flex-wrap gap-x-4 gap-y-2 text-sm text-slate-600">
-            {STATE_LANDING_PAGES.map((state) => (
-              <li key={state.path}>
-                <Link to={state.path} className="inline-block py-1 hover:text-brand">{state.name}</Link>
-              </li>
-            ))}
-          </ul>
-        </div>
-        {/* The company's other web properties, as crawlable links rather than only as `sameAs`
-            in the JSON-LD. Both matter and they do different jobs: the markup asserts "these are
-            one company", while a real anchor is what a crawler follows and what an answer engine
-            reads as rendered text. Ramani Steel House publishes under several domains and none
-            of them linked to any other, so each one looked like a separate business.
-
-            It names the company, not the group's other product lines. This site is nickel strip
-            and nickel busbar only; titanium, duplex, stainless and the powders belong to the
-            other domains. Listing them here would dilute the one thing this domain is topically
-            about, which is the opposite of what the cross-link is for. */}
-        <div className="mt-10 border-t border-slate-200 pt-8">
-          <p className="text-xs uppercase tracking-[0.3em] text-slate-400 mb-3">Part of Ramani Steel House</p>
-          <p className="text-sm text-slate-600 max-w-3xl">
-            NickelBusbar.com is the nickel strip and nickel busbar catalogue of Ramani Steel House,
-            Mumbai, established 1974. Company websites:{' '}
-            {GROUP_SITES.map((site, index) => (
-              <React.Fragment key={site.href}>
-                {index > 0 ? (index === GROUP_SITES.length - 1 ? ' and ' : ', ') : ''}
-                <a
-                  href={site.href}
-                  target="_blank"
-                  rel="noopener"
-                  className="underline underline-offset-2 hover:text-brand"
-                >
-                  {site.label}
-                </a>
-              </React.Fragment>
-            ))}
-            .
-          </p>
-        </div>
-        <div className="mt-10 border-t border-slate-200 pt-6 text-xs text-slate-500">
-          <p>Copyright 2026 Ramani Steel House. All rights reserved.</p>
-        </div>
-      </div>
-    </footer>
+      </footer>
+    </>
   );
 };
