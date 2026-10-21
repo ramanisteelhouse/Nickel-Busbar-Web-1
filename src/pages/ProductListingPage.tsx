@@ -8,6 +8,7 @@ import { cn, getProductUnitLabel, getStrikePrice } from '../lib/utils';
 import { ProductThumbnail } from '../components/ProductThumbnail';
 import { showToast } from '../components/Toast';
 import { takesStripSize } from '../lib/stripSpec';
+import { catalogueMetaFor } from '../lib/catalogueMeta';
 import { useLanguage } from '../i18n/LanguageProvider';
 
 type ProductListingPageProps = {
@@ -198,19 +199,12 @@ export const ProductListingPage: React.FC<ProductListingPageProps> = ({ onAddToC
   return (
     <>
       <Helmet>
-        {isCategoriesRoute ? (
-          <title>Nickel Strip Categories | Pure Nickel & Plated Strips</title>
-        ) : (
-          <title>Nickel Strip Products | Manufacturer &amp; Exporter India</title>
-        )}
-        <meta
-          name="description"
-          content={
-            isCategoriesRoute
-              ? 'Browse nickel strip categories: pure nickel, nickel-plated strips, battery tabs, busbars and custom coils. Made in Mumbai, supplied PAN India and exported.'
-              : 'Nickel strips, nickel-plated strips and battery tabs made in Mumbai, India. PAN India supply, export to 17+ countries. Bulk and custom quotes.'
-          }
-        />
+        {/* Title and description come from src/lib/catalogueMeta.ts, which seoSnapshot.ts also
+            reads. These two renderers had drifted: the snapshot carried 167 and 197 character
+            descriptions that Google was truncating, while this page carried shorter, different
+            copy. One source means changing it here changes it for the crawler too. */}
+        <title>{catalogueMetaFor(isCategoriesRoute).title}</title>
+        <meta name="description" content={catalogueMetaFor(isCategoriesRoute).description} />
         {/* /categories renders this same component with the same product grid, so it
             canonicalises to /products instead of self-canonicalising — otherwise the two
             URLs compete as duplicates. Mirrored in seoSnapshot.renderProductListSnapshot. */}

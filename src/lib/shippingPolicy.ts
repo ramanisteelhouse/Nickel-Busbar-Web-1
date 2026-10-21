@@ -38,19 +38,34 @@ const SHIPPING_DESTINATION_COUNTRY = 'IN';
 export type DayRange = { min: number; max: number };
 
 /**
- * DATA REQUIRED - the freight charge for a domestic order, in INR.
+ * The freight charge for a domestic order, in INR. Permanently null — this is a decision, not a
+ * gap waiting to be filled.
  *
- * Set to a number to switch the markup on. 0 is a valid and meaningful value, but it means
- * "delivered free", so set it only if that is genuinely the commercial position. If freight is
- * actually quoted per order by weight and destination, it is not expressible as a single
- * MonetaryAmount and this should stay null — the Offer is better off without the block.
+ * Confirmed by the owner on 2026-10-21: **freight is quoted per order, based on weight and
+ * destination.** There is therefore no single figure to publish. schema.org's `shippingRate` is
+ * one `MonetaryAmount`, so a per-order quote cannot be expressed honestly, and any number put
+ * here would be a price commitment the business never made to a buyer who could hold them to it.
+ *
+ * So `buildShippingSchema()` returns null and no `shippingDetails` is emitted. That is the
+ * correct outcome, not a missing feature: Google treats the block as recommended, but requires
+ * `shippingRate` inside it once present, so a placeholder would turn a silently-absent
+ * recommendation into a reported invalid item on all 17 product URLs.
+ *
+ * Do not set this to 0 to "enable" the markup. 0 means delivery is free, which is not the
+ * position. If the company ever moves to a flat domestic rate, set that real figure here and the
+ * markup and the visible copy both follow automatically.
  */
 export const SHIPPING_RATE_INR: number | null = null;
 
 /**
- * DATA REQUIRED - the working days between order confirmation and the material leaving the
- * works, and the days in transit after that. These must add up to DELIVERY_TIME, which is the
- * figure already published to buyers.
+ * The working days between order confirmation and the material leaving the works, and the days
+ * in transit after that. Both null, and moot while SHIPPING_RATE_INR is null: `deliveryTime`
+ * lives inside `shippingDetails`, which is not emitted at all.
+ *
+ * They are kept rather than deleted because they are the other half of a flat-rate switch. If
+ * freight ever becomes a published figure, these must add up to DELIVERY_TIME — the 7 days
+ * already promised to buyers — and must be confirmed, not guessed, because the split varies by
+ * destination.
  */
 export const HANDLING_TIME_DAYS: DayRange | null = null;
 export const TRANSIT_TIME_DAYS: DayRange | null = null;

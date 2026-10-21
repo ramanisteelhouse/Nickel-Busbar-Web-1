@@ -20,6 +20,7 @@ import {
   RETURN_POLICY_LINES,
   RETURN_POLICY_SCHEMA,
 } from "./src/lib/returnPolicy.js";
+import { catalogueMetaFor } from "./src/lib/catalogueMeta.js";
 import {
   buildShippingSchema,
   SHIPPING_HEADING,
@@ -602,12 +603,9 @@ export async function renderProductListSnapshot(template: string, isCategoriesRo
   // only the title/description differ), so it canonicalises to /products rather than
   // self-canonicalising. Two indexable URLs for identical content split their own ranking.
   const canonical = `${SITE_URL}/products`;
-  const title = isCategoriesRoute
-    ? "Nickel Strip Categories | Pure Nickel & Plated Strips"
-    : "Nickel Strip Products | Manufacturer & Exporter India";
-  const description = isCategoriesRoute
-    ? "Browse nickel strip categories from Ramani Steel House: pure nickel, nickel-plated strips, battery tabs, busbars and custom coils. Manufactured in Mumbai, supplied PAN India and exported worldwide."
-    : "Shop nickel strips, nickel-plated strips, and battery tabs manufactured in Mumbai, India. PAN India supply and export to 17+ countries. Request bulk and custom quotes.";
+  // Shared with ProductListingPage.tsx so the crawler and the browser cannot be told two
+  // different things about the same page — see src/lib/catalogueMeta.ts.
+  const { title, description } = catalogueMetaFor(isCategoriesRoute);
 
   // The catalogue hub shipped an h1 and one sentence — no products, no links, no images. It is
   // the page every product URL should be reachable from, so for a crawler that does not run the
