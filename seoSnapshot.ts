@@ -737,8 +737,12 @@ const STATIC_ROUTE_SEO: Record<StaticSnapshotRoute, { title: string; description
     <ul>${HOME_HERO.offers.map((offer) => `<li>${escapeHtml(offer)}</li>`).join("")}</ul>
     <!-- The hero photograph, as a real element with real dimensions and alt text. Google
          Images will not index a picture that only exists once the bundle has run, and this is
-         the one product photo on the site's most-linked URL. Mirrors the <img> HomePage
-         renders in the hero card. -->
+         the one product photo on the site's most-linked URL. Mirrors the image element
+         HomePage renders in the hero card.
+         No angle-bracket tag names in this comment: it ships in the public HTML, and a
+         regex-based crawler that counts image tags will match the text inside a comment and
+         report the homepage as having an image with no alt. That false positive cost an
+         afternoon once already. -->
     <img src="${productImageUrl(SITE_URL, HERO_PRODUCT_SLUG)}" alt="${escapeAttr(
       buildImageAlt("H type nickel strip for 18650 battery packs, cut to cell pitch")
     )}" width="900" height="900" fetchpriority="high" />
