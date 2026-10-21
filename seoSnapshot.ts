@@ -1304,23 +1304,37 @@ export async function renderBlogListSnapshot(template: string): Promise<Snapshot
 
   // Without this, /blog was a dead end for non-rendering crawlers: the post links exist only
   // in the client bundle, so nothing but the sitemap pointed at individual articles.
+  // One <article> per post, with the post's own title as an <h2> — the same shape
+  // BlogListingPage.tsx renders for a browser.
+  //
+  // This index previously emitted a flat <ul> of links and no headings at all, so a crawler saw
+  // h1=1, h2=0 while a visitor saw a heading per article. The rendered page was right and the
+  // snapshot was wrong, which is the worse way round: the snapshot is the version Google and the
+  // answer engines actually read, and a list with no sub-structure gives them nothing to extract
+  // beyond "this is a blog". Each H2 now names an article, which is what a reader and a
+  // retrieval system are both looking for.
   const postsHtml = posts.length
-    ? `<ul>${posts
+    ? posts
         .map((post) => {
+          const href = `${SITE_URL}/blog/${encodeURIComponent(post.slug)}`;
           // The cover art as a real element, matching what /products does for its grid. The
           // index rendered twenty links and no pictures, so an image crawler saw nothing here.
+          // 1000x1000 because that is the size covers are uploaded at (see supabase/README.md)
+          // and what the rendered page declares; the old 600x338 described a crop that does not
+          // exist, which is a layout-shift hint pointing at the wrong aspect ratio.
           const cover = post.cover_image_url
-            ? `<img src="${escapeAttr(post.cover_image_url)}" alt="${escapeAttr(
+            ? `<a href="${href}"><img src="${escapeAttr(post.cover_image_url)}" alt="${escapeAttr(
                 buildImageAlt(post.title)
-              )}" width="600" height="338" loading="lazy" decoding="async" />`
+              )}" width="1000" height="1000" loading="lazy" decoding="async" /></a>`
             : "";
-          return (
-            `<li><a href="${SITE_URL}/blog/${encodeURIComponent(post.slug)}">${cover}${escapeHtml(post.title)}</a>${
-              post.excerpt ? ` — ${escapeHtml(post.excerpt)}` : ""
-            }</li>`
-          );
+          // The same fallback sentence the rendered page uses, so an excerpt-less post reads the
+          // same way in both.
+          const excerpt = escapeHtml(post.excerpt || "Read the full article for details.");
+          return `<article>${cover}<h2><a href="${href}">${escapeHtml(
+            post.title
+          )}</a></h2><p>${excerpt}</p></article>`;
         })
-        .join("")}</ul>`
+        .join("")
     : "";
 
   const jsonLd: object[] = [
