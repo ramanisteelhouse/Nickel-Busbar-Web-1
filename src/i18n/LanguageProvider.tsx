@@ -9,7 +9,6 @@ import {
   setCookie,
   setSessionValue,
 } from '../lib/utils';
-import { getCountryOptions } from '../lib/countryCodes';
 import { languageMeta, LanguageCode } from './languages';
 import { translations, TranslationKey } from './translations';
 import { getLocaleForCountry, languageMaps, normalizeLocaleKey, toFlagEmoji, validatePostalCode } from '../lib/localization';
@@ -310,13 +309,30 @@ export const LanguageProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         mapped.sort((a, b) => a.name.localeCompare(b.name));
         setCountries(mapped);
       })
-      .catch(() => {
-        const fallback = getCountryOptions().map((option) => ({
-          code: option.code,
-          name: option.name,
-          flag: option.flag,
-        }));
-        setCountries(fallback);
+      // Imported here rather than at the top of the file, because this is the only place the
+      // provider needs it and it is the path that normally never runs.
+      //
+      // lib/countryCodes pulls in libphonenumber-js, which is 105 kB of source — the largest
+      // avoidable dependency in the entry bundle. Since LanguageProvider wraps the whole app,
+      // a static import shipped that country table to every visitor on every page just to have
+      // a fallback ready in case /api/localization/countries failed. Now it is fetched only if
+      // that request actually fails. CheckoutPage imports the same module statically, but it is
+      // React.lazy, so the cost lands in the checkout chunk where it is genuinely needed.
+      .catch(async () => {
+        if (!isActive) return;
+        try {
+          const { getCountryOptions } = await import('../lib/countryCodes');
+          if (!isActive) return;
+          const fallback = getCountryOptions().map((option) => ({
+            code: option.code,
+            name: option.name,
+            flag: option.flag,
+          }));
+          setCountries(fallback);
+        } catch {
+          // The fallback itself failed to load. Leave the list empty rather than throwing
+          // inside an effect — the country picker degrades, the rest of the page is unaffected.
+        }
       });
 
     return () => {
