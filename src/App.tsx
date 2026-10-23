@@ -34,8 +34,28 @@ const CalculatorPage = React.lazy(() => import('./pages/CalculatorPage').then((m
 const NotFoundPage = React.lazy(() => import('./pages/NotFoundPage').then((m) => ({ default: m.NotFoundPage })));
 const LandingPage = React.lazy(() => import('./pages/LandingPage').then((m) => ({ default: m.LandingPage })));
 
+/**
+ * Holds a full viewport while the route chunk loads, so the footer stays below the fold.
+ *
+ * This is a Cumulative Layout Shift fix, not a styling choice. Every route is React.lazy, so
+ * on first paint the page is Navbar + this fallback + Footer. At 60vh the fallback reserved
+ * 487px on a 812px phone, which put the footer inside the viewport; when the real route
+ * arrived — often ten to twenty times taller — the footer was shoved thousands of pixels down,
+ * and because it had been visible, the move counted in full.
+ *
+ * Measured on 2026-10-23 in Chrome at 375x812, the shift was attributed to the footer's
+ * catalogue section every time: 0.40 on the homepage, 0.34 on a product page, 1.15 on a long
+ * blog post, against a "good" threshold of 0.10. The layout-shift entry reported previousRect
+ * y=487, which is 60vh exactly.
+ *
+ * Reserving the full viewport puts the footer below the fold during loading. CLS only counts
+ * movement of content that was visible, so the same reflow stops being charged. It does not
+ * make the page load faster; it stops the reflow being measured as instability, which is what
+ * Core Web Vitals grades. svh rather than vh so a mobile browser's collapsing address bar does
+ * not leave the reservation short.
+ */
 const RouteLoadingFallback: React.FC = () => (
-  <div className="flex min-h-[60vh] items-center justify-center">
+  <div className="flex min-h-[100svh] items-center justify-center">
     <div className="h-10 w-10 animate-spin rounded-full border-4 border-brand/20 border-t-brand" />
   </div>
 );
