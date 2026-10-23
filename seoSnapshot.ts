@@ -1475,6 +1475,10 @@ export async function renderProductSnapshot(template: string, slug: string): Pro
             // Answers Search Console's "Missing field hasMerchantReturnPolicy (in offers)".
             // The copy backing this claim is rendered below, in the snapshot body.
             hasMerchantReturnPolicy: RETURN_POLICY_SCHEMA,
+            // A recommended merchant-listing field Search Console reported as absent on every
+            // product. Unambiguously true: this is newly manufactured material, slit to order.
+            // Mirrored in ProductDetailPage.tsx.
+            itemCondition: "https://schema.org/NewCondition",
             // The companion merchant-listing enhancement. Spread rather than assigned, because
             // the builder returns null until the freight figure is known: an Offer carrying a
             // shippingDetails without shippingRate is a reported invalid item, not a silently

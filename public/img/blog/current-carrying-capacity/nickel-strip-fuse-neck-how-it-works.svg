@@ -1,0 +1,47 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 540" width="800" height="540" role="img" aria-labelledby="t d" font-family="system-ui, -apple-system, 'Segoe UI', Roboto, Arial, sans-serif">
+  <title id="t">How the narrow neck of a fuse-type nickel strip works</title>
+  <desc id="d">A fuse-type nickel strip has a deliberately narrowed neck. The narrow neck has less cross-section area, so higher resistance and more heat for the same current. When a cell shorts, the fault current heats the neck first, and it melts open before the fault can spread to other cells. The trade-off is less current headroom in normal use.</desc>
+  <defs>
+    <marker id="ar" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto"><path d="M1,1 L9,5 L1,9 Z" fill="#304e58"/></marker>
+    <radialGradient id="glow" cx="50%" cy="50%" r="60%"><stop offset="0%" stop-color="#d4551f" stop-opacity="0.75"/><stop offset="100%" stop-color="#d4551f" stop-opacity="0"/></radialGradient>
+  </defs>
+  <rect x="1" y="1" width="798" height="538" rx="14" fill="#f6f9fa" stroke="#d9e0e2" stroke-width="2"/>
+  <text x="400" y="48" text-anchor="middle" font-size="30" font-weight="700" fill="#304e58">Why a fuse-type strip has a narrow neck</text>
+  <text x="400" y="80" text-anchor="middle" font-size="19" fill="#51656c">Top view of one interconnect segment</text>
+
+  <ellipse cx="400" cy="190" rx="150" ry="62" fill="url(#glow)"/>
+  <path d="M40,150 H290 L325,181 H475 L510,150 H760 V230 H510 L475,199 H325 L290,230 H40 Z" fill="#cfd8dc" stroke="#90a4ae" stroke-width="3" stroke-linejoin="round"/>
+  <line x1="52" y1="190" x2="270" y2="190" stroke="#304e58" stroke-width="3" marker-end="url(#ar)"/>
+  <line x1="530" y1="190" x2="748" y2="190" stroke="#304e58" stroke-width="3" marker-end="url(#ar)"/>
+  <text x="48" y="136" font-size="19" font-weight="700" fill="#2f7d6d">Wide section</text>
+  <text x="48" y="260" font-size="17" fill="#3d5159">large A, low R, stays cool</text>
+  <text x="400" y="136" text-anchor="middle" font-size="19" font-weight="700" fill="#d4551f">Narrow neck</text>
+  <text x="400" y="260" text-anchor="middle" font-size="17" fill="#3d5159">small A, high R, heats first</text>
+  <text x="752" y="136" text-anchor="end" font-size="19" font-weight="700" fill="#2f7d6d">Wide section</text>
+
+  <g text-anchor="middle">
+    <rect x="28" y="296" width="212" height="128" rx="12" fill="#fff" stroke="#c5d1d5" stroke-width="2"/>
+    <circle cx="58" cy="324" r="15" fill="#304e58"/><text x="58" y="331" font-size="18" font-weight="700" fill="#fff">1</text>
+    <text x="150" y="331" font-size="21" font-weight="700" fill="#1f3a43">Cell shorts</text>
+    <text x="134" y="368" font-size="18" fill="#3d5159">Fault current surges</text>
+    <text x="134" y="392" font-size="18" fill="#3d5159">through the strip</text>
+
+    <rect x="294" y="296" width="212" height="128" rx="12" fill="#fff" stroke="#c5d1d5" stroke-width="2"/>
+    <circle cx="324" cy="324" r="15" fill="#304e58"/><text x="324" y="331" font-size="18" font-weight="700" fill="#fff">2</text>
+    <text x="418" y="331" font-size="21" font-weight="700" fill="#1f3a43">Neck heats first</text>
+    <text x="400" y="368" font-size="18" fill="#3d5159">P = I² × R, and the</text>
+    <text x="400" y="392" font-size="18" fill="#3d5159">neck has the highest R</text>
+
+    <rect x="560" y="296" width="212" height="128" rx="12" fill="#fff" stroke="#d4551f" stroke-width="2.5"/>
+    <circle cx="590" cy="324" r="15" fill="#d4551f"/><text x="590" y="331" font-size="18" font-weight="700" fill="#fff">3</text>
+    <text x="684" y="331" font-size="21" font-weight="700" fill="#1f3a43">Neck melts open</text>
+    <text x="666" y="368" font-size="18" fill="#3d5159">Circuit breaks before</text>
+    <text x="666" y="392" font-size="18" fill="#3d5159">the fault spreads</text>
+  </g>
+  <line x1="242" y1="360" x2="292" y2="360" stroke="#304e58" stroke-width="3" marker-end="url(#ar)"/>
+  <line x1="508" y1="360" x2="558" y2="360" stroke="#304e58" stroke-width="3" marker-end="url(#ar)"/>
+
+  <rect x="28" y="446" width="744" height="72" rx="12" fill="#e8f0f2"/>
+  <text x="400" y="476" text-anchor="middle" font-size="19" font-weight="700" fill="#1f3a43">The trade-off: less current headroom in normal use.</text>
+  <text x="400" y="503" text-anchor="middle" font-size="18" fill="#3d5159">Size the neck against your cell's fault current and BMS, not a datasheet number.</text>
+</svg>

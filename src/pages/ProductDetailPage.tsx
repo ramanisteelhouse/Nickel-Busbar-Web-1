@@ -252,6 +252,10 @@ export const ProductDetailPage: React.FC<{ onAddToCart: (p: Product, spec?: Stri
                     // offers)". Mirrored in seoSnapshot.ts, and backed by the returns copy
                     // rendered further down this page.
                     hasMerchantReturnPolicy: RETURN_POLICY_SCHEMA,
+                    // A recommended merchant-listing field Search Console reported as absent on
+                    // every product. Unambiguously true: newly manufactured material, slit to
+                    // order. Mirrors seoSnapshot.ts.
+                    itemCondition: 'https://schema.org/NewCondition',
                     // The companion merchant-listing enhancement. Spread rather than assigned,
                     // because the builder returns null until the freight figure is known: an
                     // Offer carrying shippingDetails without shippingRate is a reported invalid

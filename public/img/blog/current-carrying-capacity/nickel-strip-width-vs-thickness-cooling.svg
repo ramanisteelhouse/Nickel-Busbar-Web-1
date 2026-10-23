@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 470" width="800" height="470" role="img" aria-labelledby="t d" font-family="system-ui, -apple-system, 'Segoe UI', Roboto, Arial, sans-serif">
+  <title id="t">Same cross-section, different cooling: wide thin strip versus narrow thick strip</title>
+  <desc id="d">Two nickel strips share the same 8.8 square millimetre cross-section. A wide thin strip, 44 mm by 0.20 mm, has a perimeter of 88.4 mm, while a narrow thick strip, 8.8 mm by 1.0 mm, has a perimeter of 19.6 mm. The wide strip exposes about 4.5 times more surface for heat to escape, so for the same amount of nickel, widening cools a connection better than thickening.</desc>
+  <rect x="1" y="1" width="798" height="468" rx="14" fill="#f6f9fa" stroke="#d9e0e2" stroke-width="2"/>
+  <text x="400" y="48" text-anchor="middle" font-size="30" font-weight="700" fill="#304e58">Same nickel, different cooling</text>
+  <text x="400" y="80" text-anchor="middle" font-size="19" fill="#51656c">Two strips with the same 8.8 mm² cross-section (end view)</text>
+
+  <g text-anchor="middle">
+    <text x="205" y="128" font-size="23" font-weight="700" fill="#2f7d6d">Wide and thin</text>
+    <text x="205" y="154" font-size="19" fill="#3d5159">44 mm × 0.20 mm</text>
+    <rect x="73" y="192" width="264" height="10" fill="#cfd8dc" stroke="#d4551f" stroke-width="3"/>
+    <text x="205" y="240" font-size="20" font-weight="700" fill="#1f3a43">Perimeter: 88.4 mm</text>
+
+    <text x="595" y="128" font-size="23" font-weight="700" fill="#d4551f">Narrow and thick</text>
+    <text x="595" y="154" font-size="19" fill="#3d5159">8.8 mm × 1.0 mm</text>
+    <rect x="569" y="152" width="52.8" height="50" fill="#cfd8dc" stroke="#d4551f" stroke-width="3" transform="translate(0 0)"/>
+    <text x="595" y="240" font-size="20" font-weight="700" fill="#1f3a43">Perimeter: 19.6 mm</text>
+  </g>
+  <text x="400" y="203" text-anchor="middle" font-size="26" font-weight="700" fill="#304e58">=</text>
+  <text x="400" y="228" text-anchor="middle" font-size="15" fill="#6a7b82">same area</text>
+
+  <rect x="150" y="268" width="500" height="58" rx="29" fill="#2f7d6d"/>
+  <text x="400" y="305" text-anchor="middle" font-size="23" font-weight="700" fill="#fff">About 4.5× more surface for heat to escape</text>
+
+  <rect x="28" y="352" width="744" height="80" rx="12" fill="#e8f0f2"/>
+  <text x="400" y="385" text-anchor="middle" font-size="20" font-weight="700" fill="#1f3a43">Past a point, widening cools a joint better than thickening,</text>
+  <text x="400" y="414" text-anchor="middle" font-size="20" font-weight="700" fill="#1f3a43">for the same amount of nickel.</text>
+  <text x="400" y="454" text-anchor="middle" font-size="15" fill="#6a7b82">Illustrative geometry. Thickness drawn larger than scale; widths to scale.</text>
+</svg>
