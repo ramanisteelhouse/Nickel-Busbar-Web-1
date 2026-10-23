@@ -28,6 +28,7 @@ import {
 } from "./src/lib/shippingPolicy.js";
 import { getLandingPageByPathname, parentCategoryFor, STATE_LANDING_PAGES } from "./src/lib/landingPages.js";
 import { blogCtaFor } from "./src/lib/blogCta.js";
+import { blogProductsFor, BLOG_PRODUCTS_HEADING } from "./src/lib/blogProducts.js";
 import { buildProductFaqs, productFaqJsonLd } from "./src/lib/productFaq.js";
 import { SHOWCASE_VIDEO, showcaseVideoJsonLd } from "./src/lib/showcaseVideo.js";
 import { productImagePath, productImageUrl } from "./src/lib/productImage.js";
@@ -524,6 +525,21 @@ export async function renderBlogSnapshot(template: string, slug: string): Promis
   // Same topic-matched next step as BlogPostPage renders; see src/lib/blogCta.
   const cta = blogCtaFor(String(post.slug ?? slug));
   const ctaHtml = `<section><h2>${escapeHtml(cta.heading)}</h2><p>${escapeHtml(cta.body)}</p><p><a href="${SITE_URL}${cta.link.path}">${escapeHtml(cta.link.label)}</a></p></section>`;
+  // Links from the article to the products it discusses, with the product name as anchor text.
+  // This is the half that matters most: the snapshot is what a crawler reads, and these posts
+  // are the pages that rank, so this is where the authority they hold gets passed to the
+  // catalogue. Same mapping BlogPostPage renders — see src/lib/blogProducts.
+  const articleProducts = blogProductsFor(String(post.slug ?? slug));
+  const productsHtml = articleProducts.length
+    ? `<section><h2>${escapeHtml(BLOG_PRODUCTS_HEADING)}</h2><ul>${articleProducts
+        .map(
+          (product) =>
+            `<li><a href="${SITE_URL}/product/${encodeURIComponent(product.slug)}">${escapeHtml(
+              product.name
+            )}</a></li>`
+        )
+        .join("")}</ul></section>`
+    : "";
   // The answer-first paragraph, above everything but the heading: this is what a featured
   // snippet or an assistant quotes, and it cannot be quoted from halfway down the article.
   const keyAnswer = typeof post.key_answer === "string" ? post.key_answer.trim() : "";
@@ -533,6 +549,7 @@ export async function renderBlogSnapshot(template: string, slug: string): Promis
     ${keyAnswerHtml}
     ${coverImageHtml}
     ${(post.content as string) || ""}
+    ${productsHtml}
     ${ctaHtml}
     ${faqHtml}
     ${typeof post.social_post_url === "string" && /^https?:\/\//i.test(post.social_post_url)

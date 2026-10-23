@@ -7,6 +7,8 @@ import { BlogFaqSection } from '../components/BlogFaqSection';
 import { BlogCtaBar, BlogCtaBlock } from '../components/BlogCtaBlock';
 import { BlogShare } from '../components/BlogShare';
 import { blogCtaFor } from '../lib/blogCta';
+import { blogProductsFor, BLOG_PRODUCTS_HEADING } from '../lib/blogProducts';
+import { MINIMUM_ORDER_QUANTITY } from '../lib/productSpecs';
 
 const SITE_URL = 'https://www.nickelbusbar.com';
 const SITE_LOGO_URL = `${SITE_URL}/img/logo.png`;
@@ -111,6 +113,8 @@ export const BlogPostPage: React.FC = () => {
   const keyAnswer = post.key_answer?.trim();
   // The next step for a reader of this article; see lib/blogCta.
   const cta = blogCtaFor(post.slug || decodedSlug);
+  // Empty for any post not yet mapped — the block then does not render at all.
+  const articleProducts = blogProductsFor(post.slug || decodedSlug);
 
   // Article schema: built from the same title/description/dates rendered on the
   // page so structured data can never drift from what visitors actually see.
@@ -214,6 +218,32 @@ export const BlogPostPage: React.FC = () => {
           className="mt-10 text-base leading-relaxed text-slate-700 [&_h2]:mt-10 [&_h2]:text-2xl [&_h2]:font-bold [&_h2]:text-brand [&_h3]:mt-8 [&_h3]:text-xl [&_h3]:font-semibold [&_p]:mt-4 [&_ul]:mt-4 [&_ul]:list-disc [&_ul]:pl-6 [&_ol]:mt-4 [&_ol]:list-decimal [&_ol]:pl-6 [&_li]:mt-2 [&_a]:font-semibold [&_a]:text-brand [&_a]:underline [&_strong]:font-semibold [&_blockquote]:mt-6 [&_blockquote]:border-l-4 [&_blockquote]:border-brand/30 [&_blockquote]:pl-4 [&_blockquote]:italic [&_pre]:mt-4 [&_pre]:overflow-x-auto [&_pre]:rounded-xl [&_pre]:bg-slate-100 [&_pre]:p-4 [&_code]:rounded [&_code]:bg-slate-100 [&_code]:px-1.5 [&_code]:py-0.5 [&_img]:mt-6 [&_img]:rounded-2xl [&_img]:border [&_img]:border-slate-200 [&_img]:w-full [&_img]:h-auto [&_figure]:mt-6 [&_figure]:mb-2 [&_figcaption]:mt-2 [&_figcaption]:text-center [&_figcaption]:text-sm [&_figcaption]:text-slate-500 [&_table]:mt-6 [&_table]:w-full [&_table]:block [&_table]:overflow-x-auto sm:[&_table]:table [&_table]:border-collapse [&_table]:text-sm [&_th]:border [&_th]:border-slate-200 [&_th]:bg-slate-50 [&_th]:px-3 [&_th]:py-2 [&_th]:text-left [&_th]:font-semibold [&_th]:text-brand [&_td]:border [&_td]:border-slate-200 [&_td]:px-3 [&_td]:py-2 [&_caption]:mt-2 [&_caption]:caption-bottom [&_caption]:text-sm [&_caption]:text-slate-500"
           dangerouslySetInnerHTML={{ __html: sanitizedContent }}
         />
+
+        {/* The products the article actually discusses, placed immediately after the content
+            rather than below the share row: the reader has just worked out which strip they
+            need, and this is the only route on the page from here to a product. The anchor text
+            is the product's own name. See src/lib/blogProducts.ts for why this exists and how
+            each mapping was checked. Mirrored in seoSnapshot.ts. */}
+        {articleProducts.length > 0 && (
+          <section className="mt-12 rounded-3xl border border-zinc-100 bg-zinc-50 p-8">
+            <h2 className="text-lg font-bold text-zinc-900">{BLOG_PRODUCTS_HEADING}</h2>
+            <ul className="mt-4 flex flex-wrap gap-x-4 gap-y-2 text-sm">
+              {articleProducts.map((product) => (
+                <li key={product.slug}>
+                  <Link
+                    to={`/product/${encodePathSegment(product.slug)}`}
+                    className="inline-block py-1 font-semibold text-brand underline underline-offset-2 hover:text-brand-dark"
+                  >
+                    {product.name}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+            <p className="mt-4 text-sm text-slate-600">
+              All sizes are slit to order from {MINIMUM_ORDER_QUANTITY}, with a material test certificate on request.
+            </p>
+          </section>
+        )}
 
         <BlogShare url={canonical} title={post.title} socialPostUrl={post.social_post_url} />
 
