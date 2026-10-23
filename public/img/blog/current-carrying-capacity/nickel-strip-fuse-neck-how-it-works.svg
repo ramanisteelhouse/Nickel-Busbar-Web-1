@@ -22,19 +22,19 @@
   <g text-anchor="middle">
     <rect x="28" y="296" width="212" height="128" rx="12" fill="#fff" stroke="#c5d1d5" stroke-width="2"/>
     <circle cx="58" cy="324" r="15" fill="#304e58"/><text x="58" y="331" font-size="18" font-weight="700" fill="#fff">1</text>
-    <text x="150" y="331" font-size="21" font-weight="700" fill="#1f3a43">Cell shorts</text>
+    <text x="84" y="331" text-anchor="start" font-size="21" font-weight="700" fill="#1f3a43">Cell shorts</text>
     <text x="134" y="368" font-size="18" fill="#3d5159">Fault current surges</text>
     <text x="134" y="392" font-size="18" fill="#3d5159">through the strip</text>
 
     <rect x="294" y="296" width="212" height="128" rx="12" fill="#fff" stroke="#c5d1d5" stroke-width="2"/>
     <circle cx="324" cy="324" r="15" fill="#304e58"/><text x="324" y="331" font-size="18" font-weight="700" fill="#fff">2</text>
-    <text x="418" y="331" font-size="21" font-weight="700" fill="#1f3a43">Neck heats first</text>
+    <text x="350" y="331" text-anchor="start" font-size="21" font-weight="700" fill="#1f3a43">Neck heats</text>
     <text x="400" y="368" font-size="18" fill="#3d5159">P = I² × R, and the</text>
     <text x="400" y="392" font-size="18" fill="#3d5159">neck has the highest R</text>
 
     <rect x="560" y="296" width="212" height="128" rx="12" fill="#fff" stroke="#d4551f" stroke-width="2.5"/>
     <circle cx="590" cy="324" r="15" fill="#d4551f"/><text x="590" y="331" font-size="18" font-weight="700" fill="#fff">3</text>
-    <text x="684" y="331" font-size="21" font-weight="700" fill="#1f3a43">Neck melts open</text>
+    <text x="616" y="331" text-anchor="start" font-size="21" font-weight="700" fill="#1f3a43">Neck melts</text>
     <text x="666" y="368" font-size="18" fill="#3d5159">Circuit breaks before</text>
     <text x="666" y="392" font-size="18" fill="#3d5159">the fault spreads</text>
   </g>

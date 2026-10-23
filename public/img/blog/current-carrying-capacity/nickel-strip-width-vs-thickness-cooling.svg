@@ -8,12 +8,12 @@
   <g text-anchor="middle">
     <text x="205" y="128" font-size="23" font-weight="700" fill="#2f7d6d">Wide and thin</text>
     <text x="205" y="154" font-size="19" fill="#3d5159">44 mm × 0.20 mm</text>
-    <rect x="73" y="192" width="264" height="10" fill="#cfd8dc" stroke="#d4551f" stroke-width="3"/>
+    <rect x="73" y="204" width="264" height="10" fill="#cfd8dc" stroke="#d4551f" stroke-width="3"/>
     <text x="205" y="240" font-size="20" font-weight="700" fill="#1f3a43">Perimeter: 88.4 mm</text>
 
     <text x="595" y="128" font-size="23" font-weight="700" fill="#d4551f">Narrow and thick</text>
     <text x="595" y="154" font-size="19" fill="#3d5159">8.8 mm × 1.0 mm</text>
-    <rect x="569" y="152" width="52.8" height="50" fill="#cfd8dc" stroke="#d4551f" stroke-width="3" transform="translate(0 0)"/>
+    <rect x="569" y="164" width="52.8" height="50" fill="#cfd8dc" stroke="#d4551f" stroke-width="3" transform="translate(0 0)"/>
     <text x="595" y="240" font-size="20" font-weight="700" fill="#1f3a43">Perimeter: 19.6 mm</text>
   </g>
   <text x="400" y="203" text-anchor="middle" font-size="26" font-weight="700" fill="#304e58">=</text>
