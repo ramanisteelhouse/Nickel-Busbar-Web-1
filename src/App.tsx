@@ -337,7 +337,25 @@ export default function App() {
           <ToastContainer />
           <AdPopup />
 
-          <main style={{ paddingTop: 'var(--adbar-height, 0px)' }}>
+          {/* min-h keeps the footer below the fold for the whole of page startup, which is a
+              Cumulative Layout Shift fix rather than a styling choice.
+
+              A route settles in two stages, and each one used to let the footer ride up into
+              view. First the lazy chunk loads, which RouteLoadingFallback covers. Then the
+              component mounts and fetches its own data, and during that second window it
+              renders almost nothing — measured on /product/:slug, the document fell from
+              1964px to 1348px at 224ms, putting the footer at y=690 inside a 768px viewport,
+              and at 548ms the data arrived and pushed it back down to y=5122. Because the
+              footer had been visible, that move was charged in full: CLS 0.80 on that load,
+              and 1.15 on a long blog post, against a good score of 0.10.
+
+              Reserving a viewport here covers both stages and any route added later, instead
+              of each page needing its own skeleton. Subtracting the ad bar keeps the
+              reservation from adding a scrollbar when the bar is showing. */}
+          <main
+            className="min-h-[calc(100svh-var(--adbar-height,0px))]"
+            style={{ paddingTop: 'var(--adbar-height, 0px)' }}
+          >
             <BackNavButton />
             <Suspense fallback={<RouteLoadingFallback />}>
               <Routes>
