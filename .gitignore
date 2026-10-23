@@ -22,3 +22,6 @@ public/version.json
 # These were tracked by mistake and churned the diff on every Cloudflare run.
 .wrangler/
 .wrangler-dryrun/
+
+# Copies of posts saved by scripts/publish-blog-posts.ts before it overwrites them
+.blog-backups/

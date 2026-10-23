@@ -7,6 +7,9 @@
 --   https://supabase.com/dashboard/project/fzrnezhbfyrpvudlsqny/sql/new
 -- If this errors with  relation "public.blog_posts" does not exist  you are in a different project.
 --
+-- No access to that project? Publish the same posts through the site's admin API instead:
+--   scripts/publish-blog-posts.ts  (it reads these posts from this file, so the two cannot drift).
+--
 -- Safe to run twice: each insert is skipped if its slug already exists.
 -- The first two posts embed diagram files that are already live on the site.
 
@@ -17,7 +20,7 @@ select setval(pg_get_serial_sequence('public.blog_posts', 'id'), (select coalesc
 
 -- 2. Post: why nickel strip overheats --------------------------------------------------------
 insert into public.blog_posts
-  (title, slug, excerpt, content, cover_image_url, cover_image_alt, status, meta_title, meta_description, published_at, faq_items)
+  (title, slug, excerpt, content, cover_image_url, cover_image_alt, status, meta_title, meta_description, published_at, faq_items, key_answer)
 select
   'Why Did My Nickel Strip Overheat or Melt? 5 Causes and How to Check Each',
   'nickel-strip-overheating-melting-causes',
@@ -97,7 +100,7 @@ select
 <p>Two mistakes sit here.</p>
 
 <ul>
-<li><strong>Nickel-plated steel in place of pure nickel.</strong> Nickel-plated steel has higher resistance than pure nickel, so a strip that looks identical runs hotter at the same size. Ask for the grade and UNS number (Nickel 200 is N02200, Nickel 201 is N02201) and a material test certificate for the batch. See <a href="/blog/pure-nickel-strip-vs-nickel-plated-steel-strip">pure nickel vs nickel-plated steel strip</a>.</li>
+<li><strong>Nickel-plated steel in place of pure nickel.</strong> Nickel-plated steel has higher resistance than pure nickel, so a strip that looks identical runs hotter at the same size. Ask for the grade and UNS number (Nickel 200 is N02200, Nickel 201 is N02201) and a <a href="/blog/how-to-read-nickel-strip-material-test-certificate">material test certificate</a> for the batch. See <a href="/blog/pure-nickel-strip-vs-nickel-plated-steel-strip">pure nickel vs nickel-plated steel strip</a>.</li>
 <li><strong>A fuse-type pattern where current capacity matters.</strong> The narrowed neck of a <a href="/blog/fuse-type-vs-plain-nickel-strip">fuse-type strip</a> gives up current headroom on purpose. In a pack that needs to carry as much current as possible, a plain or H-type strip is the better choice.</li>
 </ul>
 
@@ -134,12 +137,13 @@ select
      "answer": "Not always. Thickness lowers resistance, but it adds less cooling surface than width does, and thicker strip is harder to weld consistently. Past a point, widening cools a joint better than thickening."},
     {"question": "Is a strip with an opened fuse neck faulty?",
      "answer": "No, it did its job. The neck is designed to open under fault current, so an opened neck points to a cell short or an overload. Find that cause before fitting a replacement strip."}
-  ]$j1$::jsonb
+  ]$j1$::jsonb,
+  $k1$A nickel strip that runs hot is usually too small for the current, welded poorly, sized for a steady current when the real load peaks, short of cooling, or the wrong material or pattern. The quickest diagnosis is where it is hottest: at the welds points to the joints, along the whole strip to sizing or cooling, and at a narrow neck to the fuse pattern.$k1$
 where not exists (select 1 from public.blog_posts where slug = 'nickel-strip-overheating-melting-causes');
 
 -- 3. Post: how to size nickel strip ---------------------------------------------------------
 insert into public.blog_posts
-  (title, slug, excerpt, content, cover_image_url, cover_image_alt, status, meta_title, meta_description, published_at, faq_items)
+  (title, slug, excerpt, content, cover_image_url, cover_image_alt, status, meta_title, meta_description, published_at, faq_items, key_answer)
 select
   'How to Size Nickel Strip for a Battery Pack: Step by Step, With a 13S4P Example',
   'how-to-size-nickel-strip-for-battery-pack',
@@ -156,6 +160,8 @@ select
 </ul>
 
 <p>These are illustrative assumptions. The point is the method, so swap in your own current, cell count and strip geometry.</p>
+
+<p>Building an e-bike or e-rickshaw pack? Our guide to <a href="/blog/nickel-strip-e-rickshaw-e-bike-battery-packs-india">nickel strip for e-rickshaw and e-bike battery packs</a> covers the thickness and pattern choices for those loads.</p>
 
 <h2>Step 1: Start from your real currents</h2>
 
@@ -221,7 +227,7 @@ select
 
 <p>Then validate before you commit. Run the pack at its worst-case load and duty cycle with a thermocouple at a weld, mid-strip and on a neighbouring cell. Pull-test welds from the same batch. Only then freeze the design.</p>
 
-<p>Order a sample first. Ramani Steel House supplies from a 5 kg minimum order, typically despatched within 7 days, with a material test certificate on request. <a href="/products">Browse the catalogue</a>, use the <a href="/calculator">calculator</a> to check weights and dimensions, or <a href="/contact">send your pack layout and current</a> for a quotation.</p>$c2$,
+<p><a href="/blog/nickel-strip-sample-before-bulk-order">Order a sample first</a>. Ramani Steel House supplies from a 5 kg minimum order, typically despatched within 7 days, with a material test certificate on request. <a href="/products">Browse the catalogue</a>, use the <a href="/calculator">calculator</a> to check weights and dimensions, or <a href="/contact">send your pack layout and current</a> for a quotation.</p>$c2$,
   'https://www.nickelbusbar.com/img/products/ni-18650-4p-h-type-nickel-strip.webp',
   'Ni 18650 4P H-type nickel strip, the 4P interconnect used in the 13S4P sizing example - Ramani Steel House, nickel strip manufacturer in Mumbai, India',
   'published',
@@ -239,12 +245,13 @@ select
      "answer": "Not usually. The pattern is cut to the cell pitch, which differs between formats, so a strip made for one rarely lands correctly on the other. See our 18650 vs 21700 guide for what changes."},
     {"question": "Why does the distance between cells matter for strip sizing?",
      "answer": "Resistance rises in proportion to the length of the current path. For the same strip, a wider cell pitch means a longer path between welds and therefore more resistance and more heat."}
-  ]$j2$::jsonb
+  ]$j2$::jsonb,
+  $k2$To size nickel strip, take your continuous and peak current, divide it by the cells in parallel, then calculate the strip's resistance from its narrowest cross-section and path length (R = rho x L / A) and its heat (P = I squared x R). Add the welds, which the formula leaves out, check the peak and duty cycle, then confirm with a thermal test on a real assembly.$k2$
 where not exists (select 1 from public.blog_posts where slug = 'how-to-size-nickel-strip-for-battery-pack');
 
 -- 4. Post: what is nickel strip -------------------------------------------------------------
 insert into public.blog_posts
-  (title, slug, excerpt, content, cover_image_url, cover_image_alt, status, meta_title, meta_description, published_at, faq_items)
+  (title, slug, excerpt, content, cover_image_url, cover_image_alt, status, meta_title, meta_description, published_at, faq_items, key_answer)
 select
   'What Is Nickel Strip? A Plain-English Guide for Battery Builders and Buyers',
   'what-is-nickel-strip',
@@ -322,12 +329,12 @@ select
 <li><strong>Pattern:</strong> plain, H-type, zig-zag, honeycomb, fuse-type or custom</li>
 <li><strong>Cell format and spacing:</strong> 18650, 21700, 32650 or 32700, and the distance between cell centres (the &ldquo;CD&rdquo; on a drawing)</li>
 <li><strong>Quantity</strong> in kilograms</li>
-<li><strong>Documentation:</strong> whether you need a material test certificate</li>
+<li><strong>Documentation:</strong> whether you need a <a href="/blog/how-to-read-nickel-strip-material-test-certificate">material test certificate</a> (and how to read one)</li>
 </ol>
 
 <h2>How nickel strip is sold</h2>
 
-<p>Nickel strip is sold by weight but used by length. Nickel has a density of about 8.9 g/cm&sup3;, so the weight per metre of solid strip is thickness (mm) &times; width (mm) &times; 8.9 grams. A 0.15 mm &times; 27 mm strip weighs 36 g per metre, which makes 5 kg roughly 139 metres. A stamped pattern removes metal, so patterned strip gives more length per kilogram than the same size solid. Our <a href="/blog/nickel-strip-minimum-order-quantity">minimum order guide</a> works through this, the <a href="/calculator">calculator</a> does the conversion for you, and the <a href="/blog/nickel-strip-pricing-guide-battery-pack-orders">pricing guide</a> explains what drives the price per kilogram.</p>
+<p>Nickel strip is sold by weight but used by length. Nickel has a density of about 8.9 g/cm&sup3;, so the weight per metre of solid strip is thickness (mm) &times; width (mm) &times; 8.9 grams. A 0.15 mm &times; 27 mm strip weighs 36 g per metre, which makes 5 kg roughly 139 metres. A stamped pattern removes metal, so patterned strip gives more length per kilogram than the same size solid. Our <a href="/blog/nickel-strip-minimum-order-quantity">minimum order guide</a> works through this, the <a href="/calculator">calculator</a> does the conversion for you, and our guides to <a href="/blog/nickel-strip-price-per-kg-india">nickel strip price per kg in India</a> and <a href="/blog/nickel-strip-pricing-guide-battery-pack-orders">pricing for bulk orders</a> explain what drives the price per kilogram.</p>
 
 <h2>Where to go next</h2>
 
@@ -336,6 +343,8 @@ select
 <li><a href="/blog/how-to-size-nickel-strip-for-battery-pack">How to size nickel strip for a battery pack</a></li>
 <li><a href="/blog/battery-spot-welding-tips-nickel-strip">Spot welding tips for nickel strip</a></li>
 <li><a href="/blog/nickel-strip-overheating-melting-causes">Why nickel strip overheats</a></li>
+<li><a href="/blog/nickel-strip-sample-before-bulk-order">How to test a sample before a bulk order</a></li>
+<li><a href="/blog/nickel-strip-e-rickshaw-e-bike-battery-packs-india">Nickel strip for e-rickshaw and e-bike battery packs</a></li>
 <li><a href="/blog/how-to-choose-nickel-strip-manufacturer-india">How to choose a nickel strip manufacturer in India</a></li>
 </ul>
 
@@ -359,7 +368,8 @@ select
      "answer": "By resistance spot welding. Nickel's resistivity and relatively low thermal conductivity let heat build at the weld interface, which is why it welds cleanly where copper does not."},
     {"question": "How is nickel strip sold?",
      "answer": "By weight, usually in kilograms, to a specified grade, thickness, width and pattern. Ramani Steel House supplies from a 5 kg minimum order. The weight per metre of solid strip is thickness in mm times width in mm times 8.9 grams."}
-  ]$j3$::jsonb
+  ]$j3$::jsonb,
+  $k3$Nickel strip is thin, flat commercially pure nickel, usually Nickel 200 or Nickel 201 to ASTM B162, supplied as coil or stamped patterns and spot welded between lithium-ion cells to connect them in parallel and in series. It is sold by weight to a specified grade, thickness, width and pattern.$k3$
 where not exists (select 1 from public.blog_posts where slug = 'what-is-nickel-strip');
 
 -- 5. Check: three rows, all published ---------------------------------------------------------
