@@ -413,10 +413,10 @@ const TRADE_BUYER_PAGE: LandingPage = {
   slug: 'nickel-strip-wholesaler-and-distributor',
   title: 'Nickel Strip Wholesaler & Distributor India | 5 kg MOQ',
   description:
-    'Nickel strip wholesaler, stockist and distributor backed by our own Mumbai manufacturing. 99.8% pure nickel from 5 kg for small battery makers and traders.',
-  h1: 'Nickel Strip Wholesaler, Stockist & Distributor in India',
+    'Nickel strip and busbar wholesaler, stockist and distributor backed by our own Mumbai manufacturing. 99.8% pure nickel from 5 kg, PAN India and export.',
+  h1: 'Nickel Strip & Busbar Wholesaler, Stockist and Distributor',
   intro:
-    'Ramani Steel House is a nickel strip manufacturer in Mumbai that also sells as a wholesaler, stockist and distributor. Manufacturing is the core of the business, and because the strip is made and slit in-house, the same 99.8% pure nickel is available in small lots: orders start at 5 kg, which suits small battery manufacturers, pack assemblers and traders as well as volume buyers.',
+    'Ramani Steel House is a nickel strip and nickel busbar manufacturer in Mumbai that also sells as a wholesaler, stockist and distributor, in India and to export buyers. Manufacturing is the core of the business, and because the material is made and slit in-house, the same 99.8% pure nickel is available in small lots: orders start at 5 kg, which suits small battery manufacturers, pack assemblers, traders and overseas distributors as well as volume buyers.',
   keywords: [
     'Nickel Strip Wholesaler',
     'Nickel Strip Distributor',
@@ -427,6 +427,10 @@ const TRADE_BUYER_PAGE: LandingPage = {
     'Nickel Strip 5 kg MOQ',
     'Nickel Strip for Small Battery Manufacturers',
     'Battery Nickel Strip Wholesale Supplier India',
+    'Nickel Busbar Supplier',
+    'Nickel Busbar Distributor',
+    'Nickel Strip Exporter',
+    'Nickel Strip Export Supplier India',
   ],
   sections: [
     {
@@ -445,15 +449,27 @@ const TRADE_BUYER_PAGE: LandingPage = {
         'Common thicknesses in pure nickel, chiefly 0.15 mm and 0.20 mm, are held as coil and slit to the width you need, so an ordinary requirement does not wait on a mill run. Stock of a particular width is confirmed at quotation. Despatch is typically within 7 days, PAN India.',
     },
     {
+      heading: 'Nickel busbar and copper busbar for distributors',
+      body:
+        'Busbar is stocked and supplied on the same terms as strip. Nickel busbar carries more current than strip at the same width, which is what pack builders move to when a 2P or 3P interconnect starts running warm, and copper busbar is supplied where conductivity matters more than corrosion resistance. Both are cut to the length and hole pattern of the pack they go into, so a distributor holding a few common sizes can quote against a drawing rather than only from a stock list.',
+    },
+    {
       heading: 'New designs made to your drawing',
       body:
         'The listed sizes are only the most requested ones. If your pack needs a different thickness, width, pitch or hole pattern, it is made to your drawing, and tooling is developed for unique battery pack layouts. Send the drawing or cell arrangement with the enquiry and the quotation is made against it.',
+    },
+    {
+      heading: 'Supplying distributors and buyers outside India',
+      body:
+        'The same material is exported, and has gone to 17+ countries. Export consignments are packed at the Mumbai works in moisture-protected, export-grade packing for sea freight and loaded through Nhava Sheva (JNPT), with Chennai available instead where that suits a buyer in the south. Documentation includes the certificate of origin, the material test certificate and HS code classification. Export orders are quoted in USD against an agreed Incoterm, separately from the rupee price list, and freight is quoted with the order once weight and destination are known.',
     },
     {
       heading: 'At a glance',
       bullets: [
         'Manufacturer first, also stockist, wholesaler and distributor',
         'Minimum order 5 kg, despatch in about 7 days',
+        'Nickel strip, nickel busbar and copper busbar on the same terms',
+        'Supplied PAN India and exported to 17+ countries',
         ...SPEC_BULLETS,
       ],
     },
@@ -478,6 +494,21 @@ const TRADE_BUYER_PAGE: LandingPage = {
       question: 'Do you make nickel strip in sizes that are not listed?',
       answer:
         'Yes. Thickness, width, pitch and hole pattern are made to your drawing, and tooling is developed for new battery pack designs. The minimum order still applies.',
+    },
+    {
+      question: 'Do you export nickel strip and busbar?',
+      answer:
+        'Yes, to 17+ countries. Consignments are packed at the Mumbai works in export-grade packing for sea freight and loaded through Nhava Sheva (JNPT), or Chennai where that suits the buyer. The certificate of origin, material test certificate and HS code classification are supplied with the shipment.',
+    },
+    {
+      question: 'How are export orders priced?',
+      answer:
+        'In USD against an agreed Incoterm, quoted separately from the rupee price list. Freight is quoted with the order rather than listed, because it depends on weight and destination.',
+    },
+    {
+      question: 'Do you supply nickel busbar as well as strip?',
+      answer:
+        'Yes. Nickel busbar and copper busbar are supplied on the same terms as strip, cut to the length and hole pattern of your pack, from the same 5 kg minimum.',
     },
   ],
   productSearch: 'nickel strip',
