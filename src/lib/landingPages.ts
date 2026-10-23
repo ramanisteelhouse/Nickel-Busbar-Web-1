@@ -633,6 +633,110 @@ const stripSizePage = (size: StripSize): LandingPage => ({
  * this supplier understands the process they are running. These pages answer that, and they are
  * the phrasing answer engines are most often asked in.
  */
+/**
+ * The export page, written for a buyer outside India.
+ *
+ * Search Console for 2026-07-21 to 2026-10-20 shows 72% of clicks coming from outside India —
+ * 23 from the United States, 6 from the United Kingdom, 5 each from Germany and Sweden, against
+ * 38 from India — and "nickel strips exporters in mumbai" sitting at position 48. There was
+ * nowhere purpose-built for that traffic to land: /export-enquiry is a form, and the Mumbai and
+ * wholesale pages carry export as a paragraph inside a domestic page.
+ *
+ * What an overseas buyer needs is not a translated version of the domestic pitch. They already
+ * assume the material exists; what they cannot tell from a product page is whether the paperwork
+ * will clear their customs, which port it leaves from, and how the price is expressed. So the
+ * page is built around documentation, packing, loading and pricing, and it ends by naming what
+ * to send so the first enquiry is quotable rather than a round of questions.
+ *
+ * Every claim here restates something already published elsewhere on the site. Nothing about
+ * payment terms, transit times, a separate export minimum, or any particular Incoterm being
+ * offered appears, because the company has not stated those — see the DATA REQUIRED list in the
+ * growth dashboard. Add them here when confirmed; do not infer them from the domestic terms.
+ */
+const EXPORT_PAGE: LandingPage = {
+  slug: 'nickel-strip-exporter-india',
+  title: 'Nickel Strip Exporter in India | Strip & Busbar Export',
+  description:
+    'Nickel strip and busbar exporter in Mumbai, shipping to 17+ countries through Nhava Sheva with certificate of origin, test certificate and HS code.',
+  h1: 'Nickel Strip and Nickel Busbar Exporter in India',
+  intro:
+    'Ramani Steel House manufactures nickel strip and nickel busbar in Mumbai and exports to 17+ countries. For a buyer outside India the question is rarely whether the material exists; it is whether the consignment clears customs cleanly, which port it leaves from, and how the price is quoted. Export lots are packed at the works, loaded through Nhava Sheva (JNPT), and shipped with the certificate of origin, material test certificate and HS code classification. Orders are quoted in USD against an agreed Incoterm.',
+  keywords: [
+    'Nickel Strip Exporter',
+    'Nickel Strip Exporter India',
+    'Nickel Strips Exporters in Mumbai',
+    'Nickel Busbar Exporter',
+    'Pure Nickel Strip Export Supplier',
+    'Battery Nickel Strip Exporter India',
+    'Nickel Strip Supplier for Export',
+    'Indian Nickel Strip Manufacturer Export',
+  ],
+  sections: [
+    {
+      heading: 'What ships with the consignment',
+      body:
+        'The paperwork is what decides whether a consignment moves or sits. Export shipments go out with the certificate of origin, the material test certificate giving batch-wise conductivity and tensile results, and the HS code classification for the material. The batch stays traceable after delivery, so a question raised during incoming inspection can be answered against the same certificate months later.',
+    },
+    {
+      heading: 'Packing and loading',
+      body:
+        'Export lots are packed at the Mumbai works in moisture-protected, export-grade packing intended for sea freight, rather than the packing used for a domestic road consignment. Shipments load through Nhava Sheva (JNPT), which handles most of western India’s container traffic. Where it suits a buyer, southern consignments can be routed through Chennai instead.',
+    },
+    {
+      heading: 'How export orders are priced',
+      body:
+        'Export orders are quoted in USD against an agreed Incoterm, separately from the rupee price list used in India. Freight is quoted with the order rather than published, because it depends on the weight of the consignment and the destination port. Tell us the destination and the quantity and both come back in the same quotation.',
+    },
+    {
+      heading: 'Material supplied for export',
+      bullets: [
+        'Pure nickel strip, H type, fuse type, zig-zag and honeycomb patterns',
+        'Nickel busbar and copper busbar, cut to length and hole pattern',
+        ...SPEC_BULLETS,
+      ],
+    },
+    {
+      heading: 'What to send with an export enquiry',
+      body:
+        'A quotation needs the thickness, the width, the pattern or a drawing, the quantity, and the destination port or city. If the strip is for a specific cell format, naming it — 18650, 21700, 32650, 32700 — lets the pitch and hole pattern be quoted against the pack rather than guessed. Send a drawing for anything that is not a listed size; tooling is developed for new pack layouts.',
+    },
+  ],
+  faqs: [
+    {
+      question: 'Do you export nickel strip and nickel busbar?',
+      answer:
+        'Yes. Nickel strip, H type strip, fuse type strip and busbar are manufactured in Mumbai and exported to 17+ countries.',
+    },
+    {
+      question: 'What documents are supplied with an export shipment?',
+      answer:
+        'The certificate of origin, the material test certificate with batch-wise conductivity and tensile results, and the HS code classification for the material. The batch remains traceable after delivery.',
+    },
+    {
+      question: 'Which port do you ship from?',
+      answer:
+        'Nhava Sheva (JNPT), near the Mumbai works, which handles most of western India’s container traffic. Chennai can be used instead where that suits a buyer in the south.',
+    },
+    {
+      question: 'How is an export order priced?',
+      answer:
+        'In USD against an agreed Incoterm, quoted separately from the rupee price list. Freight is quoted with the order, since it depends on consignment weight and destination.',
+    },
+    {
+      question: 'What is the minimum order for export?',
+      answer:
+        'The manufacturing minimum is 5 kg, the same as for domestic orders. For a sea freight consignment the practical quantity also depends on freight cost to your port, which is quoted with the order — send the destination and requirement and both are confirmed together.',
+    },
+    {
+      question: 'Can you manufacture to our drawing for export orders?',
+      answer:
+        'Yes. Thickness, width, pitch and hole pattern are made to drawing, and tooling is developed for new battery pack designs. The same material test certificate is issued regardless of whether the size is listed.',
+    },
+  ],
+  productSearch: 'nickel strip',
+  breadcrumbName: 'Export',
+};
+
 const APPLICATION_PAGES: readonly LandingPage[] = [
   {
     slug: 'nickel-strip-for-battery-pack-welding',
@@ -818,6 +922,7 @@ export const LANDING_PAGES: readonly LandingPage[] = [
   H_TYPE_PAGE,
   MUMBAI_PAGE,
   TRADE_BUYER_PAGE,
+  EXPORT_PAGE,
   ...STRIP_SIZES.map(stripSizePage),
   ...APPLICATION_PAGES,
   ...STATE_FACTS.map(stateLandingPage),

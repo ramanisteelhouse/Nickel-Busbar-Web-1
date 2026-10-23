@@ -40,6 +40,7 @@
     { "src": "/blog/[^/]+/?", "dest": "/api/render" },
     { "src": "/h-type-nickel-strip/?", "dest": "/api/render?path=/h-type-nickel-strip" },
     { "src": "/nickel-strip-wholesaler-and-distributor/?", "dest": "/api/render?path=/nickel-strip-wholesaler-and-distributor" },
+    { "src": "/nickel-strip-exporter-india/?", "dest": "/api/render?path=/nickel-strip-exporter-india" },
     { "src": "/pure-nickel-strip-0-15mm-x-10mm/?", "dest": "/api/render?path=/pure-nickel-strip-0-15mm-x-10mm" },
     { "src": "/pure-nickel-strip-0-20mm-x-15mm/?", "dest": "/api/render?path=/pure-nickel-strip-0-20mm-x-15mm" },
     { "src": "/nickel-strip-for-battery-pack-welding/?", "dest": "/api/render?path=/nickel-strip-for-battery-pack-welding" },
