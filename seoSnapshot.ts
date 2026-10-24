@@ -47,6 +47,18 @@ import { BROCHURE } from "./src/lib/brochure.js";
 import { GROUP_SITES } from "./src/lib/groupSites.js";
 import { YEARS_IN_BUSINESS } from "./src/lib/heritage.js";
 import { PRODUCT_LINKS } from "./src/lib/productLinks.js";
+import { GUIDES, GUIDES_PATH, getGuideBySlug } from "./src/lib/guides.js";
+import {
+  GUIDES_INDEX_DESCRIPTION,
+  GUIDES_INDEX_TITLE,
+  formatGuideDate,
+  guideCoverUrl,
+  guideJsonLd,
+  guideProducts,
+  guideUrl,
+  guidesIndexJsonLd,
+  otherGuides,
+} from "./src/lib/guideView.js";
 import {
   applications as HOME_APPLICATIONS,
   faqItems as HOME_FAQ_ITEMS,
@@ -1267,6 +1279,103 @@ export async function renderLandingSnapshot(
     <p>Ramani Steel House, ${escapeHtml(POSTAL_ADDRESS.oneLine)}</p>
     <p>Email: ${EMAIL_ADDRESSES.join(" / ")}</p>
     <p>Phone: ${PHONE_NUMBERS.map((n) => n.display).join(" / ")}</p>
+  </article>`,
+  });
+
+  return { status: 200, html };
+}
+
+/**
+ * /guides and /guides/<slug>: the long-form explainers kept in code (src/lib/guides.ts), not in
+ * the blog database.
+ *
+ * Matched with any slug, not only the known ones, so an invented /guides/anything is answered
+ * here with a real 404 rather than falling through to the branch that serves the untouched
+ * homepage template with a 200 — the soft-404 the landing pages guard against the same way.
+ */
+export function isGuideSnapshotRoute(pathname: string): boolean {
+  return /^\/guides(\/[^/]+)?$/i.test(pathname);
+}
+
+export function renderGuideSnapshot(template: string, pathname: string): SnapshotResult {
+  // Vercel matches route patterns case-insensitively, so /Guides/What-Is-Nickel-Strip reaches
+  // this function. Every guide slug is lowercase, so send the variant to its canonical form
+  // instead of serving a second indexable copy of the page.
+  const lower = pathname.toLowerCase();
+  if (lower !== pathname) {
+    return { status: 301, html: "", location: `${SITE_URL}${lower}` };
+  }
+
+  if (pathname === GUIDES_PATH) {
+    const html = injectHead(template, {
+      title: GUIDES_INDEX_TITLE,
+      description: GUIDES_INDEX_DESCRIPTION,
+      canonical: `${SITE_URL}${GUIDES_PATH}`,
+      jsonLd: guidesIndexJsonLd(),
+      snapshotBody: `<article>
+    <h1>Nickel Strip Guides</h1>
+    <p>${escapeHtml(GUIDES_INDEX_DESCRIPTION)}</p>
+    <ul>${GUIDES.map(
+      (guide) => `<li><a href="${guideUrl(guide)}">${escapeHtml(guide.title)}</a> &mdash; ${escapeHtml(guide.excerpt)}</li>`
+    ).join("")}</ul>
+    <p><a href="${SITE_URL}/blog">Technical articles</a> &middot; <a href="${SITE_URL}/products">Nickel strip and busbar products</a></p>
+  </article>`,
+    });
+    return { status: 200, html };
+  }
+
+  const guide = getGuideBySlug(pathname.slice(GUIDES_PATH.length + 1));
+  if (!guide) {
+    const html = injectHead(template, {
+      title: "404 | Page Not Found",
+      description: "This guide does not exist. Browse the nickel strip guides or the product range.",
+      canonical: `${SITE_URL}${pathname}`,
+      robots: "noindex,follow,noarchive",
+      jsonLd: [],
+      snapshotBody: "",
+    });
+    return { status: 404, html };
+  }
+
+  const canonical = guideUrl(guide);
+  const cta = blogCtaFor(guide.slug);
+  const products = guideProducts(guide);
+
+  const productsHtml = products.length
+    ? `<section><h2>Products covered in this guide</h2><ul>${products
+        .map(
+          (product) =>
+            `<li><a href="${SITE_URL}/product/${encodeURIComponent(product.slug)}">${escapeHtml(product.name)}</a></li>`
+        )
+        .join("")}</ul></section>`
+    : "";
+  const ctaHtml = `<section><h2>${escapeHtml(cta.heading)}</h2><p>${escapeHtml(cta.body)}</p><p><a href="${SITE_URL}${cta.link.path}">${escapeHtml(cta.link.label)}</a></p></section>`;
+  const faqHtml = `<section><h2>Frequently Asked Questions</h2>${guide.faqs
+    .map((faq) => `<h3>${escapeHtml(faq.question)}</h3><p>${escapeHtml(faq.answer)}</p>`)
+    .join("")}</section>`;
+  const moreHtml = `<section><h2>More nickel strip guides</h2><ul>${otherGuides(guide)
+    .map((other) => `<li><a href="${guideUrl(other)}">${escapeHtml(other.title)}</a></li>`)
+    .join("")}</ul></section>`;
+
+  // The guide body is authored in this repository (src/lib/guides.ts), not user input, so it is
+  // injected as-is, the same trust boundary the blog's snapshot relies on.
+  const html = injectHead(template, {
+    title: guide.metaTitle,
+    description: guide.description,
+    canonical,
+    ogImage: guideCoverUrl(guide),
+    jsonLd: guideJsonLd(guide),
+    snapshotBody: `<article>
+    <h1>${escapeHtml(guide.title)}</h1>
+    <p>${escapeHtml(SITE_NAME)} &middot; <time datetime="${guide.datePublished}">${formatGuideDate(guide.datePublished)}</time></p>
+    <p><strong>${escapeHtml(guide.keyAnswer)}</strong></p>
+    <img src="${escapeAttr(guideCoverUrl(guide))}" alt="${escapeAttr(guide.coverAlt)}" width="900" height="900" fetchpriority="high" />
+    ${guide.html}
+    ${productsHtml}
+    ${ctaHtml}
+    ${faqHtml}
+    ${moreHtml}
+    <p><a href="${SITE_URL}${GUIDES_PATH}">All nickel strip guides</a> &middot; <a href="${SITE_URL}/blog">Technical articles</a> &middot; <a href="${SITE_URL}/products">Nickel strip and busbar products</a></p>
   </article>`,
   });
 

@@ -131,6 +131,7 @@ export const Footer: React.FC = () => {
                 <li><Link className="inline-block py-1" to="/about">About Us</Link></li>
                 <li><Link className="inline-block py-1" to="/calculator">Weight Calculator</Link></li>
                 <li><Link className="inline-block py-1" to="/blog">Blog</Link></li>
+                <li><Link className="inline-block py-1" to="/guides">Guides</Link></li>
                 <li><Link className="inline-block py-1" to="/export-enquiry">Export Enquiry</Link></li>
                 <li><Link className="inline-block py-1" to="/contact">Contact</Link></li>
                 <li>

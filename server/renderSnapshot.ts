@@ -7,10 +7,12 @@ import {
   renderStaticRouteSnapshot,
   renderNoindexSnapshot,
   renderLandingSnapshot,
+  renderGuideSnapshot,
   renderUnavailableShell,
   isStaticSnapshotRoute,
   isNoindexSnapshotRoute,
   isLandingSnapshotRoute,
+  isGuideSnapshotRoute,
 } from "../seoSnapshot.js";
 
 /**
@@ -90,6 +92,8 @@ async function renderForPath(
       result = await renderStaticRouteSnapshot(template, pathname);
     } else if (isLandingSnapshotRoute(pathname)) {
       result = await renderLandingSnapshot(template, pathname);
+    } else if (isGuideSnapshotRoute(pathname)) {
+      result = renderGuideSnapshot(template, pathname);
     } else {
       const blogMatch = pathname.match(/^\/blog\/([^/]+)$/);
       const productMatch = pathname.match(/^\/product\/([^/]+)$/);

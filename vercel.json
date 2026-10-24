@@ -32,6 +32,8 @@
     { "src": "/contact/?", "dest": "/api/render?path=/contact" },
     { "src": "/export-enquiry/?", "dest": "/api/render?path=/export-enquiry" },
     { "src": "/calculator/?", "dest": "/api/render?path=/calculator" },
+    { "src": "/guides/?", "dest": "/api/render?path=/guides" },
+    { "src": "/guides/[^/]+/?", "dest": "/api/render" },
     { "src": "/blog/?", "dest": "/api/render?path=/blog" },
     { "src": "/blog/Why-99\\.6-Purity-Matters/?", "status": 301, "headers": { "Location": "https://www.nickelbusbar.com/blog/why-nickel-purity-matters" } },
     { "src": "/blog/Manufacturers-Guide/?", "status": 301, "headers": { "Location": "https://www.nickelbusbar.com/blog/sourcing-custom-stamped-nickel-busbars" } },

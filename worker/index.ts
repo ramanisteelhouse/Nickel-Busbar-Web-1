@@ -13,6 +13,7 @@ import {
 } from "../server/catalog.js";
 import {
   isLandingSnapshotRoute,
+  isGuideSnapshotRoute,
   isNoindexSnapshotRoute,
   isStaticSnapshotRoute,
 } from "../seoSnapshot.js";
@@ -177,6 +178,7 @@ function isSnapshotRoute(pathname: string): boolean {
     isStaticSnapshotRoute(pathname) ||
     isNoindexSnapshotRoute(pathname) ||
     isLandingSnapshotRoute(pathname) ||
+    isGuideSnapshotRoute(pathname) ||
     /^\/blog\/[^/]+$/.test(pathname) ||
     /^\/product\/[^/]+$/.test(pathname)
   );

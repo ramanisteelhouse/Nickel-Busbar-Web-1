@@ -20,6 +20,7 @@
 /products  /.netlify/functions/render?path=/products  200
 /categories  /.netlify/functions/render?path=/categories  200
 /blog  /.netlify/functions/render?path=/blog  200
+/guides  /.netlify/functions/render?path=/guides  200
 
 # Static-content routes (about, contact, calculator, …). '/' is filtered out because it is
 # already emitted above with the force flag it needs.
@@ -40,6 +41,7 @@
 /h-type-nickel-strip  /.netlify/functions/render?path=/h-type-nickel-strip  200
 /nickel-strip-manufacturer-in-mumbai  /.netlify/functions/render?path=/nickel-strip-manufacturer-in-mumbai  200
 /nickel-strip-wholesaler-and-distributor  /.netlify/functions/render?path=/nickel-strip-wholesaler-and-distributor  200
+/nickel-strip-exporter-india  /.netlify/functions/render?path=/nickel-strip-exporter-india  200
 /pure-nickel-strip-0-15mm-x-10mm  /.netlify/functions/render?path=/pure-nickel-strip-0-15mm-x-10mm  200
 /pure-nickel-strip-0-20mm-x-15mm  /.netlify/functions/render?path=/pure-nickel-strip-0-20mm-x-15mm  200
 /nickel-strip-for-battery-pack-welding  /.netlify/functions/render?path=/nickel-strip-for-battery-pack-welding  200
@@ -65,6 +67,7 @@
 # Per-item pages. :splat carries the slug through to the renderer.
 /product/*  /.netlify/functions/render?path=/product/:splat  200
 /blog/*  /.netlify/functions/render?path=/blog/:splat  200
+/guides/*  /.netlify/functions/render?path=/guides/:splat  200
 
 # Anything else is genuinely not a page. Matching Vercel's behaviour, this is a real 404
 # rather than the SPA shell, so an unknown URL is not indexed as a soft 404.

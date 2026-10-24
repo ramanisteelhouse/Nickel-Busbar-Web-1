@@ -2,6 +2,7 @@ import { existsSync, readFileSync, writeFileSync } from "fs";
 import path from "path";
 import { EMAIL_ADDRESSES, PHONE_NUMBERS } from "../src/lib/contact.js";
 import { EXPORT_FAQS, EXPORT_PATH } from "../src/lib/exportEnquiry.js";
+import { GUIDES, GUIDES_PATH, guidePath } from "../src/lib/guides.js";
 
 const SITE_URL = "https://www.nickelbusbar.com";
 
@@ -60,6 +61,10 @@ async function main() {
     `- [Export Enquiry](${SITE_URL}${EXPORT_PATH}): Bulk supply PAN India and export to 17+ countries - Incoterms, HS codes, export documentation, and the enquiry form.`
   );
   lines.push(`- [Blog](${SITE_URL}/blog): Technical guides on nickel strip specification, welding, and battery pack design.`);
+  lines.push(`- [Guides](${SITE_URL}${GUIDES_PATH}): Plain-English nickel strip explainers for battery builders and buyers.`);
+  for (const guide of GUIDES) {
+    lines.push(`- [${guide.title}](${SITE_URL}${guidePath(guide.slug)}): ${guide.excerpt}`);
+  }
 
   // The DB import is dynamic (and independently guarded) so a missing build-time DB
   // connection never fails the build — it just falls back to the static page list above.

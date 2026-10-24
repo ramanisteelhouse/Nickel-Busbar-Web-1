@@ -20,6 +20,7 @@
 import { readFileSync } from "fs";
 import path from "path";
 import { LANDING_PATHS } from "../src/lib/landingPages.js";
+import { GUIDE_PATHS, GUIDES_PATH } from "../src/lib/guides.js";
 
 type VercelRoute = { src?: string; dest?: string; status?: number; handle?: string };
 
@@ -32,7 +33,10 @@ const serving = routes.filter(
   (route) => route.src && route.dest && !route.status && !route.dest.includes("404")
 );
 
-const missing = LANDING_PATHS.filter(
+// Guides are advertised in the sitemap too, so they get the same guarantee as landing pages.
+const ADVERTISED_PATHS = [...LANDING_PATHS, GUIDES_PATH, ...GUIDE_PATHS];
+
+const missing = ADVERTISED_PATHS.filter(
   (landingPath) => !serving.some((route) => new RegExp(`^${route.src}$`).test(landingPath))
 );
 
@@ -49,4 +53,4 @@ if (missing.length > 0) {
   process.exit(1);
 }
 
-console.log(`[check-vercel-routes] All ${LANDING_PATHS.length} landing paths are routed.`);
+console.log(`[check-vercel-routes] All ${ADVERTISED_PATHS.length} landing and guide paths are routed.`);

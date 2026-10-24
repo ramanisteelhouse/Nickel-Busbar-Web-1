@@ -2,10 +2,11 @@ import { existsSync, readFileSync, writeFileSync } from "fs";
 import path from "path";
 import { LANDING_PATHS } from "../src/lib/landingPages.js";
 import { productImageUrl } from "../src/lib/productImage.js";
+import { GUIDES, GUIDES_PATH, guidePath } from "../src/lib/guides.js";
 
 const SITE_URL = "https://www.nickelbusbar.com";
 
-const staticPages: Array<{ path: string; changefreq: string; priority: string }> = [
+const staticPages: Array<{ path: string; changefreq: string; priority: string; lastmod?: string }> = [
   { path: "/", changefreq: "weekly", priority: "1.0" },
   { path: "/products", changefreq: "weekly", priority: "0.9" },
   // /categories is deliberately absent: it serves the same grid as /products and now
@@ -17,6 +18,10 @@ const staticPages: Array<{ path: string; changefreq: string; priority: string }>
   { path: "/export-enquiry", changefreq: "monthly", priority: "0.8" },
   { path: "/calculator", changefreq: "monthly", priority: "0.7" },
   { path: "/blog", changefreq: "weekly", priority: "0.7" },
+  // Guides live in the codebase (src/lib/guides.ts). lastmod is the guide's own date: stamping
+  // them with the build date would tell Google they change on every deploy.
+  { path: GUIDES_PATH, changefreq: "monthly", priority: "0.7", lastmod: GUIDES.reduce((latest, g) => (g.dateModified > latest ? g.dateModified : latest), "") },
+  ...GUIDES.map((guide) => ({ path: guidePath(guide.slug), changefreq: "monthly", priority: "0.7", lastmod: guide.dateModified })),
   { path: "/blog/nickel-strips-lithium-batteries", changefreq: "monthly", priority: "0.7" },
   // Category and state landing pages. /h-type-nickel-strip is priority 0.9: it is the page
   // that exists because "H type nickel strip manufacturer in India" was landing on the
@@ -63,7 +68,7 @@ async function main() {
   const today = new Date().toISOString().slice(0, 10);
   const urls: SitemapUrl[] = staticPages.map((page) => ({
     loc: `${SITE_URL}${page.path}`,
-    lastmod: today,
+    lastmod: page.lastmod ?? today,
     changefreq: page.changefreq,
     priority: page.priority,
   }));

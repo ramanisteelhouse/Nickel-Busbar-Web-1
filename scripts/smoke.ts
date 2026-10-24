@@ -64,6 +64,13 @@ const CHECKS: Check[] = [
   // Case-only variant, resolved in renderBlogSnapshot rather than vercel.json. This is the one
   // that briefly became an infinite redirect loop.
   { path: "/blog/Nickel-Strips-for-Electric-Vehicles", covers: "case-insensitive blog slug 301", status: 301, redirect: "manual", location: "/blog/nickel-strips-for-electric-vehicles" },
+  // Guides are rendered from code (src/lib/guides.ts), so unlike a blog post they cannot be broken
+  // by the database: if these fail, the route, the renderer or the build is at fault.
+  { path: "/guides", covers: "renderGuideSnapshot (index)", canonical: "/guides", jsonLd: true, contains: ["what-is-nickel-strip"] },
+  { path: "/guides/what-is-nickel-strip", covers: "renderGuideSnapshot (guide)", canonical: "/guides/what-is-nickel-strip", jsonLd: true, contains: ["<h1>", '"FAQPage"', "<table>"] },
+  { path: "/guides/nickel-strip-current-capacity-diagrams", covers: "renderGuideSnapshot (diagram guide)", canonical: "/guides/nickel-strip-current-capacity-diagrams", contains: [".svg"] },
+  { path: "/Guides/What-Is-Nickel-Strip", covers: "case-variant guide URL 301", status: 301, redirect: "manual", location: "/guides/what-is-nickel-strip" },
+  { path: "/guides/this-guide-does-not-exist", covers: "unknown guide is a real 404", status: 404 },
   { path: "/this-page-does-not-exist", covers: "404 handling", status: 404 },
 ];
 

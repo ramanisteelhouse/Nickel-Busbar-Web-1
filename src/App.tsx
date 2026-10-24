@@ -29,6 +29,8 @@ const ContactPage = React.lazy(() => import('./pages/ContactPage').then((m) => (
 const ExportEnquiryPage = React.lazy(() => import('./pages/ExportEnquiryPage').then((m) => ({ default: m.ExportEnquiryPage })));
 const BlogListingPage = React.lazy(() => import('./pages/BlogListingPage').then((m) => ({ default: m.BlogListingPage })));
 const BlogPostPage = React.lazy(() => import('./pages/BlogPostPage').then((m) => ({ default: m.BlogPostPage })));
+const GuidesIndexPage = React.lazy(() => import('./pages/GuidesIndexPage').then((m) => ({ default: m.GuidesIndexPage })));
+const GuidePage = React.lazy(() => import('./pages/GuidePage').then((m) => ({ default: m.GuidePage })));
 const BlogNickelStripsLithiumPage = React.lazy(() => import('./pages/BlogNickelStripsLithiumPage').then((m) => ({ default: m.BlogNickelStripsLithiumPage })));
 const CalculatorPage = React.lazy(() => import('./pages/CalculatorPage').then((m) => ({ default: m.CalculatorPage })));
 const NotFoundPage = React.lazy(() => import('./pages/NotFoundPage').then((m) => ({ default: m.NotFoundPage })));
@@ -370,6 +372,8 @@ export default function App() {
                 <Route path="/contact" element={<ContactPage />} />
                 <Route path="/export-enquiry" element={<ExportEnquiryPage />} />
                 <Route path="/blog" element={<BlogListingPage />} />
+                <Route path="/guides" element={<GuidesIndexPage />} />
+                <Route path="/guides/:slug" element={<GuidePage />} />
                 <Route path="/blog/nickel-strips-lithium-batteries" element={<BlogNickelStripsLithiumPage />} />
                 <Route path="/blog/:slug" element={<BlogPostPage />} />
                 <Route path="/calculator" element={<CalculatorPage />} />
