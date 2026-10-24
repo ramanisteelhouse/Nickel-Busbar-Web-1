@@ -52,6 +52,9 @@ import {
   phoneListSentence,
 } from "./src/lib/contact.js";
 import { PRODUCT_IMAGE_PLACEHOLDER, productImageUrl } from "./src/lib/productImage.js";
+import { IMAGE_EXTENSION, proxyRemoteImage } from "./server/imageProxy.js";
+import { BLOG_COVER_DIR, SHARE_IMAGE_PATH } from "./src/lib/blogImage.js";
+import { LOCAL_BLOG_COVER_SLUGS } from "./src/lib/blogCoverLocal.js";
 import {
   buildMerchantFeed,
   type MerchantFeedProduct,
@@ -99,18 +102,6 @@ const MAX_QUOTE_ITEMS = 200;
 const MAX_CART_ITEMS = 200;
 const MAX_CART_QUANTITY = 1_000_000;
 const MAX_PREFERENCES_BYTES = 16 * 1024;
-// Product-image proxy (see the /api/product-image route). The extension in the request path
-// is cosmetic, so it is stripped back off to recover the slug; the allow-list keeps the route
-// from being turned into an open proxy for arbitrary non-image responses.
-const PRODUCT_IMAGE_EXTENSION = /\.(jpe?g|png|webp|avif|gif)$/i;
-const PRODUCT_IMAGE_CONTENT_TYPES = new Set([
-  "image/jpeg",
-  "image/png",
-  "image/webp",
-  "image/avif",
-  "image/gif",
-]);
-const PRODUCT_IMAGE_MAX_BYTES = 4 * 1024 * 1024;
 
 const emailTransporter =
   SMTP_HOST && SMTP_USER && SMTP_PASS
@@ -560,7 +551,7 @@ export function createApiApp() {
   app.get(
     "/api/product-image/:file",
     asyncHandler(async (req, res) => {
-      const slug = String(req.params.file || "").replace(PRODUCT_IMAGE_EXTENSION, "");
+      const slug = String(req.params.file || "").replace(IMAGE_EXTENSION, "");
       if (!slug) {
         return res.redirect(302, PRODUCT_IMAGE_PLACEHOLDER);
       }
@@ -595,51 +586,51 @@ export function createApiApp() {
         return res.redirect(302, source.startsWith("/") ? source : fallback);
       }
 
-      let upstream: Response;
+      return proxyRemoteImage(res, { source, fallback, tag: "product-image", subject: slug });
+    })
+  );
+
+  // The same idea for blog covers. A post's cover is stored as a Supabase signed URL, which Google
+  // is told not to index (X-Robots-Tag: none), so no post could ever get a search-result
+  // thumbnail. Most posts are served from an optimised local copy (src/lib/blogImage.ts); this
+  // route covers a post published since the last scripts/sync-blog-covers.ts run, so a new post
+  // is never without an indexable image. Registered above the session-cookie middleware for the
+  // same reason as the product route: a Set-Cookie header makes the response uncacheable.
+  app.get(
+    "/api/blog-image/:file",
+    asyncHandler(async (req, res) => {
+      const slug = String(req.params.file || "").replace(IMAGE_EXTENSION, "");
+      if (!slug) {
+        return res.redirect(302, SHARE_IMAGE_PATH);
+      }
+
+      const fallback = LOCAL_BLOG_COVER_SLUGS.has(slug) ? `${BLOG_COVER_DIR}/${slug}.webp` : SHARE_IMAGE_PATH;
+
+      // A database outage must not turn every blog thumbnail into a 500.
+      let post: { cover_image_url: string | null } | null = null;
       try {
-        upstream = await fetch(source, { redirect: "follow" });
-      } catch (error) {
-        console.error(`[product-image] upstream fetch failed for ${slug}; serving local copy`, error);
-        return res.redirect(302, fallback);
-      }
-
-      const contentType = (upstream.headers.get("content-type") || "").split(";")[0].trim().toLowerCase();
-      if (!upstream.ok || !PRODUCT_IMAGE_CONTENT_TYPES.has(contentType)) {
-        console.error(
-          `[product-image] upstream returned ${upstream.status} ${contentType || "(no type)"} for ${slug}; serving local copy`
+        post = await queryOne<{ cover_image_url: string | null }>(
+          `SELECT cover_image_url FROM blog_posts
+            WHERE lower(slug) = lower($1)
+              AND status = 'published'
+              AND (published_at IS NULL OR published_at <= now())`,
+          [slug]
         );
+      } catch (error) {
+        console.error(`[blog-image] post lookup failed for ${slug}; serving fallback`, error);
         return res.redirect(302, fallback);
       }
 
-      // A Vercel function response is capped at ~4.5MB. Falling back to the storage URL for an
-      // oversized file loses the indexing benefit for that one product, which beats a 500.
-      const declaredLength = Number(upstream.headers.get("content-length"));
-      if (Number.isFinite(declaredLength) && declaredLength > PRODUCT_IMAGE_MAX_BYTES) {
-        console.warn(`[product-image] ${slug} is ${declaredLength} bytes; serving upstream directly`);
-        return res.redirect(302, source);
+      // Published only: an unpublished post's cover is not something to serve.
+      const source = post?.cover_image_url?.trim();
+      if (!source) {
+        return res.redirect(302, fallback);
+      }
+      if (!/^https?:\/\//i.test(source)) {
+        return res.redirect(302, source.startsWith("/") ? source : fallback);
       }
 
-      const body = Buffer.from(await upstream.arrayBuffer());
-      if (body.length > PRODUCT_IMAGE_MAX_BYTES) {
-        console.warn(`[product-image] ${slug} is ${body.length} bytes; serving upstream directly`);
-        return res.redirect(302, source);
-      }
-
-      res.setHeader("Content-Type", contentType);
-      res.setHeader("Content-Length", String(body.length));
-      // The entire point of the route: the explicit opposite of Supabase's `none`.
-      res.setHeader("X-Robots-Tag", "all");
-      // A product photo changes only when someone re-uploads it, and the URL is keyed by slug
-      // rather than by content, so browsers get a day and the CDN holds it for a year with a
-      // week of stale-while-revalidate to absorb re-uploads.
-      res.setHeader(
-        "Cache-Control",
-        "public, max-age=86400, s-maxage=31536000, stale-while-revalidate=604800"
-      );
-      // helmet defaults this to same-origin, which would block og:image previews and any
-      // legitimate hotlink of a photo we are publishing on purpose.
-      res.setHeader("Cross-Origin-Resource-Policy", "cross-origin");
-      return res.end(body);
+      return proxyRemoteImage(res, { source, fallback, tag: "blog-image", subject: slug });
     })
   );
 

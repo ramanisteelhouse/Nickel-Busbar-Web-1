@@ -2,11 +2,12 @@ import React from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
 import type { BlogPost } from '../types';
-import { buildImageAlt, encodePathSegment, sanitizeRichHtml, resolveImageSrc } from '../lib/utils';
+import { buildImageAlt, encodePathSegment, sanitizeRichHtml } from '../lib/utils';
 import { BlogFaqSection } from '../components/BlogFaqSection';
 import { BlogCtaBar, BlogCtaBlock } from '../components/BlogCtaBlock';
 import { BlogShare } from '../components/BlogShare';
 import { blogCtaFor } from '../lib/blogCta';
+import { blogCover } from '../lib/blogImage';
 import { blogProductsFor, BLOG_PRODUCTS_HEADING } from '../lib/blogProducts';
 import { MINIMUM_ORDER_QUANTITY } from '../lib/productSpecs';
 
@@ -105,7 +106,11 @@ export const BlogPostPage: React.FC = () => {
 
   const title = post.meta_title?.trim() || post.title;
   const description = post.meta_description?.trim() || post.excerpt?.trim() || 'Technical insights from Ramani Steel House.';
-  const coverImageUrl = post.cover_image_url ? resolveImageSrc(post.cover_image_url) : '';
+  // Never the stored URL: it is a Supabase signed URL served with X-Robots-Tag: none, which Google
+  // obeys, so it can never be indexed or become the search-result thumbnail. See lib/blogImage.
+  // Mirrored by renderBlogSnapshot, which calls the same function.
+  const cover = blogCover(post.slug, post.cover_image_url);
+  const coverImageUrl = `${SITE_URL}${cover.path}`;
   const coverImageAlt = post.cover_image_alt?.trim() || buildImageAlt(post.title, 'blog article cover');
   const publishedIso = post.published_at || post.created_at || null;
   const modifiedIso = post.updated_at || publishedIso;
@@ -188,10 +193,10 @@ export const BlogPostPage: React.FC = () => {
           </div>
         </header>
 
-        {coverImageUrl ? (
+        {cover.kind !== 'brand' ? (
           <figure className="mt-8">
             <img
-              src={coverImageUrl}
+              src={cover.path}
               alt={coverImageAlt}
               width={1000}
               height={1000}

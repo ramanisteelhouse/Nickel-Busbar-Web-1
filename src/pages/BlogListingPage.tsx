@@ -3,7 +3,8 @@ import { Link } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
 import { ArrowRight } from 'lucide-react';
 import type { BlogPost } from '../types';
-import { buildImageAlt, encodePathSegment, resolveImageSrc } from '../lib/utils';
+import { buildImageAlt, encodePathSegment } from '../lib/utils';
+import { blogCover } from '../lib/blogImage';
 
 const SITE_NAME = 'Ramani Steel House';
 
@@ -67,9 +68,9 @@ export const BlogListingPage: React.FC = () => {
               className="flex flex-col overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm transition hover:shadow-md"
             >
               <Link to={`/blog/${encodePathSegment(post.slug)}`} className="block aspect-square w-full overflow-hidden bg-slate-100">
-                {post.cover_image_url ? (
+                {blogCover(post.slug, post.cover_image_url).kind !== 'brand' ? (
                   <img
-                    src={resolveImageSrc(post.cover_image_url)}
+                    src={blogCover(post.slug, post.cover_image_url).path}
                     alt={post.cover_image_alt?.trim() || buildImageAlt(post.title, 'blog article cover')}
                     width={1000}
                     height={1000}

@@ -48,6 +48,7 @@ import { GROUP_SITES } from "./src/lib/groupSites.js";
 import { YEARS_IN_BUSINESS } from "./src/lib/heritage.js";
 import { PRODUCT_LINKS } from "./src/lib/productLinks.js";
 import { GUIDES, GUIDES_PATH, getGuideBySlug } from "./src/lib/guides.js";
+import { blogCover } from "./src/lib/blogImage.js";
 import {
   GUIDES_INDEX_DESCRIPTION,
   GUIDES_INDEX_TITLE,
@@ -210,14 +211,18 @@ const injectHead = (template: string, head: HeadInput) => {
   html = html.replace(/<meta name="twitter:description"[^>]*>/, "");
   html = html.replace(/<meta name="twitter:image"[^>]*>/, "");
 
+  // A page that does not choose an image still names one. The brand card is indexable, on our own
+  // origin and 1200x630, so it is a valid thumbnail source where nothing better exists.
+  const ogImage = head.ogImage || SITE_OG_IMAGE_URL;
+
   const ogTags = [
     `<meta property="og:title" data-ssr-head="true" content="${escapeAttr(head.title)}" />`,
     `<meta property="og:description" data-ssr-head="true" content="${escapeAttr(head.description)}" />`,
     `<meta property="og:url" data-ssr-head="true" content="${escapeAttr(head.canonical)}" />`,
-    head.ogImage ? `<meta property="og:image" data-ssr-head="true" content="${escapeAttr(head.ogImage)}" />` : "",
+    `<meta property="og:image" data-ssr-head="true" content="${escapeAttr(ogImage)}" />`,
     `<meta name="twitter:title" data-ssr-head="true" content="${escapeAttr(head.title)}" />`,
     `<meta name="twitter:description" data-ssr-head="true" content="${escapeAttr(head.description)}" />`,
-    head.ogImage ? `<meta name="twitter:image" data-ssr-head="true" content="${escapeAttr(head.ogImage)}" />` : "",
+    `<meta name="twitter:image" data-ssr-head="true" content="${escapeAttr(ogImage)}" />`,
   ]
     .filter(Boolean)
     .join("\n  ");
@@ -374,7 +379,7 @@ export async function renderBlogSnapshot(template: string, slug: string): Promis
   // redirects to - which is an infinite loop, and briefly was one. Case-only differences have
   // to be resolved somewhere that compares strings case-sensitively, which is here.
   const post = await queryOne<Record<string, unknown>>(
-    `SELECT title, slug, excerpt, content, cover_image_url, author_name, meta_title,
+    `SELECT title, slug, excerpt, content, cover_image_url, cover_image_alt, author_name, meta_title,
             meta_description, faq_items, key_answer, social_post_url, published_at, created_at, updated_at
      FROM blog_posts
      WHERE lower(slug) = lower($1) AND status = 'published' AND (published_at IS NULL OR published_at <= now())
@@ -409,7 +414,10 @@ export async function renderBlogSnapshot(template: string, slug: string): Promis
   const description =
     (post.meta_description as string) || (post.excerpt as string) || `Technical insights from ${SITE_NAME}.`;
   const canonical = `${SITE_URL}/blog/${encodeURIComponent(post.slug as string)}`;
-  const coverImageUrl = (post.cover_image_url as string) || "";
+  // Never the stored URL: that is a Supabase signed URL served with X-Robots-Tag: none, which
+  // Google obeys, so it can never be indexed or become the result thumbnail. See lib/blogImage.
+  const cover = blogCover(String(post.slug ?? slug), post.cover_image_url as string | null);
+  const coverImageUrl = `${SITE_URL}${cover.path}`;
   const publishedIso = (post.published_at as string) || (post.created_at as string) || null;
   const modifiedIso = (post.updated_at as string) || publishedIso;
 
@@ -525,10 +533,11 @@ export async function renderBlogSnapshot(template: string, slug: string): Promis
 
   // The cover photo as a real element. It was published in the Article JSON-LD but never as an
   // <img>, so an image crawler had nothing on the page to index.
-  const coverImageHtml = coverImageUrl
+  const coverImageHtml = cover.kind !== "brand"
     ? `<img src="${escapeAttr(coverImageUrl)}" alt="${escapeAttr(
-        buildImageAlt(String(post.title ?? ""))
-      )}" width="1200" height="675" fetchpriority="high" />`
+        (typeof post.cover_image_alt === "string" && post.cover_image_alt.trim()) ||
+          buildImageAlt(String(post.title ?? ""))
+      )}" width="1000" height="1000" fetchpriority="high" />`
     : "";
 
   // The content column is only ever written via the authenticated /api/admin/blog-posts
@@ -576,7 +585,7 @@ export async function renderBlogSnapshot(template: string, slug: string): Promis
     title,
     description,
     canonical,
-    ogImage: coverImageUrl || undefined,
+    ogImage: coverImageUrl,
     jsonLd: [
       articleJsonLd,
       ...(faqJsonLd ? [faqJsonLd] : []),
@@ -1452,8 +1461,11 @@ export async function renderBlogListSnapshot(template: string): Promise<Snapshot
           // 1000x1000 because that is the size covers are uploaded at (see supabase/README.md)
           // and what the rendered page declares; the old 600x338 described a crop that does not
           // exist, which is a layout-shift hint pointing at the wrong aspect ratio.
-          const cover = post.cover_image_url
-            ? `<a href="${href}"><img src="${escapeAttr(post.cover_image_url)}" alt="${escapeAttr(
+          // Own-origin cover (see lib/blogImage), and a product photo when a post has none, so
+          // every card on the index has a picture an image crawler can index.
+          const postCover = blogCover(post.slug, post.cover_image_url);
+          const cover = postCover.kind !== "brand"
+            ? `<a href="${href}"><img src="${escapeAttr(`${SITE_URL}${postCover.path}`)}" alt="${escapeAttr(
                 buildImageAlt(post.title)
               )}" width="1000" height="1000" loading="lazy" decoding="async" /></a>`
             : "";

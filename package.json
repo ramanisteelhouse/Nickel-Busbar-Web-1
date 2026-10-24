@@ -12,6 +12,7 @@
     "clean": "rm -rf dist",
     "lint": "tsc --noEmit",
     "smoke": "tsx scripts/smoke.ts",
+    "audit:thumbnails": "node scripts/audit-thumbnails.mjs",
     "build:cloudflare": "npm run build && tsx scripts/strip-cloudflare-incompatibles.ts",
     "cf:dev": "wrangler dev",
     "cf:deploy": "npm run build:cloudflare && wrangler deploy"
