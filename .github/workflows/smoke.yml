@@ -71,3 +71,11 @@ jobs:
 
       - name: Smoke check
         run: npm run smoke
+
+      # Only reached when the deploy is live and healthy: telling engines about pages that are not
+      # up yet would waste the submission. A failure here (IndexNow down, rate-limited) must never
+      # fail a deploy check, so it does not.
+      - name: Tell Bing about changed pages (IndexNow)
+        if: github.event_name == 'push'
+        continue-on-error: true
+        run: npx tsx scripts/indexnow.ts --since 6

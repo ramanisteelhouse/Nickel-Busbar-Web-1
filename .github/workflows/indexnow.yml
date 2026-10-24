@@ -1,0 +1,40 @@
+name: IndexNow
+
+# Tells Bing (and the other IndexNow engines) about new and changed pages. See scripts/indexnow.ts.
+#
+# Two things trigger it. After every deploy it runs as the last step of the smoke workflow, once the
+# live site has been checked. This workflow is the other half: blog posts are published through
+# the database with no deploy, and scheduled posts go live at a set time, so a daily run is the
+# only thing that notices them. It runs after the 04:00 UTC publishing slot.
+on:
+  schedule:
+    - cron: "30 6 * * *"
+  workflow_dispatch:
+    inputs:
+      scope:
+        description: "recent = pages changed in the last 26 hours. all = every URL in the sitemap (use once to seed, not routinely)."
+        type: choice
+        options:
+          - recent
+          - all
+        default: recent
+
+jobs:
+  submit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install
+        run: npm ci --no-audit --no-fund
+
+      # 26 hours rather than 24: a run that starts a little late must not leave a gap in which a
+      # change falls between two windows.
+      - name: Submit changed pages
+        run: npx tsx scripts/indexnow.ts ${{ github.event.inputs.scope == 'all' && '--all' || '--since 26' }}
