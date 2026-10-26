@@ -61,6 +61,21 @@ const ARTICLE_PRODUCTS: Readonly<Record<string, readonly string[]>> = {
     'ni-21700-2p-h-type-v3',
     'ni-32650-2p-h-type',
   ],
+  // The 32 mm LiFePO4 formats. The article names all three in its closing section and is the
+  // only post written about these cells rather than mentioning them in passing.
+  'nickel-strip-32700-32650-lifepo4-battery-pack': [
+    'ni-32650-2p-h-type',
+    'ni-fuse-type-32700-2p-zig-zag-honeycomb',
+    'Plain-Nickel-Strips',
+  ],
+  // Stationary storage. Busbar sits high here, unlike the 32700 post: the article's argument is
+  // that a 48 V pack's series links carry full load current and suit a bolted joint, so it names
+  // busbar alongside the strip rather than treating it as the alternative.
+  'nickel-strip-solar-inverter-bess-battery-packs': [
+    'ni-32650-2p-h-type',
+    'Copper-Busbar',
+    'Plain-Nickel-Strips',
+  ],
 };
 
 const BY_SLUG = new Map(PRODUCT_LINKS.map((product) => [product.slug, product]));
