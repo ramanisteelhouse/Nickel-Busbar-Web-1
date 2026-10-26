@@ -1,6 +1,10 @@
 import { POSTAL_ADDRESS, PRIMARY_CALL } from './contact.js';
 import { YEARS_IN_BUSINESS } from './heritage.js';
 import { CELL_FORMATS, STANDARD_THICKNESSES_MM, WIDTH_RANGE_MM } from './stripSizes.js';
+// The company's stated export terms, already published on /export-enquiry and on product
+// pages. Naming the actual Incoterms beats 'an agreed Incoterm': a buyer who works to CIF can
+// see it applies before writing to ask.
+import { HS_CODES, INCOTERMS, PRODUCT_EXPORT_TERMS } from './exportEnquiry.js';
 
 /**
  * Indexable landing pages that sit between the homepage and the individual SKU pages.
@@ -683,9 +687,12 @@ const EXPORT_PAGE: LandingPage = {
         'Export lots are packed at the Mumbai works in moisture-protected, export-grade packing intended for sea freight, rather than the packing used for a domestic road consignment. Shipments load through Nhava Sheva (JNPT), which handles most of western India’s container traffic. Where it suits a buyer, southern consignments can be routed through Chennai instead.',
     },
     {
+      heading: 'Trade terms',
+      bullets: PRODUCT_EXPORT_TERMS.map((term) => `${term.label}: ${term.value}`),
+    },
+    {
       heading: 'How export orders are priced',
-      body:
-        'Export orders are quoted in USD against an agreed Incoterm, separately from the rupee price list used in India. Freight is quoted with the order rather than published, because it depends on the weight of the consignment and the destination port. Tell us the destination and the quantity and both come back in the same quotation.',
+      body: `Export orders are quoted in USD, separately from the rupee price list used in India, on ${INCOTERMS.slice(0, -1).join(', ')} or ${INCOTERMS[INCOTERMS.length - 1]} terms. Freight is quoted with the order rather than published, because it depends on the weight of the consignment and the destination port. Tell us the destination, the quantity and which Incoterm you work to, and the quotation comes back against it.`,
     },
     {
       heading: 'Material supplied for export',
@@ -720,7 +727,7 @@ const EXPORT_PAGE: LandingPage = {
     {
       question: 'How is an export order priced?',
       answer:
-        'In USD against an agreed Incoterm, quoted separately from the rupee price list. Freight is quoted with the order, since it depends on consignment weight and destination.',
+        `In USD on ${INCOTERMS.join(', ')} terms, quoted separately from the rupee price list. Freight is quoted with the order, since it depends on consignment weight and destination. The HS code for pure nickel strip and busbar strip is ${HS_CODES[0].code}; confirm the import line with your own broker, since destination tariff lines vary.`,
     },
     {
       question: 'What is the minimum order for export?',

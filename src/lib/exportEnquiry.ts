@@ -9,7 +9,7 @@
  *
  * Every figure below is already published elsewhere on this site: 1974, 17+ countries and
  * Mumbai from /about and llms.txt; purity, thickness and width from the homepage
- * specification table; ASTM B16 / UNS N02201 / DIN 2.4068 from the product pages; ISO 9001
+ * specification table; ASTM B162 / UNS N02201 / DIN 2.4068 from the product pages; ISO 9001
  * from the homepage quality section; "lead times confirmed at quotation" from
  * ProductDetailPage. Nothing here asserts a capability the site does not already claim.
  */
@@ -44,7 +44,7 @@ export const EXPORT_LEAD =
 export const EXPORT_REGIONS: ReadonlyArray<{ region: string; detail: string }> = [
   { region: 'Asia-Pacific', detail: 'Battery pack assemblers, cell integrators and power-tool OEMs.' },
   { region: 'Middle East', detail: 'Energy storage integrators and industrial fabricators.' },
-  { region: 'Europe', detail: 'EV module builders working to ASTM B16 / DIN 2.4068 specifications.' },
+  { region: 'Europe', detail: 'EV module builders working to ASTM B162 / DIN 2.4068 specifications.' },
   { region: 'Africa', detail: 'Solar and off-grid storage assemblers sourcing in bulk.' },
   { region: 'North & South America', detail: 'Battery pack manufacturers and distributors.' },
 ];
@@ -83,7 +83,11 @@ export const EXPORT_SPECS: ReadonlyArray<{ label: string; value: string }> = [
   { label: 'Purity', value: '99.8% pure nickel' },
   { label: 'Thickness', value: '0.10 - 0.50 mm' },
   { label: 'Width', value: '2 - 50 mm (custom slitting available)' },
-  { label: 'Standards', value: 'ASTM B16 / UNS N02201 / DIN 2.4068' },
+  // ASTM B162 is Standard Specification for Nickel Plate, Sheet and Strip, covering UNS
+  // N02200 and N02201. This previously read ASTM B16, which is Free-Cutting Brass Rod, Bar and
+  // Shapes for Use in Screw Machines (UNS C36000/C36010) -- a leaded brass standard, printed
+  // here beside a nickel UNS number. The products table already carries B162.
+  { label: 'Standards', value: 'ASTM B162 / UNS N02201 / DIN 2.4068' },
   { label: 'Forms', value: EXPORT_PRODUCT_FORMS.join(', ') },
   { label: 'Quality system', value: 'ISO 9001-compliant manufacturing, in-house slitting and QC' },
 ];
