@@ -17,6 +17,8 @@
  * 696px wide (Google's floor for Article images). Exits non-zero when any page fails, so it can gate
  * a deploy. Needs sharp, which the image sync scripts already use.
  */
+import sharp from 'sharp';
+
 const SITE = (process.env.SITE_URL || 'https://www.nickelbusbar.com').replace(/\/+$/, '');
 const UA = 'Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)';
 
