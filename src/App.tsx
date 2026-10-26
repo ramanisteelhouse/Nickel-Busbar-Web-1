@@ -6,6 +6,7 @@ import { CookieBanner } from './components/CookieBanner';
 import { LanguageProvider } from './i18n/LanguageProvider';
 import { FloatingContact } from './components/FloatingContact';
 import { AdPopup } from './components/AdPopup';
+import { LeadCapturePopup } from './components/LeadCapturePopup';
 import { GoogleOneTap } from './components/GoogleOneTap';
 import { Footer } from './components/Footer';
 import { Analytics } from './components/Analytics';
@@ -338,6 +339,10 @@ export default function App() {
           <Navbar cartCount={cart.reduce((acc, item) => acc + item.quantity, 0)} />
           <ToastContainer />
           <AdPopup />
+          {/* Scroll-triggered phone capture. Rendered beside AdPopup rather than inside <main>
+              so it is not affected by route transitions, and so its fixed overlay cannot
+              participate in the main column’s layout. */}
+          <LeadCapturePopup />
 
           {/* min-h keeps the footer below the fold for the whole of page startup, which is a
               Cumulative Layout Shift fix rather than a styling choice.
