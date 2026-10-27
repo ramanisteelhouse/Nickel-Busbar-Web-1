@@ -15,6 +15,7 @@ import { blogCtaFor } from '../lib/blogCta';
 import { BlogFaqSection } from '../components/BlogFaqSection';
 import { BlogCtaBar, BlogCtaBlock } from '../components/BlogCtaBlock';
 import { BlogShare } from '../components/BlogShare';
+import { ContextualLinks } from '../components/ContextualLinks';
 import { MINIMUM_ORDER_QUANTITY } from '../lib/productSpecs';
 import { NotFoundPage } from './NotFoundPage';
 
@@ -154,6 +155,8 @@ export const GuidePage: React.FC = () => {
             .
           </p>
         </section>
+
+        <ContextualLinks context={{ kind: 'guide', slug: guide.slug }} exclude={[cta.link.path]} />
       </article>
     </div>
   );

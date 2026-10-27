@@ -1,5 +1,6 @@
 import React from 'react';
 import { Helmet } from 'react-helmet-async';
+import { ContextualLinks } from '../components/ContextualLinks';
 
 export const BlogNickelStripsLithiumPage: React.FC = () => {
   const canonical = 'https://www.nickelbusbar.com/blog/nickel-strips-lithium-batteries';
@@ -46,6 +47,7 @@ export const BlogNickelStripsLithiumPage: React.FC = () => {
             technically aligned nickel strip solutions with timely delivery and responsive support.
           </p>
         </div>
+        <ContextualLinks context={{ kind: 'blog', slug: 'nickel-strips-lithium-batteries' }} />
       </article>
     </div>
   );

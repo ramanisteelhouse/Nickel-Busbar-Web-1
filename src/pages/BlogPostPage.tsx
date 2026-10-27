@@ -6,6 +6,7 @@ import { buildImageAlt, encodePathSegment, sanitizeRichHtml } from '../lib/utils
 import { BlogFaqSection } from '../components/BlogFaqSection';
 import { BlogCtaBar, BlogCtaBlock } from '../components/BlogCtaBlock';
 import { BlogShare } from '../components/BlogShare';
+import { ContextualLinks } from '../components/ContextualLinks';
 import { blogCtaFor } from '../lib/blogCta';
 import { blogCover } from '../lib/blogImage';
 import { blogProductsFor, BLOG_PRODUCTS_HEADING } from '../lib/blogProducts';
@@ -269,6 +270,11 @@ export const BlogPostPage: React.FC = () => {
         <BlogCtaBlock cta={cta} />
 
         <BlogFaqSection items={faqItems} />
+
+        <ContextualLinks
+          context={{ kind: 'blog', slug: post.slug || decodedSlug }}
+          exclude={[cta.link.path, ...articleProducts.map((product) => `/product/${product.slug}`)]}
+        />
 
         <div className="mt-14 border-t border-slate-200 pt-8">
           <Link to="/blog" className="inline-flex items-center gap-2 text-sm font-semibold text-brand">

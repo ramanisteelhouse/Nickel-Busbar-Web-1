@@ -12,6 +12,7 @@ import { parentCategoryFor } from '../lib/landingPages';
 import { StripSizePicker } from '../components/StripSizePicker';
 import { showToast } from '../components/Toast';
 import { checkSpec, defaultSpecFor, EMPTY_SPEC, formatSpec, takesStripSize, type StripSpec } from '../lib/stripSpec';
+import { ContextualLinks } from '../components/ContextualLinks';
 import { RelatedProducts } from '../components/RelatedProducts';
 import {
   RETURN_POLICY_HEADING,
@@ -639,6 +640,10 @@ export const ProductDetailPage: React.FC<{ onAddToCart: (p: Product, spec?: Stri
           snapshot has rendered the same six products for a while; this brings the rendered page
           into line with it. */}
       {slug ? <RelatedProducts slug={slug} /> : null}
+
+      {/* Guides, articles and category pages for this product's pattern and cell format, and the
+          other patterns and formats to compare it with. Same blocks the crawler snapshot lists. */}
+      {slug ? <ContextualLinks context={{ kind: 'product', slug }} className="mt-16 border-t border-zinc-200 pt-10" /> : null}
 
       {showCartToast && (
         <div className="fixed bottom-4 left-4 right-4 z-50 sm:hidden">

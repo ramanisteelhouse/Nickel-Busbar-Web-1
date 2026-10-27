@@ -48,6 +48,7 @@ import { GROUP_SITES } from "./src/lib/groupSites.js";
 import { YEARS_IN_BUSINESS } from "./src/lib/heritage.js";
 import { PRODUCT_LINKS } from "./src/lib/productLinks.js";
 import { GUIDES, GUIDES_PATH, getGuideBySlug } from "./src/lib/guides.js";
+import { contextualLinks, type PageContext } from "./src/lib/contextualLinks.js";
 import { blogCover } from "./src/lib/blogImage.js";
 import {
   GUIDES_INDEX_DESCRIPTION,
@@ -297,6 +298,26 @@ const productCardHtml = (product: ProductCardRow): string => {
 
 export const productListHtml = (products: ProductCardRow[]): string =>
   products.map(productCardHtml).filter(Boolean).join("");
+
+/**
+ * The topic-matched links for a page (src/lib/contextualLinks.ts), as the sections a crawler
+ * reads. ContextualLinks.tsx renders the same blocks for readers, so the two cannot disagree.
+ *
+ * This is the half the snapshots were missing. A product page linked to other products and to
+ * nothing else; a landing page linked to its sibling states; the guides were reachable only from
+ * each other. Anchor text is written per destination to say what the page is, since a crawler
+ * that never runs the bundle has only the anchor to go on. `exclude` is for links the page
+ * already carries, so none appears twice.
+ */
+const contextualLinksHtml = (ctx: PageContext, exclude: readonly string[] = []): string =>
+  contextualLinks(ctx, exclude)
+    .map(
+      (block) =>
+        `<section><h2>${escapeHtml(block.heading)}</h2><ul>${block.links
+          .map((link) => `<li><a href="${SITE_URL}${link.path}">${escapeHtml(link.anchor)}</a></li>`)
+          .join("")}</ul></section>`
+    )
+    .join("");
 
 /**
  * The company's other web properties, as a sentence for the crawler snapshot.
@@ -598,6 +619,10 @@ export async function renderBlogSnapshot(template: string, slug: string): Promis
       : ""}
     ${relatedProductsHtml}
     ${relatedPostsHtml}
+    ${contextualLinksHtml({ kind: "blog", slug: String(post.slug ?? slug) }, [
+      cta.link.path,
+      ...articleProducts.map((product) => `/product/${product.slug}`),
+    ])}
     <p><a href="${SITE_URL}/blog">All nickel strip guides and technical articles</a> &middot; <a href="${SITE_URL}/products">Nickel strip and busbar products</a></p>
   </article>`;
 
@@ -643,6 +668,7 @@ export async function renderNickelStripsLithiumSnapshot(template: string): Promi
     <p>As a dedicated manufacturer of nickel strips used in lithium-ion batteries, we produce precision strips for battery manufacturers across India and selected global markets. Our production focus is consistency in thickness, controlled purity, and dependable electrical performance.</p>
     <p>We support lithium-ion battery manufacturers with competitive pricing by combining scalable manufacturing, disciplined quality control, and efficient supply planning. This helps customers reduce procurement risk while maintaining product quality in high-volume battery assembly.</p>
     <p>Whether your requirement is for EV battery packs, consumer electronics, or energy storage systems, we provide technically aligned nickel strip solutions with timely delivery and responsive support.</p>
+    ${contextualLinksHtml({ kind: "blog", slug: "nickel-strips-lithium-batteries" })}
   </article>`;
 
   const html = injectHead(template, {
@@ -1303,6 +1329,7 @@ export async function renderLandingSnapshot(
     ${sectionsHtml}
     ${productsHtml}
     ${faqHtml}
+    ${contextualLinksHtml({ kind: "landing", slug: page.slug })}
     ${crossLinksHtml}
     <h2>Contact</h2>
     <p>Ramani Steel House, ${escapeHtml(POSTAL_ADDRESS.oneLine)}</p>
@@ -1404,6 +1431,7 @@ export function renderGuideSnapshot(template: string, pathname: string): Snapsho
     ${ctaHtml}
     ${faqHtml}
     ${moreHtml}
+    ${contextualLinksHtml({ kind: "guide", slug: guide.slug }, [cta.link.path])}
     <p><a href="${SITE_URL}${GUIDES_PATH}">All nickel strip guides</a> &middot; <a href="${SITE_URL}/blog">Technical articles</a> &middot; <a href="${SITE_URL}/products">Nickel strip and busbar products</a></p>
   </article>`,
   });
@@ -1453,7 +1481,7 @@ export async function renderBlogListSnapshot(template: string): Promise<Snapshot
        WHERE status = 'published' AND (published_at IS NULL OR published_at <= now())
          AND slug IS NOT NULL AND slug <> ''
        ORDER BY published_at DESC NULLS LAST, id DESC
-       LIMIT 20`
+       LIMIT 100`
     );
   } catch (error) {
     // A listing with no posts is still a better snapshot than the homepage shell, so a failed
@@ -1472,8 +1500,13 @@ export async function renderBlogListSnapshot(template: string): Promise<Snapshot
   // answer engines actually read, and a list with no sub-structure gives them nothing to extract
   // beyond "this is a blog". Each H2 now names an article, which is what a reader and a
   // retrieval system are both looking for.
+  // The cards are the newest twenty, as before. The rest were reachable from here by nothing but
+  // the sitemap, which left ten articles with one inbound link each, so they follow as a plain
+  // list. The lithium guide is a page in the code rather than a row, so it is never in the query.
+  const featuredPosts = posts.slice(0, 20);
+  const olderPosts = posts.slice(20);
   const postsHtml = posts.length
-    ? posts
+    ? featuredPosts
         .map((post) => {
           const href = `${SITE_URL}/blog/${encodeURIComponent(post.slug)}`;
           // The cover art as a real element, matching what /products does for its grid. The
@@ -1498,6 +1531,12 @@ export async function renderBlogListSnapshot(template: string): Promise<Snapshot
         })
         .join("")
     : "";
+  const moreArticlesHtml = `<section><h2>More nickel strip articles</h2><ul>${[
+    ...olderPosts.map((post) => ({ href: `${SITE_URL}/blog/${encodeURIComponent(post.slug)}`, text: post.title })),
+    { href: `${SITE_URL}/blog/nickel-strips-lithium-batteries`, text: "Nickel strips for lithium-ion batteries: a manufacturer guide" },
+  ]
+    .map((item) => `<li><a href="${escapeAttr(item.href)}">${escapeHtml(item.text)}</a></li>`)
+    .join("")}</ul></section>`;
 
   const jsonLd: object[] = [
     {
@@ -1514,7 +1553,7 @@ export async function renderBlogListSnapshot(template: string): Promise<Snapshot
     jsonLd.push({
       "@context": "https://schema.org",
       "@type": "ItemList",
-      itemListElement: posts.map((post, index) => ({
+      itemListElement: featuredPosts.map((post, index) => ({
         "@type": "ListItem",
         position: index + 1,
         name: post.title,
@@ -1533,6 +1572,7 @@ export async function renderBlogListSnapshot(template: string): Promise<Snapshot
     <h1>Latest Blog Articles</h1>
     <p>${escapeHtml(description)}</p>
     ${postsHtml}
+    ${moreArticlesHtml}
   </article>`,
   });
 
@@ -1776,6 +1816,7 @@ export async function renderProductSnapshot(template: string, slug: string): Pro
     <h2>${escapeHtml(SHIPPING_HEADING)}</h2>
     ${SHIPPING_LINES.map((line) => `<p>${escapeHtml(line)}</p>`).join("")}
     ${relatedHtml}
+    ${contextualLinksHtml({ kind: "product", slug: productSlug })}
     ${catalogueHtml}
     <p><a href="${SITE_URL}/products">All nickel strip and busbar products</a></p>
   </article>`;

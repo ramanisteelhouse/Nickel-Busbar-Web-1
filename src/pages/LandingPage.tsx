@@ -4,6 +4,7 @@ import { ArrowRight, CheckCircle2, MapPin, Phone } from 'lucide-react';
 import { Helmet } from 'react-helmet-async';
 import type { Product } from '../types';
 import { PHONE_NUMBERS, PRIMARY_EMAIL, POSTAL_ADDRESS, telHref } from '../lib/contact';
+import { ContextualLinks } from '../components/ContextualLinks';
 import { getLandingPage, STATE_LANDING_PAGES } from '../lib/landingPages';
 import { ProductThumbnail } from '../components/ProductThumbnail';
 import { Reveal } from '../components/Tilt3D';
@@ -198,6 +199,12 @@ export const LandingPage: React.FC = () => {
               </div>
             ))}
           </dl>
+        </div>
+      </section>
+
+      <section className="py-16 bg-white">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+          <ContextualLinks context={{ kind: 'landing', slug: page.slug }} className="" />
         </div>
       </section>
 
