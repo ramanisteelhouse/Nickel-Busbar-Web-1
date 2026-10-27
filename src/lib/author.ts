@@ -72,6 +72,6 @@ export function authorBoxContent(): AuthorBoxContent {
       },
       { text: `Works and office: ${POSTAL_ADDRESS.oneLine}` },
     ],
-    contact: { text: 'Technical questions about this article are answered by email:', email: PRIMARY_EMAIL },
+    contact: { text: 'Questions about this article can be sent to:', email: PRIMARY_EMAIL },
   };
 }
