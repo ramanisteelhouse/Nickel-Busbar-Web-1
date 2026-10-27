@@ -31,6 +31,7 @@ import {
   HERO_PRODUCT_SLUG,
   HOME_HERO,
   HOME_SEO,
+  TRADE_ROLES_PHOTOS,
   TRADE_ROLES_SECTION,
   industries as industryTitles,
   productSpecifications,
@@ -546,8 +547,8 @@ export const HomePage: React.FC = () => {
           the crawler snapshot renders the same section. */}
       <section className="bg-white pb-12">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid gap-8 rounded-3xl border border-slate-200 px-6 py-8 md:grid-cols-5 md:px-10 md:py-10">
-            <div className="md:col-span-3">
+          <div className="grid items-center gap-8 rounded-3xl border border-slate-200 px-6 py-8 md:grid-cols-2 md:gap-10 md:px-10 md:py-10">
+            <div>
               <h2 className="text-2xl md:text-3xl font-display font-bold text-brand">{TRADE_ROLES_SECTION.heading}</h2>
               {TRADE_ROLES_SECTION.paragraphs.map((paragraph) => (
                 <p key={paragraph.slice(0, 32)} className="mt-4 text-base leading-relaxed text-slate-700">
@@ -568,16 +569,25 @@ export const HomePage: React.FC = () => {
                 — stock sizes, 5 kg MOQ and trade enquiries.
               </p>
             </div>
-            <ul className="space-y-3 md:col-span-2">
-              {TRADE_ROLES_SECTION.bullets.map((bullet) => {
+            <ul className="grid grid-cols-2 gap-3 sm:gap-4">
+              {TRADE_ROLES_SECTION.bullets.map((bullet, index) => {
                 const [role, detail] = bullet.split(': ');
+                const photo = TRADE_ROLES_PHOTOS[index];
                 return (
-                  <li key={bullet} className="flex gap-3 rounded-2xl bg-slate-50 px-4 py-3 text-sm text-slate-700">
-                    <BadgeCheck size={18} className="mt-0.5 shrink-0 text-brand" />
-                    <span>
-                      <strong className="font-semibold text-brand">{role}</strong>
-                      {detail ? `: ${detail}` : ''}
-                    </span>
+                  <li key={bullet} className="group relative aspect-square overflow-hidden rounded-2xl bg-slate-900">
+                    <img
+                      src={photo.src}
+                      alt={photo.alt}
+                      width={900}
+                      height={900}
+                      loading="lazy"
+                      decoding="async"
+                      className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+                    />
+                    <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-slate-950/90 via-slate-950/60 to-transparent px-3 pb-3 pt-10 sm:px-4 sm:pb-4">
+                      <p className="text-sm font-semibold leading-tight text-white sm:text-base">{role}</p>
+                      <p className="mt-1 text-[11px] leading-snug text-white/80 sm:text-xs">{detail}</p>
+                    </div>
                   </li>
                 );
               })}

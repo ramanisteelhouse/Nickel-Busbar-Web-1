@@ -97,10 +97,11 @@ export const HOME_HERO = {
 export const TRADE_ROLES_SECTION = {
   heading: 'Manufacturer first, also stockist, wholesaler and distributor',
   paragraphs: [
-    'Ramani Steel House manufactures nickel strip and nickel busbar in Mumbai, and that is the core of the business. Because the strip is made and slit in-house, the same material is also sold the way traders and smaller buyers need it: as a stockist of the common sizes, and as a wholesaler and distributor to small battery manufacturers, pack builders and traders.',
-    'Orders start at 5 kg. That is small enough for a pack assembler building a few hundred cells, not only for volume manufacturers, and the material and certificates are the same at 5 kg as at 500.',
-    'Listed sizes are only the most common ones. New designs are made to your drawing: strip thickness, width, pitch and hole pattern, plus tooling for unique battery pack layouts. Send the drawing or the cell arrangement and the quotation is made against it.',
+    'Ramani Steel House manufactures nickel strip and nickel busbar in Mumbai. Because the strip is made and slit in-house, the same material is also sold as a stockist, wholesaler and distributor to small battery manufacturers, pack builders and traders.',
+    'Orders start at 5 kg, with the same material and certificates as at 500 kg. New sizes are made to your drawing.',
   ],
+  // Each bullet is "Role: detail". The homepage shows them as the captions on four photos, in the
+  // same order as TRADE_ROLES_PHOTOS below.
   bullets: [
     'Manufacturer: in-house production and slitting in Mumbai since 1974',
     'Stockist: common thicknesses and widths for quick despatch',
@@ -108,6 +109,18 @@ export const TRADE_ROLES_SECTION = {
     'Custom: made to your drawing, with tooling for new pack designs',
   ],
 } as const;
+
+/**
+ * The photo behind each role in TRADE_ROLES_SECTION.bullets, same order. All four are existing
+ * product photographs, so nothing new is shipped and none is a stock image: a buyer who clicks
+ * through to the range sees the same strip.
+ */
+export const TRADE_ROLES_PHOTOS: ReadonlyArray<{ src: string; alt: string }> = [
+  { src: '/img/products/ni-18650-2p-zig-zag-no-fuse-type-nickel-strip.webp', alt: 'Zig-zag nickel strip for 18650 battery packs, made in-house at Ramani Steel House, Mumbai' },
+  { src: '/img/products/ni-18650-2p-h-type-nickel-strip.webp', alt: 'H-type nickel strip for 18650 packs, a stocked size ready for despatch' },
+  { src: '/img/products/plain-nickel-strips.webp', alt: 'Coils of plain pure nickel strip, supplied by weight from a 5 kg minimum order' },
+  { src: '/img/products/ni-custom-customizable-nickel-strip.webp', alt: 'Custom-punched nickel strip made to a buyer\'s drawing' },
+];
 
 export const applications = [
   'Lithium-ion Batteries',
