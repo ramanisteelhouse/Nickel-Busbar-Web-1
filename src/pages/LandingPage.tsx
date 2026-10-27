@@ -5,7 +5,7 @@ import { Helmet } from 'react-helmet-async';
 import type { Product } from '../types';
 import { PHONE_NUMBERS, PRIMARY_EMAIL, POSTAL_ADDRESS, telHref } from '../lib/contact';
 import { ContextualLinks } from '../components/ContextualLinks';
-import { getLandingPage, STATE_LANDING_PAGES } from '../lib/landingPages';
+import { getLandingPage, REGION_LANDING_PAGES } from '../lib/landingPages';
 import { ProductThumbnail } from '../components/ProductThumbnail';
 import { Reveal } from '../components/Tilt3D';
 import { NotFoundPage } from './NotFoundPage';
@@ -52,7 +52,7 @@ export const LandingPage: React.FC = () => {
   }
 
   const canonical = `${SITE_URL}/${page.slug}`;
-  const crossLinks = STATE_LANDING_PAGES.filter((state) => state.path !== `/${page.slug}`);
+  const crossLinks = REGION_LANDING_PAGES.filter((region) => region.path !== `/${page.slug}`);
 
   const jsonLd = [
     {
@@ -212,13 +212,13 @@ export const LandingPage: React.FC = () => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <h2 className="text-2xl md:text-3xl font-display font-bold text-brand">Also supplying</h2>
           <div className="mt-6 flex flex-wrap gap-3">
-            {crossLinks.map((state) => (
+            {crossLinks.map((region) => (
               <Link
-                key={state.path}
-                to={state.path}
+                key={region.path}
+                to={region.path}
                 className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-2 text-sm text-slate-600 transition-colors hover:border-brand hover:text-brand"
               >
-                <MapPin className="h-4 w-4" /> {state.name}
+                <MapPin className="h-4 w-4" /> Nickel strip manufacturer and supplier in {region.name}
               </Link>
             ))}
           </div>

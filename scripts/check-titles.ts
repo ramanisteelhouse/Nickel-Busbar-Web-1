@@ -36,7 +36,11 @@ const check = (where: string, title: string, { needsModifier, allowPrice }: { ne
   if (!allowPrice && /\bprice\b/i.test(title)) problems.push(`${where}: promises a price the page does not show: "${title}"`);
 };
 
-for (const page of LANDING_PAGES) check(`/${page.slug}`, page.title, { needsModifier: true, allowPrice: false });
+for (const page of LANDING_PAGES) {
+  check(`/${page.slug}`, page.title, { needsModifier: true, allowPrice: false });
+  // 160 is where a description is cut off in the result; the cut falls on the call to action.
+  if (page.description.length > 160) problems.push(`/${page.slug}: description is ${page.description.length} characters (max 160)`);
+}
 for (const isCategories of [false, true]) {
   const meta = catalogueMetaFor(isCategories);
   check(isCategories ? "/categories" : "/products", meta.title, { needsModifier: !isCategories, allowPrice: true });

@@ -53,7 +53,11 @@ const CHECKS: Check[] = [
   { path: "/blog/why-nickel-purity-matters", covers: "renderBlogSnapshot", canonical: "/blog/why-nickel-purity-matters" },
   { path: "/h-type-nickel-strip", covers: "renderLandingSnapshot (bespoke page)", canonical: "/h-type-nickel-strip" },
   { path: "/nickel-strip-manufacturer-in-mumbai", covers: "renderLandingSnapshot (Mumbai)", canonical: "/nickel-strip-manufacturer-in-mumbai" },
-  { path: "/nickel-strip-manufacturer-in-maharashtra", covers: "renderLandingSnapshot (generated state page)", canonical: "/nickel-strip-manufacturer-in-maharashtra" },
+  { path: "/nickel-strip-manufacturer-in-west-india", covers: "renderLandingSnapshot (generated regional page)", canonical: "/nickel-strip-manufacturer-in-west-india", contains: ["Gujarat", "Maharashtra"] },
+  // The ten state pages were folded into three regional ones. Both of these were indexed, so they
+  // must keep answering 301, not 404; a removed rule would drop them from the index unnoticed.
+  { path: "/nickel-strip-manufacturer-in-maharashtra", covers: "former state page 301", status: 301, redirect: "manual", location: "/nickel-strip-manufacturer-in-west-india" },
+  { path: "/nickel-strip-manufacturer-in-tamil-nadu", covers: "former state page 301", status: 301, redirect: "manual", location: "/nickel-strip-manufacturer-in-south-india" },
   { path: "/merchant-feed.xml", covers: "Merchant Center feed route", contains: ["<g:brand>", "<g:identifier_exists>"] },
   { path: "/sitemap.xml", covers: "build-time sitemap", contains: ["<loc>"] },
   { path: "/robots.txt", covers: "static file serving", contains: ["Sitemap:"] },

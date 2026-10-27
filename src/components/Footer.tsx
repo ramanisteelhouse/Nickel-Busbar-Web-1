@@ -2,7 +2,7 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { logCallClick } from '../lib/utils';
 import { EMAIL_ADDRESSES, PHONE_NUMBERS, POSTAL_ADDRESS, telHref } from '../lib/contact';
-import { STATE_LANDING_PAGES } from '../lib/landingPages';
+import { REGION_LANDING_PAGES } from '../lib/landingPages';
 import { BROCHURE } from '../lib/brochure';
 import { YEARS_IN_BUSINESS } from '../lib/heritage';
 import { PRODUCT_LINKS } from '../lib/productLinks';
@@ -41,15 +41,15 @@ export const Footer: React.FC = () => {
               ))}
             </ul>
           </div>
-          {/* Crawlable links to the state landing pages. Without an entry point in site-wide
+          {/* Crawlable links to the regional landing pages. Without an entry point in site-wide
               navigation these URLs would be reachable only from the sitemap and from each other,
               which is a weak enough signal that Google often leaves such a cluster uncrawled. */}
           <div className="mt-10 border-t border-slate-200 pt-8">
             <p className="text-xs uppercase tracking-[0.3em] text-slate-400 mb-4">Nickel Strip Supply Across India</p>
             <ul className="flex flex-wrap gap-x-4 gap-y-2 text-sm text-slate-600">
-              {STATE_LANDING_PAGES.map((state) => (
-                <li key={state.path}>
-                  <Link to={state.path} className="inline-block py-1 hover:text-brand">{state.name}</Link>
+              {REGION_LANDING_PAGES.map((region) => (
+                <li key={region.path}>
+                  <Link to={region.path} className="inline-block py-1 hover:text-brand">Nickel strip supplier, {region.name}</Link>
                 </li>
               ))}
             </ul>

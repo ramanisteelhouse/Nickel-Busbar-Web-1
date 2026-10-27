@@ -26,7 +26,7 @@ import {
   SHIPPING_HEADING,
   SHIPPING_LINES,
 } from "./src/lib/shippingPolicy.js";
-import { getLandingPageByPathname, parentCategoryFor, STATE_LANDING_PAGES } from "./src/lib/landingPages.js";
+import { getLandingPageByPathname, parentCategoryFor, REGION_LANDING_PAGES, STATE_PAGE_REDIRECTS } from "./src/lib/landingPages.js";
 import { blogCtaFor } from "./src/lib/blogCta.js";
 import { blogProductsFor, BLOG_PRODUCTS_HEADING } from "./src/lib/blogProducts.js";
 import { buildProductFaqs, productFaqJsonLd } from "./src/lib/productFaq.js";
@@ -646,6 +646,8 @@ export async function renderBlogSnapshot(template: string, slug: string): Promis
     ${contextualLinksHtml({ kind: "blog", slug: String(post.slug ?? slug) }, [
       cta.link.path,
       ...articleProducts.map((product) => `/product/${product.slug}`),
+      // The related posts above were chosen from the database by title; do not list them twice.
+      ...relatedPosts.map((related) => `/blog/${related.slug}`),
     ])}
     <p><a href="${SITE_URL}/blog">All nickel strip guides and technical articles</a> &middot; <a href="${SITE_URL}/products">Nickel strip and busbar products</a></p>
   </article>`;
@@ -1242,6 +1244,11 @@ export async function renderLandingSnapshot(
   template: string,
   pathname: string
 ): Promise<SnapshotResult> {
+  // The former state pages were consolidated into regional pages; the old URLs were indexed, so
+  // they answer with a permanent redirect rather than a 404.
+  const regionPath = STATE_PAGE_REDIRECTS[pathname.toLowerCase()];
+  if (regionPath) return { status: 301, html: "", location: `${SITE_URL}${regionPath}` };
+
   const page = getLandingPageByPathname(pathname);
   // vercel.json routes the whole /nickel-strip-manufacturer-in-* prefix here, so an invented
   // state name reaches this function. Answering 200 with the untouched template would leave a
@@ -1305,8 +1312,8 @@ export async function renderLandingSnapshot(
       .join("\n    ")}`;
 
   const crossLinksHtml = `<h2>Also supplying</h2>
-    <ul>${STATE_LANDING_PAGES.filter((state) => state.path !== `/${page.slug}`)
-      .map((state) => `<li><a href="${SITE_URL}${state.path}">${escapeHtml(state.name)}</a></li>`)
+    <ul>${REGION_LANDING_PAGES.filter((region) => region.path !== `/${page.slug}`)
+      .map((region) => `<li><a href="${SITE_URL}${region.path}">Nickel strip manufacturer and supplier in ${escapeHtml(region.name)}</a></li>`)
       .join("")}</ul>`;
 
   const html = injectHead(template, {

@@ -5,6 +5,7 @@ import { CELL_FORMATS, STANDARD_THICKNESSES_MM, WIDTH_RANGE_MM } from './stripSi
 // pages. Naming the actual Incoterms beats 'an agreed Incoterm': a buyer who works to CIF can
 // see it applies before writing to ask.
 import { HS_CODES, INCOTERMS, PRODUCT_EXPORT_TERMS } from './exportEnquiry.js';
+import { DELIVERY_TIME, MINIMUM_ORDER_QUANTITY } from './productSpecs.js';
 
 /**
  * Indexable landing pages that sit between the homepage and the individual SKU pages.
@@ -252,89 +253,119 @@ const STATE_FACTS: readonly StateFacts[] = [
 ];
 
 /**
- * Search engines truncate a description past ~160 characters, and the city list is the part
- * that varies — "Sri City, Tirupati, Visakhapatnam" is 20 characters longer than "Jaipur,
- * Neemrana, Bhiwadi". Rather than hand-tune ten strings and have the next state added here
- * silently overflow, fit as many cities as the budget allows and stop.
+ * The state pages, consolidated into three regional pages.
+ *
+ * There used to be ten, one per state, generated from STATE_FACTS. About a hundred words on each
+ * were specific to the state (the cluster paragraph and the shipping note) and the other three
+ * hundred were identical, which is the near-duplicate location-page pattern Google demotes, and
+ * a weak cluster of pages can weigh on the site around it. A buyer in Hosur and a buyer in Pune
+ * get the same material, the same minimum order and the same certificates, so ten pages said one
+ * thing ten times.
+ *
+ * Each regional page now carries the state-specific text of every state in it, which puts the
+ * unique content in one place and makes the page long enough to deserve its URL. Nothing was
+ * added to that text: the cluster paragraphs and shipping notes are the ones the state pages had.
+ * The ten old URLs redirect (301) to the region that covers them, see STATE_PAGE_REDIRECTS.
+ * Mumbai keeps its own hand-written page, below.
  */
-const DESCRIPTION_MAX = 160;
-
-const stateDescription = (state: StateFacts) => {
-  const base = `Nickel strip manufacturer supplying ${state.name}: pure nickel strip, H type nickel strip and nickel busbar for battery packs.`;
-  const chosen: string[] = [];
-  let description = base;
-  for (const city of state.cities) {
-    const candidate = `${base} Despatch to ${[...chosen, city].join(', ')}.`;
-    if (candidate.length > DESCRIPTION_MAX) break;
-    chosen.push(city);
-    description = candidate;
-  }
-  return description;
+type Region = {
+  slug: string;
+  /** "South India", for headings and the breadcrumb. */
+  name: string;
+  /** Same, with "&" where the title has no room for "and". */
+  titleName: string;
+  stateSlugs: readonly string[];
 };
 
-/**
- * The commercial words a buyer types next to the product (manufacturer, supplier), kept inside
- * 60 characters so the result line is not cut. Trailing detail is added only where it still fits:
- * "Andhra Pradesh" leaves no room for it, "Gujarat" does, and a title that is longer for one state
- * than another is better than one that is truncated for some.
- */
-const stateTitle = (stateName: string): string => {
-  const base = `Nickel Strip Manufacturer & Supplier in ${stateName}`;
+const REGIONS: readonly Region[] = [
+  { slug: 'south-india', name: 'South India', titleName: 'South India', stateSlugs: ['tamil-nadu', 'karnataka', 'telangana', 'andhra-pradesh'] },
+  { slug: 'north-and-east-india', name: 'North and East India', titleName: 'North & East India', stateSlugs: ['haryana', 'uttar-pradesh', 'rajasthan', 'west-bengal'] },
+  { slug: 'west-india', name: 'West India', titleName: 'West India', stateSlugs: ['maharashtra', 'gujarat'] },
+];
+
+const STATE_BY_SLUG = new Map(STATE_FACTS.map((state) => [state.slug, state]));
+
+const joinNames = (names: readonly string[]): string =>
+  names.length <= 1 ? (names[0] ?? '') : `${names.slice(0, -1).join(', ')} and ${names[names.length - 1]}`;
+
+const regionStates = (region: Region): StateFacts[] =>
+  region.stateSlugs.map((slug) => {
+    const state = STATE_BY_SLUG.get(slug);
+    if (!state) throw new Error(`Region ${region.slug} names a state with no facts: ${slug}`);
+    return state;
+  });
+
+const DESCRIPTION_MAX = 160;
+
+const regionDescription = (region: Region): string => {
+  const names = joinNames(regionStates(region).map((state) => state.name));
+  const full = `Nickel strip manufacturer supplying ${region.name}: ${names}. Pure nickel strip, H type strip and busbar, despatched from Mumbai.`;
+  return full.length <= DESCRIPTION_MAX
+    ? full
+    : `Nickel strip manufacturer supplying ${region.name}: pure nickel strip, H type strip and busbar for battery packs, despatched from our Mumbai works.`;
+};
+
+/** Manufacturer and supplier, inside 60 characters; the trailing detail only where it still fits. */
+const regionTitle = (region: Region): string => {
+  const base = `Nickel Strip Manufacturer & Supplier in ${region.titleName}`;
   const tail = [' | 5 kg MOQ', ' | Ramani Steel'].find((candidate) => (base + candidate).length <= 60);
   return tail ? base + tail : base;
 };
 
-const stateLandingPage = (state: StateFacts): LandingPage => ({
-  slug: `nickel-strip-manufacturer-in-${state.slug}`,
-  title: stateTitle(state.name),
-  description: stateDescription(state),
-  h1: `Nickel Strip Manufacturer Supplying ${state.name}`,
-  intro: `Ramani Steel House supplies nickel strip to battery pack makers, electronics manufacturers and engineering firms across ${state.name} from its Mumbai works. Pure nickel strip, H type nickel strip and nickel busbar are despatched to ${state.cities.slice(0, -1).join(', ')} and ${state.cities[state.cities.length - 1]}, cut to the cell format and pack layout you build to.`,
-  keywords: [
-    `Nickel Strip Manufacturer in ${state.name}`,
-    `Nickel Strip Supplier in ${state.name}`,
-    `Nickel Strips Manufacturer in ${state.name}`,
-    `H Type Nickel Strip ${state.name}`,
-    `Battery Nickel Strip Supplier ${state.name}`,
-    ...state.cities.map((city) => `Nickel Strip Supplier in ${city}`),
-  ],
-  sections: [
-    {
-      heading: `Battery and electronics manufacturing in ${state.name}`,
-      body: state.clusters,
-    },
-    {
-      heading: `Supplying ${state.name}`,
-      body: state.note,
-    },
-    {
-      heading: 'What is supplied',
-      bullets: SPEC_BULLETS,
-    },
-    {
-      heading: `Cities served in ${state.name}`,
-      bullets: state.cities,
-    },
-  ],
-  faqs: [
-    {
-      question: `Do you supply nickel strip in ${state.name}?`,
-      answer: `Yes. Nickel strip, H type nickel strip and nickel busbar are despatched from our Mumbai works to customers across ${state.name}, including ${state.cities.slice(0, 3).join(', ')}. Send your cell format, thickness, width and quantity for a quotation.`,
-    },
-    {
-      question: `What is the minimum order for ${state.name} deliveries?`,
-      answer:
-        'Order quantity depends on thickness, width and whether the pattern is standard or cut to your drawing. Both trial lots for a new pack design and repeat bulk schedules are quoted — send the specification and we confirm the minimum against it.',
-    },
-    {
-      question: 'Are material test certificates provided?',
-      answer:
-        'Yes, on request. A material test certificate with batch-wise conductivity and tensile results is issued when you ask for one, and the batch remains traceable after delivery.',
-    },
-  ],
-  productSearch: 'nickel strip',
-  breadcrumbName: `Nickel Strip in ${state.name}`,
-});
+const regionLandingPage = (region: Region): LandingPage => {
+  const states = regionStates(region);
+  const stateNames = states.map((state) => state.name);
+  const cities = states.flatMap((state) => state.cities);
+
+  return {
+    slug: `nickel-strip-manufacturer-in-${region.slug}`,
+    title: regionTitle(region),
+    description: regionDescription(region),
+    h1: `Nickel Strip Manufacturer Supplying ${region.name}`,
+    intro: `Ramani Steel House supplies nickel strip to battery pack makers, electronics manufacturers and engineering firms across ${region.name}: ${joinNames(stateNames)}. Everything is despatched from its Mumbai works, and pure nickel strip, H type nickel strip and nickel busbar are cut to the cell format and pack layout you build to. The minimum order is ${MINIMUM_ORDER_QUANTITY} and despatch takes ${DELIVERY_TIME}, the same in every state below.`,
+    keywords: [
+      `Nickel Strip Manufacturer in ${region.name}`,
+      `Nickel Strip Supplier in ${region.name}`,
+      ...states.flatMap((state) => [
+        `Nickel Strip Manufacturer in ${state.name}`,
+        `Nickel Strip Supplier in ${state.name}`,
+        `H Type Nickel Strip ${state.name}`,
+      ]),
+      ...cities.map((city) => `Nickel Strip Supplier in ${city}`),
+    ],
+    sections: [
+      ...states.map((state) => ({
+        heading: `Supplying ${state.name}`,
+        body: `${state.clusters} ${state.note} Despatches go to ${joinNames(state.cities)}.`,
+      })),
+      {
+        heading: 'What is supplied',
+        bullets: SPEC_BULLETS,
+      },
+      {
+        heading: `Ordering from ${region.name}`,
+        body: `A buyer in ${cities[0]} and a buyer in ${cities[cities.length - 1]} order the same way: send the cell format, thickness, width and quantity, with a drawing for anything that is not a listed size, and the quotation is made against it. The minimum order is ${MINIMUM_ORDER_QUANTITY}. Trial lots for a new pack design are quoted as readily as repeat schedules, and a material test certificate is issued on request with each batch.`,
+      },
+    ],
+    faqs: [
+      ...states.map((state) => ({
+        question: `Do you supply nickel strip in ${state.name}?`,
+        answer: `Yes. Nickel strip, H type nickel strip and nickel busbar are despatched from our Mumbai works to customers across ${state.name}, including ${state.cities.slice(0, 3).join(', ')}. ${state.note}`,
+      })),
+      {
+        question: `What is the minimum order for ${region.name} deliveries?`,
+        answer: `The minimum order is ${MINIMUM_ORDER_QUANTITY}, the same in every state. Thickness, width and whether the pattern is standard or cut to your drawing affect the quotation, so send the specification and it is confirmed against it.`,
+      },
+      {
+        question: 'Are material test certificates provided?',
+        answer:
+          'Yes, on request. A material test certificate with batch-wise conductivity and tensile results is issued when you ask for one, and the batch remains traceable after delivery.',
+      },
+    ],
+    productSearch: 'nickel strip',
+    breadcrumbName: `Nickel Strip in ${region.name}`,
+  };
+};
 
 /**
  * Mumbai, written by hand rather than generated from STATE_FACTS.
@@ -546,6 +577,9 @@ type StripSize = {
   slug: string;
   thickness: string;
   width: string;
+  /** The same two numbers as thickness and width, for the arithmetic on the page. */
+  thicknessMm: number;
+  widthMm: number;
   title: string;
   description: string;
   /** What this gauge is actually for — the reason a buyer picks it over the other. */
@@ -558,22 +592,26 @@ const STRIP_SIZES: readonly StripSize[] = [
     slug: 'pure-nickel-strip-0-15mm-x-10mm',
     thickness: '0.15 mm',
     width: '10 mm',
+    thicknessMm: 0.15,
+    widthMm: 10,
     title: 'Pure Nickel Strip 0.15mm x 10mm | Manufacturer & Supplier',
     description:
       'Pure nickel strip 0.15mm thick x 10mm wide, 99.8% nickel, UNS N02201. Made in Mumbai for 18650 and 21700 battery pack welding. 5 kg MOQ, 7 day delivery.',
     suitedTo:
-      'the most widely used gauge for 18650 pack assembly. It spot welds cleanly on a mid-range resistance welder without the electrode force a thicker strip needs, which is why it is the size most builders standardise on for 2P and 3P layouts.',
+      'This is the most widely used gauge for 18650 pack assembly. It spot welds cleanly on a mid-range resistance welder without the electrode force a thicker strip needs, which is why it is the size most builders standardise on for 2P and 3P layouts.',
     cellFormats: '18650, 21700',
   },
   {
     slug: 'pure-nickel-strip-0-20mm-x-15mm',
     thickness: '0.20 mm',
     width: '15 mm',
+    thicknessMm: 0.20,
+    widthMm: 15,
     title: 'Pure Nickel Strip 0.20mm x 15mm | Manufacturer & Supplier',
     description:
       'Pure nickel strip 0.20mm x 15mm wide, 99.8% nickel, UNS N02201. Higher current capacity for 21700 and 32700 packs. 5 kg MOQ, 7 day delivery from Mumbai.',
     suitedTo:
-      'packs that draw more current per cell than 0.15 mm comfortably carries. The larger cross-section — thicker and wider — lowers resistance through the interconnect, at the cost of needing more weld energy than a 0.15 mm strip.',
+      'This gauge is suited to packs that draw more current per cell than 0.15 mm comfortably carries. The larger cross-section — thicker and wider — lowers resistance through the interconnect, at the cost of needing more weld energy than a 0.15 mm strip.',
     cellFormats: '21700, 32650, 32700',
   },
 ];
@@ -607,8 +645,9 @@ const stripSizePage = (size: StripSize): LandingPage => ({
     },
     {
       heading: 'What this size is used for',
-      body: `This gauge is ${size.suitedTo}`,
+      body: size.suitedTo,
     },
+    ...sizeNumbersSections(size),
     {
       heading: 'Ordering this size',
       body: `${size.thickness} × ${size.width} is a stocked size, so it ships from coil rather than being rolled to order. If your pack needs a different width, the same 99.8% material is slit to any width from 2 mm to 50 mm against your drawing — send the pitch and cell layout and it is cut to that instead.`,
@@ -629,6 +668,7 @@ const stripSizePage = (size: StripSize): LandingPage => ({
       answer:
         '5 kg. Both trial quantities for qualifying a new pack design and repeat bulk schedules are quoted from the same stock.',
     },
+    sizeNumbersFaq(size),
     {
       question: 'Can this size be supplied as a coil rather than cut strip?',
       answer:
@@ -935,14 +975,155 @@ const APPLICATION_PAGES: readonly LandingPage[] = [
   },
 ];
 
+/**
+ * The arithmetic behind the numbers on the size and busbar pages, in one place so every page
+ * states the same figures and none is typed by hand.
+ *
+ * Density 8.9 g/cm³ and resistivity 9.5 × 10⁻⁸ Ω·m are the values the guides use (see
+ * src/lib/guides.ts), so a buyer who reads a guide and then a size page meets the same numbers.
+ * Resistivity is the Nickel 200 figure, the conservative one: Nickel 201 is a little lower.
+ * These are geometry and material constants, not a current rating. What a strip can safely carry
+ * depends on how it is cooled and how long the current lasts, which the guides explain.
+ */
+const NICKEL_DENSITY_G_PER_CM3 = 8.9;
+const NICKEL_RESISTIVITY_OHM_M = 9.5e-8;
+const COPPER_RESISTIVITY_OHM_M = 1.72e-8;
+
+/** Properties of a solid strip. Area in mm², so one metre of it is area cm³ of metal. */
+const solidStrip = (thicknessMm: number, widthMm: number) => {
+  const areaMm2 = thicknessMm * widthMm;
+  const gramsPerMetre = areaMm2 * NICKEL_DENSITY_G_PER_CM3;
+  const ohmsPerMetre = NICKEL_RESISTIVITY_OHM_M / (areaMm2 * 1e-6);
+  return { areaMm2, gramsPerMetre, metresPerKg: 1000 / gramsPerMetre, milliohmsPerMetre: ohmsPerMetre * 1000 };
+};
+
+const round = (value: number, places = 1): string => value.toFixed(places).replace(/\.0+$/, '');
+
+const sizeNumbersSections = (size: StripSize): LandingSection[] => {
+  const me = solidStrip(size.thicknessMm, size.widthMm);
+  const other = STRIP_SIZES.find((candidate) => candidate.slug !== size.slug);
+  const them = other ? solidStrip(other.thicknessMm, other.widthMm) : null;
+  const heat10A = 10 * 10 * (me.milliohmsPerMetre / 1000) * 0.1; // I² × R over a 100 mm run, watts
+
+  return [
+    {
+      heading: `The numbers for ${size.thickness} × ${size.width} strip`,
+      bullets: [
+        `Cross-section ${round(me.areaMm2, 2)} mm²`,
+        `Weight ${round(me.gramsPerMetre)} g per metre, so ${round(me.metresPerKg, 0)} metres per kilogram and about ${round(me.metresPerKg * 5, 0)} metres in a 5 kg order`,
+        `Resistance about ${round(me.milliohmsPerMetre, 0)} milliohms per metre, or ${round(me.milliohmsPerMetre / 10)} milliohms over a 100 mm run`,
+        `Carrying 10 A over that 100 mm run it gives off about ${round(heat10A, 2)} W as heat (I² × R)`,
+      ],
+    },
+    {
+      heading: 'How these figures are worked out',
+      body: `Weight per metre is thickness times width times 8.9 grams, from nickel's density of about 8.9 g/cm³. Resistance is ρ × length ÷ cross-section, using about 9.5 × 10⁻⁸ ohm-metres for nickel. They describe the strip as a piece of metal; they are not a current rating, because what a strip can safely carry depends on how well it is cooled and how long the current lasts. A pattern cut into the strip, such as an H type or a fuse neck, removes metal and so raises resistance and lowers weight at that point.`,
+    },
+    ...(other && them
+      ? [
+          {
+            heading: `${size.thickness} × ${size.width} or ${other.thickness} × ${other.width}`,
+            body: `The two stocked sizes differ by a factor of ${round(them.areaMm2 / me.areaMm2, 1)} in cross-section: ${round(me.areaMm2, 2)} mm² against ${round(them.areaMm2, 2)} mm². ${me.areaMm2 > them.areaMm2 ? 'This is the larger section, so it' : 'The other size, with the larger section,'} runs at ${round(Math.max(me.milliohmsPerMetre, them.milliohmsPerMetre) / Math.min(me.milliohmsPerMetre, them.milliohmsPerMetre), 1)} times lower resistance and heats ${round(Math.max(me.milliohmsPerMetre, them.milliohmsPerMetre) / Math.min(me.milliohmsPerMetre, them.milliohmsPerMetre), 1)} times less at the same current, at the price of more weight per metre (${round(Math.max(me.gramsPerMetre, them.gramsPerMetre))} g against ${round(Math.min(me.gramsPerMetre, them.gramsPerMetre))} g) and more weld energy. Neither is better in general: the right one is set by the current each cell connection carries and by the welder you have.`,
+          },
+        ]
+      : []),
+  ];
+};
+
+const sizeNumbersFaq = (size: StripSize) => {
+  const me = solidStrip(size.thicknessMm, size.widthMm);
+  return {
+    question: `How many metres are in 5 kg of ${size.thickness} × ${size.width} nickel strip?`,
+    answer: `About ${round(me.metresPerKg * 5, 0)} metres. Solid ${size.thickness} × ${size.width} strip weighs about ${round(me.gramsPerMetre)} g per metre, which is ${round(me.metresPerKg, 0)} metres per kilogram. Patterned strip has metal removed, so it gives more length per kilogram than the same size solid.`,
+  };
+};
+
+/**
+ * A worked example for the busbar page: a 0.5 mm × 20 mm nickel busbar run 150 mm between two
+ * terminals at 50 A, beside the same size in copper. An illustration of the method, not a rating.
+ */
+const busbarWorkedExample = (): LandingSection => {
+  const areaM2 = 0.5 * 20 * 1e-6;
+  const lengthM = 0.15;
+  const amps = 50;
+  const nickelOhms = (NICKEL_RESISTIVITY_OHM_M * lengthM) / areaM2;
+  const copperOhms = (COPPER_RESISTIVITY_OHM_M * lengthM) / areaM2;
+  return {
+    heading: 'Sizing a busbar: a worked example',
+    body: `Take a nickel busbar 0.5 mm thick and 20 mm wide, which is 10 mm² in cross-section, running 150 mm between two terminals at ${amps} A. Its resistance is ρ × L ÷ A: about ${round(nickelOhms * 1000, 1)} milliohms. The heat it gives off is I² × R: about ${round(amps * amps * nickelOhms, 1)} W. The same section in copper has about ${round(copperOhms * 1000, 2)} milliohms and gives off about ${round(amps * amps * copperOhms, 1)} W, roughly ${round(nickelOhms / copperOhms, 1)} times less, which is why copper carries the long, heavy runs in a pack and nickel is used where a weldable joint matters more than the last milliohm. The example shows the method. It is not a current rating; send the current, the length and the temperature rise you can accept, and the section is worked out against them.`,
+  };
+};
+
+/**
+ * Sections and questions added to the application pages, which were each about 350 words and
+ * answered only "what do you supply". These cover the next thing a buyer on the page is working
+ * out, in general engineering terms, with no figure that is not derived or already published.
+ */
+const APPLICATION_DEPTH: Readonly<Record<string, { sections: LandingSection[]; faqs?: LandingPage['faqs'] }>> = {
+  'nickel-strip-for-battery-pack-welding': {
+    sections: [
+      {
+        heading: 'What makes a spot weld repeatable',
+        body: 'Spot welding nickel strip to a cell is a resistance weld: current passes through the strip and the cell, and the heat is made where the two meet. Three things decide whether that joint forms the same way every time. The first is the strip surface. Oxide, fingerprints and moisture raise the contact resistance and move the heat to the wrong place, so strip is kept sealed and handled clean until it is on the cell. The second is the match between strip thickness and welder energy: thin strip needs less energy and less electrode force, and a pulse that is too strong blows a hole through it. The third is flatness, because strip that does not sit flat on the terminal welds unevenly from one end to the other.',
+      },
+      {
+        heading: 'Checking a weld before production',
+        body: 'The usual test is a peel test: pull the strip off a welded cell and look at what stays behind. A good weld tears the strip or lifts a nugget of cell metal with it. A weld that lets go cleanly at the interface was too cold. Run it on sample cells at the start of each shift and after any change of strip lot, electrode or welder setting. Trial lots for these tests start at the 5 kg minimum order, so a weld schedule can be settled on the real material before a bulk order is placed.',
+      },
+    ],
+    faqs: [
+      {
+        question: 'How should nickel strip be stored before welding?',
+        answer:
+          'Sealed and dry, away from moisture and chemical fumes, and handled with clean gloves. Oxide and skin oils raise the contact resistance at the weld, which is the usual cause of weak or inconsistent joints on strip that was fine when it left the works.',
+      },
+    ],
+  },
+  'nickel-strip-for-lithium-ion-battery-manufacturers': {
+    sections: [
+      {
+        heading: 'How a strip supplier is qualified',
+        body: 'Most battery makers qualify strip in stages: a sample lot, then a certificate and dimension check, then weld tests on sample cells, then a pilot batch, then scheduled volume. Each stage answers one question. Is the material what the certificate says it is? Does it measure what the drawing says? Does it weld the way your process needs? Does the next batch match the last? Supply is organised around those stages, with the batch traceable from the certificate to the coil.',
+      },
+      {
+        heading: 'What to check when strip arrives',
+        bullets: [
+          'Thickness and width against the drawing, with a micrometer and calipers, at several points along the length',
+          'Surface: no oxide staining, scratches or fingerprints on the weld face',
+          'Edges: clean, with no burr that could catch or cut a cell wrapper',
+          'Flatness: the strip lies flat on the terminal without lifting at the ends',
+          'Paperwork: the material test certificate carries the same batch number as the coil',
+        ],
+      },
+    ],
+    faqs: [
+      {
+        question: 'What checks should we run on incoming nickel strip?',
+        answer:
+          'Measure thickness and width at several points, inspect the surface and edges, confirm the strip lies flat, and match the batch number on the coil to the material test certificate. Then weld a sample set and peel-test it before releasing the lot to the line.',
+      },
+    ],
+  },
+  'nickel-busbar-for-battery-applications': {
+    sections: [busbarWorkedExample()],
+  },
+};
+
+const withDepth = (page: LandingPage): LandingPage => {
+  const depth = APPLICATION_DEPTH[page.slug];
+  return depth
+    ? { ...page, sections: [...page.sections, ...depth.sections], faqs: [...page.faqs, ...(depth.faqs ?? [])] }
+    : page;
+};
+
 export const LANDING_PAGES: readonly LandingPage[] = [
   H_TYPE_PAGE,
   MUMBAI_PAGE,
   TRADE_BUYER_PAGE,
   EXPORT_PAGE,
   ...STRIP_SIZES.map(stripSizePage),
-  ...APPLICATION_PAGES,
-  ...STATE_FACTS.map(stateLandingPage),
+  ...APPLICATION_PAGES.map(withDepth),
+  ...REGIONS.map(regionLandingPage),
 ];
 
 const LANDING_PAGES_BY_SLUG = new Map(LANDING_PAGES.map((page) => [page.slug, page]));
@@ -985,7 +1166,19 @@ export function parentCategoryFor(product: { name?: string | null; slug?: string
 /** Every landing path, for the sitemap and the router. */
 export const LANDING_PATHS: readonly string[] = LANDING_PAGES.map((page) => `/${page.slug}`);
 
-/** The state pages only, for the "also supplying" cross-links rendered on each landing page. */
-export const STATE_LANDING_PAGES: readonly { path: string; name: string }[] = STATE_FACTS.map(
-  (state) => ({ path: `/nickel-strip-manufacturer-in-${state.slug}`, name: state.name })
+/** The regional pages only, for the "also supplying" cross-links rendered on each landing page. */
+export const REGION_LANDING_PAGES: readonly { path: string; name: string }[] = REGIONS.map((region) => ({
+  path: `/nickel-strip-manufacturer-in-${region.slug}`,
+  name: region.name,
+}));
+
+/**
+ * The ten former state pages and the regional page that now covers each, for the 301s. The old
+ * URLs were indexed, so they must answer with a redirect rather than a 404: that carries what
+ * little they had earned across to the page that replaced them.
+ */
+export const STATE_PAGE_REDIRECTS: Readonly<Record<string, string>> = Object.fromEntries(
+  REGIONS.flatMap((region) =>
+    region.stateSlugs.map((state) => [`/nickel-strip-manufacturer-in-${state}`, `/nickel-strip-manufacturer-in-${region.slug}`])
+  )
 );

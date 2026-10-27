@@ -31,7 +31,7 @@
  */
 
 import { GUIDES, guidePath } from './guides.js';
-import { STATE_LANDING_PAGES } from './landingPages.js';
+import { REGION_LANDING_PAGES } from './landingPages.js';
 import { PRODUCT_LINKS } from './productLinks.js';
 
 export type ContextLink = { path: string; anchor: string };
@@ -125,7 +125,7 @@ const CATEGORY_DESTINATIONS: readonly (Destination & { slug: string })[] = [
 ];
 
 const CATEGORY_TOPICS = new Map(CATEGORY_DESTINATIONS.map((page) => [page.slug, page.topics]));
-/** The ten state pages: a buyer there is choosing a supplier, so the tags are about buying. */
+/** The regional pages: a buyer there is choosing a supplier, so the tags are about buying. */
 const STATE_TOPICS: readonly Topic[] = ['buying', 'purity'];
 
 /* ----- Products: topics and anchors are derived from the slug, which is stable. ----- */
@@ -207,7 +207,7 @@ const WANTS = {
   product: { products: 4, guides: 2, articles: 4, categories: 2 },
   landing: { products: 0, guides: 2, articles: 4, categories: 3 },
   guide: { products: 0, guides: 0, articles: 4, categories: 3 },
-  blog: { products: 0, guides: 2, articles: 0, categories: 2 },
+  blog: { products: 0, guides: 2, articles: 2, categories: 2 },
 } as const;
 
 const productPath = (slug: string) => `/product/${encodeURIComponent(slug)}`;
@@ -224,8 +224,8 @@ function allPages(): Page[] {
   for (const category of CATEGORY_DESTINATIONS) {
     pages.push({ ctx: { kind: 'landing', slug: category.slug }, path: category.path, topics: category.topics });
   }
-  for (const state of STATE_LANDING_PAGES) {
-    pages.push({ ctx: { kind: 'landing', slug: state.path.slice(1) }, path: state.path, topics: STATE_TOPICS });
+  for (const region of REGION_LANDING_PAGES) {
+    pages.push({ ctx: { kind: 'landing', slug: region.path.slice(1) }, path: region.path, topics: STATE_TOPICS });
   }
   for (const product of PRODUCT_FACTS) {
     pages.push({ ctx: { kind: 'product', slug: product.slug }, path: productPath(product.slug), topics: product.topics });
