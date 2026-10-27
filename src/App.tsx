@@ -360,7 +360,16 @@ export default function App() {
               of each page needing its own skeleton. Subtracting the ad bar keeps the
               reservation from adding a scrollbar when the bar is showing. */}
           <main
-            className="min-h-[calc(100svh-var(--adbar-height,0px))]"
+            // overflow-x-clip stops entrance animations producing a horizontal scrollbar.
+            // Product pages slide their two columns in from the sides (x: ±20 in
+            // ProductDetailPage), and while that runs the translated column sticks 4px past a
+            // 375px viewport, so the page can be scrolled sideways for the ~600ms it takes to
+            // settle. Measured: translateX(19.6px) with scrollWidth 379 at 0ms, transform none
+            // and 375 by 600ms.
+            //
+            // clip, not hidden: hidden makes this a scroll container, which would give the
+            // product image's lg:sticky nothing to travel within. clip just stops the paint.
+            className="min-h-[calc(100svh-var(--adbar-height,0px))] overflow-x-clip"
             style={{ paddingTop: 'var(--adbar-height, 0px)' }}
           >
             <BackNavButton />
