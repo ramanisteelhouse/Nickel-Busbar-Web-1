@@ -8,6 +8,7 @@
  *
  * Plain data, no React, and `.js` on relative imports: the Node serverless function loads this.
  */
+import { authorJsonLd } from './author.js';
 import { GUIDES, GUIDES_PATH, guidePath, type Guide } from './guides.js';
 import { PRODUCT_LINKS } from './productLinks.js';
 
@@ -52,7 +53,7 @@ export function guideJsonLd(guide: Guide): object[] {
       headline: guide.title,
       description: guide.description,
       image: [guideCoverUrl(guide)],
-      author: { '@type': 'Organization', name: SITE_NAME, url: GUIDE_SITE_URL },
+      author: authorJsonLd(),
       publisher: {
         '@type': 'Organization',
         name: SITE_NAME,

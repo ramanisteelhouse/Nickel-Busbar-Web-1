@@ -49,6 +49,8 @@ import { YEARS_IN_BUSINESS } from "./src/lib/heritage.js";
 import { PRODUCT_LINKS } from "./src/lib/productLinks.js";
 import { GUIDES, GUIDES_PATH, getGuideBySlug } from "./src/lib/guides.js";
 import { contextualLinks, type PageContext } from "./src/lib/contextualLinks.js";
+import { authorBoxContent, authorJsonLd } from "./src/lib/author.js";
+import { LITHIUM_ARTICLE, LITHIUM_ARTICLE_PATH, lithiumArticleJsonLd } from "./src/lib/lithiumArticle.js";
 import { blogCover } from "./src/lib/blogImage.js";
 import {
   GUIDES_INDEX_DESCRIPTION,
@@ -299,6 +301,25 @@ const productCardHtml = (product: ProductCardRow): string => {
 export const productListHtml = (products: ProductCardRow[]): string =>
   products.map(productCardHtml).filter(Boolean).join("");
 
+/**
+ * "About the author", the same facts ContextualLinks-style blocks give readers in AuthorBox.tsx
+ * (both read lib/author). The byline said only the company name; this says what the company is
+ * and where the claims can be checked.
+ */
+const authorBoxHtml = (): string => {
+  const box = authorBoxContent();
+  const facts = box.facts
+    .map((fact) =>
+      `<li>${escapeHtml(fact.text)}${
+        fact.href && fact.linkText ? `. <a href="${SITE_URL}${fact.href}">${escapeHtml(fact.linkText)}</a>` : ""
+      }</li>`
+    )
+    .join("");
+  return `<aside><h2>${escapeHtml(box.heading)}</h2><p>${escapeHtml(box.lead)}</p><ul>${facts}</ul><p>${escapeHtml(
+    box.contact.text
+  )} <a href="mailto:${escapeAttr(box.contact.email)}">${escapeHtml(box.contact.email)}</a></p></aside>`;
+};
+
 type BlogCardRow = { title: string; slug: string; excerpt: string | null; cover_image_url: string | null };
 
 /**
@@ -472,7 +493,7 @@ export async function renderBlogSnapshot(template: string, slug: string): Promis
     headline: post.title,
     description,
     ...(coverImageUrl ? { image: [coverImageUrl] } : {}),
-    author: { "@type": "Organization", name: post.author_name || SITE_NAME, url: SITE_URL },
+    author: authorJsonLd(post.author_name as string | null),
     publisher: { "@type": "Organization", name: SITE_NAME, logo: { "@type": "ImageObject", url: SITE_LOGO_URL } },
     mainEntityOfPage: { "@type": "WebPage", "@id": canonical },
     ...(publishedIso ? { datePublished: publishedIso } : {}),
@@ -638,6 +659,7 @@ export async function renderBlogSnapshot(template: string, slug: string): Promis
     ${productsHtml}
     ${ctaHtml}
     ${faqHtml}
+    ${authorBoxHtml()}
     ${typeof post.social_post_url === "string" && /^https?:\/\//i.test(post.social_post_url)
       ? `<p><a href="${escapeAttr(post.social_post_url)}" rel="noopener">See this on LinkedIn</a></p>`
       : ""}
@@ -672,37 +694,52 @@ export async function renderBlogSnapshot(template: string, slug: string): Promis
 }
 
 export async function renderNickelStripsLithiumSnapshot(template: string): Promise<SnapshotResult> {
-  const canonical = `${SITE_URL}/blog/nickel-strips-lithium-batteries`;
-  const title = "Nickel Strips for Lithium-Ion Batteries | Manufacturer Guide";
-  const description =
-    "We are a manufacturer of nickel strips used in lithium-ion batteries, delivering consistent quality and competitive pricing for battery manufacturers.";
+  // The article is defined in code (src/lib/lithiumArticle.ts) and shared with the React page, so
+  // the HTML a crawler is handed and the page a visitor sees say the same thing. It was four
+  // paragraphs about the company; it is now a buyer's article, and this renders all of it.
+  const article = LITHIUM_ARTICLE;
+  const canonical = `${SITE_URL}${LITHIUM_ARTICLE_PATH}`;
+  const cta = blogCtaFor(article.slug);
+  const products = guideProducts(article);
 
-  const articleJsonLd = {
-    "@context": "https://schema.org",
-    "@type": "Article",
-    headline: "Nickel Strips for Lithium-Ion Batteries: Why Manufacturers Choose Us",
-    description,
-    author: { "@type": "Organization", name: SITE_NAME, url: SITE_URL },
-    publisher: { "@type": "Organization", name: SITE_NAME, logo: { "@type": "ImageObject", url: SITE_LOGO_URL } },
-    mainEntityOfPage: { "@type": "WebPage", "@id": canonical },
-    datePublished: "2026-05-14",
-  };
-
-  const snapshotBody = `<article>
-    <h1>Nickel Strips for Lithium-Ion Batteries: Why Manufacturers Choose Us</h1>
-    <p>Nickel strips are a critical component in lithium-ion battery packs because they provide strong conductivity, stable weldability, and reliable performance under demanding charging cycles.</p>
-    <p>As a dedicated manufacturer of nickel strips used in lithium-ion batteries, we produce precision strips for battery manufacturers across India and selected global markets. Our production focus is consistency in thickness, controlled purity, and dependable electrical performance.</p>
-    <p>We support lithium-ion battery manufacturers with competitive pricing by combining scalable manufacturing, disciplined quality control, and efficient supply planning. This helps customers reduce procurement risk while maintaining product quality in high-volume battery assembly.</p>
-    <p>Whether your requirement is for EV battery packs, consumer electronics, or energy storage systems, we provide technically aligned nickel strip solutions with timely delivery and responsive support.</p>
-    ${contextualLinksHtml({ kind: "blog", slug: "nickel-strips-lithium-batteries" })}
-  </article>`;
+  const productsHtml = products.length
+    ? `<section><h2>Products covered in this article</h2><ul>${products
+        .map(
+          (product) =>
+            `<li><a href="${SITE_URL}/product/${encodeURIComponent(product.slug)}">${escapeHtml(product.name)}</a></li>`
+        )
+        .join("")}</ul></section>`
+    : "";
+  const ctaHtml = `<section><h2>${escapeHtml(cta.heading)}</h2><p>${escapeHtml(cta.body)}</p><p><a href="${SITE_URL}${cta.link.path}">${escapeHtml(cta.link.label)}</a></p></section>`;
+  const faqHtml = `<section><h2>Frequently Asked Questions</h2>${article.faqs
+    .map((faq) => `<h3>${escapeHtml(faq.question)}</h3><p>${escapeHtml(faq.answer)}</p>`)
+    .join("")}</section>`;
 
   const html = injectHead(template, {
-    title,
-    description,
+    title: article.metaTitle,
+    description: article.description,
     canonical,
-    jsonLd: [articleJsonLd],
-    snapshotBody,
+    ogImage: `${SITE_URL}${article.coverImage}`,
+    jsonLd: lithiumArticleJsonLd(),
+    // The body is authored in this repository, not user input, so it is injected as-is: the same
+    // trust boundary the guides and blog snapshots rely on.
+    snapshotBody: `<article>
+    <nav aria-label="Breadcrumb"><a href="${SITE_URL}/">Home</a> › <a href="${SITE_URL}/blog">Blog</a> › ${escapeHtml(article.title)}</nav>
+    <h1>${escapeHtml(article.title)}</h1>
+    <p><a href="${SITE_URL}/about">${escapeHtml(SITE_NAME)}</a> &middot; Published <time datetime="${article.datePublished}">${formatGuideDate(article.datePublished)}</time> &middot; Updated <time datetime="${article.dateModified}">${formatGuideDate(article.dateModified)}</time></p>
+    <p><strong>${escapeHtml(article.keyAnswer)}</strong></p>
+    <img src="${escapeAttr(`${SITE_URL}${article.coverImage}`)}" alt="${escapeAttr(article.coverAlt)}" width="900" height="900" fetchpriority="high" />
+    ${article.html}
+    ${productsHtml}
+    ${ctaHtml}
+    ${faqHtml}
+    ${authorBoxHtml()}
+    ${contextualLinksHtml({ kind: "blog", slug: article.slug }, [
+      cta.link.path,
+      ...products.map((product) => `/product/${product.slug}`),
+    ])}
+    <p><a href="${SITE_URL}/blog">All articles</a> &middot; <a href="${SITE_URL}${GUIDES_PATH}">Nickel strip guides</a> &middot; <a href="${SITE_URL}/products">Nickel strip and busbar products</a></p>
+  </article>`,
   });
 
   return { status: 200, html };
@@ -1462,6 +1499,7 @@ export function renderGuideSnapshot(template: string, pathname: string): Snapsho
     ${ctaHtml}
     ${faqHtml}
     ${moreHtml}
+    ${authorBoxHtml()}
     ${contextualLinksHtml({ kind: "guide", slug: guide.slug }, [cta.link.path])}
     <p><a href="${SITE_URL}${GUIDES_PATH}">All nickel strip guides</a> &middot; <a href="${SITE_URL}/blog">Technical articles</a> &middot; <a href="${SITE_URL}/products">Nickel strip and busbar products</a></p>
   </article>`,
@@ -1602,7 +1640,7 @@ export async function renderBlogListSnapshot(template: string): Promise<Snapshot
     : "";
   const moreArticlesHtml = `<section><h2>More nickel strip articles</h2><ul>${[
     ...olderPosts.map((post) => ({ href: `${SITE_URL}/blog/${encodeURIComponent(post.slug)}`, text: post.title })),
-    { href: `${SITE_URL}/blog/nickel-strips-lithium-batteries`, text: "Nickel strips for lithium-ion batteries: a manufacturer guide" },
+    { href: `${SITE_URL}/blog/nickel-strips-lithium-batteries`, text: "Nickel strips for lithium-ion batteries: what to specify and how to buy" },
   ]
     .map((item) => `<li><a href="${escapeAttr(item.href)}">${escapeHtml(item.text)}</a></li>`)
     .join("")}</ul></section>`;

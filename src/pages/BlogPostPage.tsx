@@ -6,7 +6,9 @@ import { buildImageAlt, encodePathSegment, sanitizeRichHtml } from '../lib/utils
 import { BlogFaqSection } from '../components/BlogFaqSection';
 import { BlogCtaBar, BlogCtaBlock } from '../components/BlogCtaBlock';
 import { BlogShare } from '../components/BlogShare';
+import { AuthorBox } from '../components/AuthorBox';
 import { ContextualLinks } from '../components/ContextualLinks';
+import { authorJsonLd } from '../lib/author';
 import { blogCtaFor } from '../lib/blogCta';
 import { blogCover } from '../lib/blogImage';
 import { blogProductsFor, BLOG_PRODUCTS_HEADING } from '../lib/blogProducts';
@@ -136,7 +138,7 @@ export const BlogPostPage: React.FC = () => {
     headline: post.title,
     description,
     ...(coverImageUrl ? { image: [coverImageUrl] } : {}),
-    author: { '@type': 'Organization', name: post.author_name || SITE_NAME, url: SITE_URL },
+    author: authorJsonLd(post.author_name),
     publisher: {
       '@type': 'Organization',
       name: SITE_NAME,
@@ -270,6 +272,8 @@ export const BlogPostPage: React.FC = () => {
         <BlogCtaBlock cta={cta} />
 
         <BlogFaqSection items={faqItems} />
+
+        <AuthorBox />
 
         <ContextualLinks
           context={{ kind: 'blog', slug: post.slug || decodedSlug }}

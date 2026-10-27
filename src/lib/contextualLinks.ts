@@ -100,7 +100,7 @@ const ARTICLES: ReadonlyArray<{ slug: string; anchor: string; topics: readonly T
   { slug: 'why-nickel-purity-matters', anchor: 'Why nickel purity matters in energy storage systems', topics: ['purity', 'storage', 'material', 'buying'] },
   { slug: '5-nickel-strip-buying-mistakes', anchor: 'Five nickel strip buying mistakes that cost pack makers money', topics: ['buying', 'purity'] },
   { slug: 'nickel-strip-weight-per-metre', anchor: 'Nickel strip weight per metre: chart, formula and kg-to-metre conversion', topics: ['sizing', 'plain', 'buying'] },
-  { slug: 'nickel-strips-lithium-batteries', anchor: 'Nickel strips for lithium-ion batteries: a manufacturer guide', topics: ['ev', 'storage', 'purity', 'cells'] },
+  { slug: 'nickel-strips-lithium-batteries', anchor: 'Nickel strips for lithium-ion batteries: what to specify and how to buy', topics: ['ev', 'storage', 'purity', 'cells'] },
 ];
 
 const ARTICLE_DESTINATIONS: readonly Destination[] = ARTICLES.map((article) => ({
