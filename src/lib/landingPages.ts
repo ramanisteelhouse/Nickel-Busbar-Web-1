@@ -272,11 +272,21 @@ const stateDescription = (state: StateFacts) => {
   return description;
 };
 
+/**
+ * The commercial words a buyer types next to the product (manufacturer, supplier), kept inside
+ * 60 characters so the result line is not cut. Trailing detail is added only where it still fits:
+ * "Andhra Pradesh" leaves no room for it, "Gujarat" does, and a title that is longer for one state
+ * than another is better than one that is truncated for some.
+ */
+const stateTitle = (stateName: string): string => {
+  const base = `Nickel Strip Manufacturer & Supplier in ${stateName}`;
+  const tail = [' | 5 kg MOQ', ' | Ramani Steel'].find((candidate) => (base + candidate).length <= 60);
+  return tail ? base + tail : base;
+};
+
 const stateLandingPage = (state: StateFacts): LandingPage => ({
   slug: `nickel-strip-manufacturer-in-${state.slug}`,
-  // "| Ramani Steel" rather than "| Supplier": it keeps every state's title inside the 50-60
-  // character window and puts the brand in the SERP line.
-  title: `Nickel Strip Manufacturer in ${state.name} | Ramani Steel`,
+  title: stateTitle(state.name),
   description: stateDescription(state),
   h1: `Nickel Strip Manufacturer Supplying ${state.name}`,
   intro: `Ramani Steel House supplies nickel strip to battery pack makers, electronics manufacturers and engineering firms across ${state.name} from its Mumbai works. Pure nickel strip, H type nickel strip and nickel busbar are despatched to ${state.cities.slice(0, -1).join(', ')} and ${state.cities[state.cities.length - 1]}, cut to the cell format and pack layout you build to.`,
@@ -548,7 +558,7 @@ const STRIP_SIZES: readonly StripSize[] = [
     slug: 'pure-nickel-strip-0-15mm-x-10mm',
     thickness: '0.15 mm',
     width: '10 mm',
-    title: 'Pure Nickel Strip 0.15mm x 10mm | Manufacturer',
+    title: 'Pure Nickel Strip 0.15mm x 10mm | Manufacturer & Supplier',
     description:
       'Pure nickel strip 0.15mm thick x 10mm wide, 99.8% nickel, UNS N02201. Made in Mumbai for 18650 and 21700 battery pack welding. 5 kg MOQ, 7 day delivery.',
     suitedTo:
@@ -559,7 +569,7 @@ const STRIP_SIZES: readonly StripSize[] = [
     slug: 'pure-nickel-strip-0-20mm-x-15mm',
     thickness: '0.20 mm',
     width: '15 mm',
-    title: 'Pure Nickel Strip 0.20mm x 15mm | Manufacturer',
+    title: 'Pure Nickel Strip 0.20mm x 15mm | Manufacturer & Supplier',
     description:
       'Pure nickel strip 0.20mm x 15mm wide, 99.8% nickel, UNS N02201. Higher current capacity for 21700 and 32700 packs. 5 kg MOQ, 7 day delivery from Mumbai.',
     suitedTo:
@@ -747,7 +757,7 @@ const EXPORT_PAGE: LandingPage = {
 const APPLICATION_PAGES: readonly LandingPage[] = [
   {
     slug: 'nickel-strip-for-battery-pack-welding',
-    title: 'Nickel Strip for Battery Pack Welding | Supplier',
+    title: 'Battery Pack Welding Nickel Strip | Manufacturer, Supplier',
     description:
       'Nickel strip for battery pack spot welding: 99.8% pure nickel, 0.10-0.50mm, cut to cell pitch. Welds cleanly on 18650, 21700 and 32700 packs. Made in Mumbai.',
     h1: 'Nickel Strip for Battery Pack Welding',
@@ -805,7 +815,7 @@ const APPLICATION_PAGES: readonly LandingPage[] = [
   },
   {
     slug: 'nickel-strip-for-lithium-ion-battery-manufacturers',
-    title: 'Nickel Strip for Lithium-Ion Battery Manufacturers',
+    title: 'Nickel Strip Supplier for Lithium-Ion Battery Manufacturers',
     description:
       'Bulk nickel strip for lithium-ion battery manufacturers: 99.8% pure nickel, custom slitting, test certificates, PAN India supply and export to 17+ countries.',
     h1: 'Nickel Strip for Lithium-Ion Battery Manufacturers',
@@ -862,7 +872,7 @@ const APPLICATION_PAGES: readonly LandingPage[] = [
   },
   {
     slug: 'nickel-busbar-for-battery-applications',
-    title: 'Nickel Busbar for Battery Applications | India',
+    title: 'Nickel Busbar Manufacturer & Supplier for Batteries | India',
     description:
       'Nickel busbar for battery applications: pure nickel interconnects for EV, storage and industrial packs. Custom width and thickness, made in Mumbai since 1974.',
     h1: 'Nickel Busbar for Battery Applications',

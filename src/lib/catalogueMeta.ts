@@ -17,7 +17,7 @@ export type CatalogueMeta = { title: string; description: string };
 
 /** /products — the catalogue hub every product URL should be reachable from. */
 export const PRODUCTS_META: CatalogueMeta = {
-  title: 'Nickel Strip Products | Manufacturer & Exporter India',
+  title: 'Nickel Strip Price Per Kg | Manufacturer & Exporter India',
   description:
     'Nickel strips, nickel-plated strips and battery tabs manufactured in Mumbai, India. PAN India supply, export to 17+ countries. Bulk and custom quotes.',
 };

@@ -15,6 +15,7 @@
     "audit:thumbnails": "node scripts/audit-thumbnails.mjs",
     "indexnow": "tsx scripts/indexnow.ts",
     "check:links": "tsx scripts/check-contextual-links.ts",
+    "check:titles": "tsx scripts/check-titles.ts",
     "build:cloudflare": "npm run build && tsx scripts/strip-cloudflare-incompatibles.ts",
     "cf:dev": "wrangler dev",
     "cf:deploy": "npm run build:cloudflare && wrangler deploy"

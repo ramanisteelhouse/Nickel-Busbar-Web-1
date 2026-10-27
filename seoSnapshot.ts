@@ -299,6 +299,30 @@ const productCardHtml = (product: ProductCardRow): string => {
 export const productListHtml = (products: ProductCardRow[]): string =>
   products.map(productCardHtml).filter(Boolean).join("");
 
+type BlogCardRow = { title: string; slug: string; excerpt: string | null; cover_image_url: string | null };
+
+/**
+ * One article as a card: the cover as a real element, then the title as a heading and the
+ * excerpt. Shared by the /blog index (h2) and the homepage's latest-articles block (h3), which
+ * had cards with covers in the React page and none in the HTML a crawler is handed.
+ *
+ * Own-origin cover (see lib/blogImage), and a product photo when a post has none, so every card
+ * has a picture an image crawler can index. 1000x1000 because that is the size covers are
+ * uploaded at (see supabase/README.md) and what the rendered page declares.
+ */
+export const blogCardHtml = (post: BlogCardRow, level: 2 | 3): string => {
+  const href = `${SITE_URL}/blog/${encodeURIComponent(post.slug)}`;
+  const postCover = blogCover(post.slug, post.cover_image_url);
+  const cover = postCover.kind !== "brand"
+    ? `<a href="${href}"><img src="${escapeAttr(`${SITE_URL}${postCover.path}`)}" alt="${escapeAttr(
+        buildImageAlt(post.title)
+      )}" width="1000" height="1000" loading="lazy" decoding="async" /></a>`
+    : "";
+  // The same fallback sentence the rendered page uses, so an excerpt-less post reads the same way.
+  const excerpt = escapeHtml(post.excerpt || "Read the full article for details.");
+  return `<article>${cover}<h${level}><a href="${href}">${escapeHtml(post.title)}</a></h${level}><p>${excerpt}</p></article>`;
+};
+
 /**
  * The topic-matched links for a page (src/lib/contextualLinks.ts), as the sections a crawler
  * reads. ContextualLinks.tsx renders the same blocks for readers, so the two cannot disagree.
@@ -753,6 +777,10 @@ export async function renderProductListSnapshot(template: string, isCategoriesRo
   return { status: 200, html };
 }
 
+// Where the homepage snapshot gets its database-backed blocks; see homeRangeHtml below.
+const HOME_RANGE_TOKEN = "%%HOME_PRODUCT_RANGE%%";
+const HOME_ARTICLES_TOKEN = "%%HOME_LATEST_ARTICLES%%";
+
 // The content routes below have no per-URL database record behind them, so before this they
 // were served the unmodified dist/index.html — which carries the *homepage's* title and, worse,
 // `<link rel="canonical" href="https://www.nickelbusbar.com/">`. Every non-rendering crawler
@@ -846,12 +874,8 @@ const STATIC_ROUTE_SEO: Record<StaticSnapshotRoute, { title: string; description
         (spec) => `<tr><th>${escapeHtml(spec.label)}</th><td>${escapeHtml(spec.value)}</td></tr>`
       ).join("")}</tbody>
     </table>
-    <h2>Product range</h2>
-    <ul>${HOME_VARIANTS.map(
-      (variant) =>
-        `<li><a href="${SITE_URL}${escapeAttr(variant.cta)}"><strong>${escapeHtml(variant.title)}</strong></a>` +
-        ` — ${escapeHtml(variant.spec)}. ${escapeHtml(variant.note)}</li>`
-    ).join("")}</ul>
+    ${HOME_RANGE_TOKEN}
+    ${HOME_ARTICLES_TOKEN}
     <h2>Applications</h2>
     <ul>${HOME_APPLICATIONS.map((item) => `<li>${escapeHtml(item)}</li>`).join("")}</ul>
     <h2>Industries served</h2>
@@ -1448,6 +1472,61 @@ export function isStaticSnapshotRoute(pathname: string): boolean {
 // so existing importers of this module keep working.
 export { STATIC_SNAPSHOT_ROUTES, NOINDEX_SNAPSHOT_ROUTES, SPA_ONLY_ROUTES } from "./src/lib/snapshotRoutes.js";
 
+/**
+ * The homepage's product range and latest articles, with their photographs.
+ *
+ * The React page renders a card grid of real products and four article covers. The snapshot had a
+ * text list of three generic variants (Pure Nickel Strips, Nickel Plated Strips, Custom Sizes) that
+ * matched neither the catalogue nor the grid, and no images at all, so a crawler that runs no
+ * scripts saw a homepage with one picture. These are real products and real posts, as cards with
+ * a linked <img> and descriptive alt text, like every other grid in this file.
+ *
+ * Each block is best-effort and falls back to what the snapshot showed before: the homepage is
+ * the most-fetched URL on the site, and a database hiccup must not cost it its copy.
+ */
+
+const homeRangeFallbackHtml = (): string =>
+  `<h2>Product range</h2><ul>${HOME_VARIANTS.map(
+    (variant) =>
+      `<li><a href="${SITE_URL}${escapeAttr(variant.cta)}"><strong>${escapeHtml(variant.title)}</strong></a>` +
+      ` — ${escapeHtml(variant.spec)}. ${escapeHtml(variant.note)}</li>`
+  ).join("")}</ul>`;
+
+async function homeRangeHtml(): Promise<string> {
+  try {
+    const products = await query<ProductCardRow>(
+      `SELECT p.slug, p.name, p.image, p.dimensions, p.seo_heading
+         FROM products p
+        ORDER BY p.is_featured DESC, p.name
+        LIMIT 6`
+    );
+    return products.length
+      ? `<h2>Product range</h2><ul>${productListHtml(products)}</ul><p><a href="${SITE_URL}/products">All nickel strip and busbar products</a></p>`
+      : homeRangeFallbackHtml();
+  } catch (error) {
+    console.warn("[snapshot] Homepage product range unavailable; rendering the text list.", error);
+    return homeRangeFallbackHtml();
+  }
+}
+
+async function homeArticlesHtml(): Promise<string> {
+  try {
+    const posts = await query<BlogCardRow>(
+      `SELECT title, slug, excerpt, cover_image_url FROM blog_posts
+        WHERE status = 'published' AND (published_at IS NULL OR published_at <= now())
+          AND slug IS NOT NULL AND slug <> ''
+        ORDER BY published_at DESC NULLS LAST, id DESC
+        LIMIT 4`
+    );
+    return posts.length
+      ? `<h2>Latest nickel strip articles</h2>${posts.map((post) => blogCardHtml(post, 3)).join("")}`
+      : "";
+  } catch (error) {
+    console.warn("[snapshot] Homepage articles unavailable; omitting the block.", error);
+    return "";
+  }
+}
+
 export async function renderStaticRouteSnapshot(template: string, pathname: string): Promise<SnapshotResult> {
   // hasOwnProperty rather than a bare lookup: `/constructor` and `/toString` would otherwise
   // resolve to inherited Object members and pass the truthiness check below with no title.
@@ -1462,7 +1541,11 @@ export async function renderStaticRouteSnapshot(template: string, pathname: stri
     canonical: `${SITE_URL}${pathname}`,
     ogImage: SITE_OG_IMAGE_URL,
     jsonLd: route.jsonLd,
-    snapshotBody: route.body,
+    snapshotBody: route.body.includes(HOME_RANGE_TOKEN)
+      ? route.body
+          .replace(HOME_RANGE_TOKEN, await homeRangeHtml())
+          .replace(HOME_ARTICLES_TOKEN, await homeArticlesHtml())
+      : route.body,
   });
 
   return { status: 200, html };
@@ -1507,28 +1590,7 @@ export async function renderBlogListSnapshot(template: string): Promise<Snapshot
   const olderPosts = posts.slice(20);
   const postsHtml = posts.length
     ? featuredPosts
-        .map((post) => {
-          const href = `${SITE_URL}/blog/${encodeURIComponent(post.slug)}`;
-          // The cover art as a real element, matching what /products does for its grid. The
-          // index rendered twenty links and no pictures, so an image crawler saw nothing here.
-          // 1000x1000 because that is the size covers are uploaded at (see supabase/README.md)
-          // and what the rendered page declares; the old 600x338 described a crop that does not
-          // exist, which is a layout-shift hint pointing at the wrong aspect ratio.
-          // Own-origin cover (see lib/blogImage), and a product photo when a post has none, so
-          // every card on the index has a picture an image crawler can index.
-          const postCover = blogCover(post.slug, post.cover_image_url);
-          const cover = postCover.kind !== "brand"
-            ? `<a href="${href}"><img src="${escapeAttr(`${SITE_URL}${postCover.path}`)}" alt="${escapeAttr(
-                buildImageAlt(post.title)
-              )}" width="1000" height="1000" loading="lazy" decoding="async" /></a>`
-            : "";
-          // The same fallback sentence the rendered page uses, so an excerpt-less post reads the
-          // same way in both.
-          const excerpt = escapeHtml(post.excerpt || "Read the full article for details.");
-          return `<article>${cover}<h2><a href="${href}">${escapeHtml(
-            post.title
-          )}</a></h2><p>${excerpt}</p></article>`;
-        })
+        .map((post) => blogCardHtml(post, 2))
         .join("")
     : "";
   const moreArticlesHtml = `<section><h2>More nickel strip articles</h2><ul>${[
