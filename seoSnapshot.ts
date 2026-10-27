@@ -565,8 +565,28 @@ export async function renderBlogSnapshot(template: string, slug: string): Promis
   // snippet or an assistant quotes, and it cannot be quoted from halfway down the article.
   const keyAnswer = typeof post.key_answer === "string" ? post.key_answer.trim() : "";
   const keyAnswerHtml = keyAnswer ? `<p><strong>${escapeHtml(keyAnswer)}</strong></p>` : "";
+  // Who wrote it and when, as text. The dates were only in the JSON-LD and the React page, so a
+  // fetcher that reads the HTML without running scripts (which is how assistants retrieve a page
+  // to quote it) saw an undated article, and recency is one of the things they rank on.
+  const bylineDate = (iso: string | null) => {
+    const parsed = iso ? new Date(iso) : null;
+    return parsed && !Number.isNaN(parsed.getTime())
+      ? {
+          iso: parsed.toISOString(),
+          label: parsed.toLocaleDateString("en-IN", { year: "numeric", month: "long", day: "numeric", timeZone: "Asia/Kolkata" }),
+        }
+      : null;
+  };
+  const publishedOn = bylineDate(publishedIso);
+  const updatedOn = bylineDate(modifiedIso);
+  const showUpdated =
+    publishedOn && updatedOn && Date.parse(updatedOn.iso) - Date.parse(publishedOn.iso) >= 24 * 3_600_000 && updatedOn.label !== publishedOn.label;
+  const bylineHtml = `<p>${escapeHtml(String(post.author_name || SITE_NAME))}${
+    publishedOn ? ` &middot; Published <time datetime="${publishedOn.iso}">${publishedOn.label}</time>` : ""
+  }${showUpdated && updatedOn ? ` &middot; Updated <time datetime="${updatedOn.iso}">${updatedOn.label}</time>` : ""}</p>`;
   const snapshotBody = `<article>
     <h1>${escapeHtml(post.title as string)}</h1>
+    ${bylineHtml}
     ${keyAnswerHtml}
     ${coverImageHtml}
     ${(post.content as string) || ""}

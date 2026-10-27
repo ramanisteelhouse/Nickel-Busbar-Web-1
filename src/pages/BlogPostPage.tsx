@@ -19,7 +19,7 @@ const formatDate = (value: string | null | undefined) => {
   if (!value) return '';
   const parsed = new Date(value);
   if (Number.isNaN(parsed.getTime())) return '';
-  return parsed.toLocaleDateString('en-IN', { year: 'numeric', month: 'long', day: 'numeric' });
+  return parsed.toLocaleDateString('en-IN', { year: 'numeric', month: 'long', day: 'numeric', timeZone: 'Asia/Kolkata' });
 };
 
 export const BlogPostPage: React.FC = () => {
@@ -114,6 +114,12 @@ export const BlogPostPage: React.FC = () => {
   const coverImageAlt = post.cover_image_alt?.trim() || buildImageAlt(post.title, 'blog article cover');
   const publishedIso = post.published_at || post.created_at || null;
   const modifiedIso = post.updated_at || publishedIso;
+  // Mirrors the byline in renderBlogSnapshot: shown only for a real edit, not for the row being
+  // touched on the day it was published.
+  const showUpdated =
+    Boolean(publishedIso && modifiedIso) &&
+    Date.parse(modifiedIso as string) - Date.parse(publishedIso as string) >= 24 * 3_600_000 &&
+    formatDate(modifiedIso) !== formatDate(publishedIso);
   const faqItems = post.faq_items || [];
   const keyAnswer = post.key_answer?.trim();
   // The next step for a reader of this article; see lib/blogCta.
@@ -187,7 +193,15 @@ export const BlogPostPage: React.FC = () => {
             {formatDate(publishedIso) ? (
               <>
                 <span aria-hidden="true">•</span>
+                <span>Published</span>
                 <time dateTime={publishedIso ?? undefined}>{formatDate(publishedIso)}</time>
+                {showUpdated ? (
+                  <>
+                    <span aria-hidden="true">•</span>
+                    <span>Updated</span>
+                    <time dateTime={modifiedIso ?? undefined}>{formatDate(modifiedIso)}</time>
+                  </>
+                ) : null}
               </>
             ) : null}
           </div>
