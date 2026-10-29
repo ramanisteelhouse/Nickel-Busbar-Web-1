@@ -1,6 +1,8 @@
+import { createHash } from "crypto";
+import { execFileSync } from "child_process";
 import { existsSync, readFileSync, writeFileSync } from "fs";
 import path from "path";
-import { LANDING_PATHS } from "../src/lib/landingPages.js";
+import { LANDING_PAGES, LANDING_PATHS } from "../src/lib/landingPages.js";
 import { productImageUrl } from "../src/lib/productImage.js";
 import { GUIDES, GUIDES_PATH, guidePath } from "../src/lib/guides.js";
 
@@ -32,6 +34,44 @@ const staticPages: Array<{ path: string; changefreq: string; priority: string; l
     priority: path === "/h-type-nickel-strip" ? "0.9" : "0.7",
   })),
 ];
+
+/**
+ * lastmod must mean "the content changed". Stamping every page with the build date told Bing (and
+ * through it Copilot) that 39 of 72 URLs changed on every deploy, which is how a search engine
+ * learns to ignore the field. The ledger records a hash of each page's real content and the date
+ * that hash was first seen; an unchanged page keeps its old date. A page with no ledger entry is
+ * dated from the last git commit that touched its source (full clones only), else today.
+ */
+const LEDGER_PATH = path.resolve(process.cwd(), "scripts/sitemap-lastmod.json");
+type Ledger = Record<string, { hash: string; lastmod: string }>;
+const ledger: Ledger = existsSync(LEDGER_PATH) ? JSON.parse(readFileSync(LEDGER_PATH, "utf-8")) : {};
+const nextLedger: Ledger = {};
+
+const hashOf = (value: unknown) =>
+  createHash("sha256").update(typeof value === "string" ? value : JSON.stringify(value)).digest("hex").slice(0, 16);
+const readSources = (files: string[]) => files.map((file) => (existsSync(file) ? readFileSync(file, "utf-8") : "")).join("\n");
+const todayStamp = () => new Date().toISOString().slice(0, 10);
+
+function gitDate(files: string[]): string | null {
+  if (files.length === 0) return null;
+  try {
+    const out = execFileSync("git", ["log", "-1", "--format=%cs", "--", ...files], {
+      encoding: "utf-8",
+      stdio: ["ignore", "pipe", "ignore"],
+    }).trim();
+    return /^\d{4}-\d{2}-\d{2}$/.test(out) ? out : null;
+  } catch {
+    return null;
+  }
+}
+
+function stamp(key: string, content: unknown, sourceFiles: string[] = []): string {
+  const hash = hashOf(content);
+  const previous = ledger[key];
+  const lastmod = !previous ? gitDate(sourceFiles) ?? todayStamp() : previous.hash === hash ? previous.lastmod : todayStamp();
+  nextLedger[key] = { hash, lastmod };
+  return lastmod;
+}
 
 type SitemapImage = { loc: string; title: string };
 
@@ -66,12 +106,25 @@ const toDateStamp = (value?: string | Date | null) => {
 async function main() {
   let degraded = false;
   const today = new Date().toISOString().slice(0, 10);
-  const urls: SitemapUrl[] = staticPages.map((page) => ({
-    loc: `${SITE_URL}${page.path}`,
-    lastmod: page.lastmod ?? today,
-    changefreq: page.changefreq,
-    priority: page.priority,
-  }));
+  const landingByPath = new Map(LANDING_PAGES.map((page) => [`/${page.slug}`, page]));
+  const pageSources: Record<string, string[]> = {
+    "/": ["src/pages/HomePage.tsx", "src/lib/homeContent.ts"],
+    "/products": ["src/pages/ProductListingPage.tsx", "src/lib/catalogueMeta.ts"],
+    "/about": ["src/pages/AboutPage.tsx"],
+    "/contact": ["src/pages/ContactPage.tsx", "src/lib/contact.ts"],
+    "/export-enquiry": ["src/pages/ExportEnquiryPage.tsx"],
+    "/calculator": ["src/pages/CalculatorPage.tsx"],
+    "/blog": ["src/pages/BlogListingPage.tsx"],
+    "/blog/nickel-strips-lithium-batteries": ["src/lib/lithiumArticle.ts", "src/pages/BlogNickelStripsLithiumPage.tsx"],
+  };
+  const urls: SitemapUrl[] = staticPages.map((page) => {
+    const landing = landingByPath.get(page.path);
+    const sources = pageSources[page.path] ?? [];
+    const lastmod =
+      page.lastmod ??
+      (landing ? stamp(page.path, landing, ["src/lib/landingPages.ts"]) : stamp(page.path, readSources(sources), sources));
+    return { loc: `${SITE_URL}${page.path}`, lastmod, changefreq: page.changefreq, priority: page.priority };
+  });
 
   // The DB import is dynamic (and every query below independently guarded) so a missing
   // build-time DB connection never fails the build — it just falls back to static pages.
@@ -79,13 +132,16 @@ async function main() {
     const { query } = await import("../db.js");
 
     try {
-      const products = await query<{ slug: string; name: string | null; image: string | null }>(
-        `SELECT slug, name, image FROM products WHERE slug IS NOT NULL AND slug <> '' ORDER BY id`
+      // The whole row is hashed except `image` (a signed URL that changes on every read), `stock`
+      // (a running count, not page copy) and the id/created_at bookkeeping columns.
+      const products = await query<{ slug: string; name: string | null; image: string | null; [key: string]: unknown }>(
+        `SELECT * FROM products WHERE slug IS NOT NULL AND slug <> '' ORDER BY id`
       );
       for (const product of products) {
+        const { image: _image, stock: _stock, id: _id, created_at: _createdAt, ...content } = product;
         urls.push({
           loc: `${SITE_URL}/product/${encodeURIComponent(product.slug)}`,
-          lastmod: today,
+          lastmod: stamp(`/product/${product.slug}`, content, ["src/pages/ProductDetailPage.tsx"]),
           changefreq: "weekly",
           priority: "0.6",
           // productImageUrl resolves to the synced WebP on our own origin, never the signed
@@ -163,6 +219,9 @@ async function main() {
   }
 
   writeFileSync(outputPath, xml, "utf-8");
+  // Sorted so the ledger diff in git shows only real changes.
+  const sortedLedger = Object.fromEntries(Object.entries(nextLedger).sort(([a], [b]) => a.localeCompare(b)));
+  writeFileSync(LEDGER_PATH, JSON.stringify(sortedLedger, null, 2) + "\n", "utf-8");
   console.log(`[sitemap] Wrote ${urls.length} URL(s) to public/sitemap.xml`);
 }
 
