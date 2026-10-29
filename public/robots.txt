@@ -55,4 +55,8 @@ Allow: /
 User-agent: FacebookBot
 Allow: /
 
+# X (link cards; Grok answers draw on X posts and the live web)
+User-agent: Twitterbot
+Allow: /
+
 Sitemap: https://www.nickelbusbar.com/sitemap.xml

@@ -24,6 +24,8 @@ export const SOCIAL_PROFILES: ReadonlyArray<{ name: string; url: string }> = [
 
 export const LINKEDIN_PROFILE = SOCIAL_PROFILES[0].url;
 
+const X_HANDLE = 'SteelHouse69101';
+
 /** Share URLs for one article. Every value is encoded, so a title with & or # survives. */
 export function shareLinks(url: string, title: string) {
   const u = encodeURIComponent(url);
@@ -31,6 +33,7 @@ export function shareLinks(url: string, title: string) {
   return [
     { name: 'LinkedIn', href: `https://www.linkedin.com/sharing/share-offsite/?url=${u}` },
     { name: 'WhatsApp', href: `https://wa.me/?text=${t}%20${u}` },
-    { name: 'X', href: `https://twitter.com/intent/tweet?url=${u}&text=${t}` },
+    // `via` credits the company account in the tweet, tying each share back to the profile in sameAs.
+    { name: 'X', href: `https://twitter.com/intent/tweet?url=${u}&text=${t}&via=${X_HANDLE}` },
   ];
 }
