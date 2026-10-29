@@ -45,4 +45,14 @@ Allow: /
 User-agent: Bytespider
 Allow: /
 
+# Meta AI (answers and link previews on Facebook, Instagram, WhatsApp)
+User-agent: Meta-ExternalAgent
+Allow: /
+
+User-agent: Meta-ExternalFetcher
+Allow: /
+
+User-agent: FacebookBot
+Allow: /
+
 Sitemap: https://www.nickelbusbar.com/sitemap.xml

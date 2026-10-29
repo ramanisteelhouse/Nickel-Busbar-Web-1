@@ -134,6 +134,8 @@ type HeadInput = {
   description: string;
   canonical: string;
   ogImage?: string;
+  /** index.html says `website` for every page; articles and products say what they are. */
+  ogType?: "website" | "article" | "product";
   /** Replaces index.html's site-wide keyword list when a page targets its own phrases. */
   keywords?: string[];
   robots?: string;
@@ -217,6 +219,18 @@ const injectHead = (template: string, head: HeadInput) => {
   // A page that does not choose an image still names one. The brand card is indexable, on our own
   // origin and 1200x630, so it is a valid thumbnail source where nothing better exists.
   const ogImage = head.ogImage || SITE_OG_IMAGE_URL;
+
+  // index.html declares the brand card's 1200x630 and a large Twitter card for every page. Product
+  // and cover photos are square, so on those pages the declared size is wrong (Meta and WhatsApp
+  // size the preview from it) and a large card centre-crops the photo. Drop the size and use the
+  // square `summary` card whenever the image is not the brand card.
+  if (ogImage !== SITE_OG_IMAGE_URL) {
+    html = html.replace(/\s*<meta property="og:image:(width|height)"[^>]*>/g, "");
+    html = html.replace(/<meta name="twitter:card"[^>]*>/, `<meta name="twitter:card" data-ssr-head="true" content="summary" />`);
+  }
+  if (head.ogType && head.ogType !== "website") {
+    html = html.replace(/<meta property="og:type"[^>]*>/, `<meta property="og:type" data-ssr-head="true" content="${head.ogType}" />`);
+  }
 
   const ogTags = [
     `<meta property="og:title" data-ssr-head="true" content="${escapeAttr(head.title)}" />`,
@@ -679,6 +693,7 @@ export async function renderBlogSnapshot(template: string, slug: string): Promis
     description,
     canonical,
     ogImage: coverImageUrl,
+    ogType: "article",
     jsonLd: [
       articleJsonLd,
       ...(faqJsonLd ? [faqJsonLd] : []),
@@ -720,6 +735,7 @@ export async function renderNickelStripsLithiumSnapshot(template: string): Promi
     description: article.description,
     canonical,
     ogImage: `${SITE_URL}${article.coverImage}`,
+    ogType: "article",
     jsonLd: lithiumArticleJsonLd(),
     // The body is authored in this repository, not user input, so it is injected as-is: the same
     // trust boundary the guides and blog snapshots rely on.
@@ -1488,6 +1504,7 @@ export function renderGuideSnapshot(template: string, pathname: string): Snapsho
     description: guide.description,
     canonical,
     ogImage: guideCoverUrl(guide),
+    ogType: "article",
     jsonLd: guideJsonLd(guide),
     snapshotBody: `<article>
     <h1>${escapeHtml(guide.title)}</h1>
@@ -1933,6 +1950,7 @@ export async function renderProductSnapshot(template: string, slug: string): Pro
     description,
     canonical,
     ogImage: imageUrl,
+    ogType: "product",
     keywords: [...(keywordBlock?.keywords ?? []), ...BUYER_ROLE_KEYWORDS],
     jsonLd: [productJsonLd, breadcrumbJsonLd, ...(productFaqJsonLd(productFaqs) ? [productFaqJsonLd(productFaqs)!] : [])],
     snapshotBody,
