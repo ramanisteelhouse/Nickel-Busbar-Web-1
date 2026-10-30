@@ -48,25 +48,56 @@ const LEDGER_PATH = path.resolve(process.cwd(), "scripts/sitemap-lastmod.json");
 type Ledger = Record<string, { hash: string; lastmod: string; v?: number }>;
 
 /**
- * Bump when the *shape* of what a page hashes changes — a new field folded into the hash, a
- * field removed — as opposed to the page's content changing.
+ * The hash shape a given kind of page uses, carried per entry rather than globally.
  *
- * Without this, widening a hash rewrites every hash at once and the ledger reads that as every
- * page changing today, which is exactly the "39 of 72 URLs changed" signal this file exists to
- * avoid. On a version change the new hash is recorded as the baseline and the existing lastmod
- * is kept, so the next real change is still detected and nothing is falsely re-dated.
+ * Widening a hash rewrites every hash of that shape at once, and the ledger would read that as
+ * every one of those pages changing today — the "39 of 72 URLs changed" signal this file exists
+ * to avoid. When an entry's recorded version differs, the new hash is taken as the baseline and
+ * the existing lastmod is kept, so nothing is falsely re-dated and the next real change is still
+ * caught.
  *
- *   v1  content only
+ * It is per call site, not one constant for the file, and that distinction is load-bearing: a
+ * global version was applied to static and landing pages whose shape had not changed at all,
+ * which made them skip the hash comparison and revert to whatever date the committed ledger
+ * held. That silently undid a real change — the landing-page thumbnails, correctly dated the day
+ * they shipped, went backwards by three days. Only bump the kind whose shape you actually
+ * changed.
+ *
+ *   v1  content only — static, landing, guides
  *   v2  content plus the per-page rendering inputs (product block, contextual links), so a code
  *       change that alters what the page renders moves lastmod as a database edit would
  */
-const HASH_VERSION = 2;
+const HASH_V_RENDER_INPUTS = 2;
+
+/**
+ * Source-file hashes became newline-normalised, so every one of them changed value without any
+ * page changing content. Re-baselining keeps the last date we have reason to believe, rather
+ * than announcing that seven pages changed on the day the normalisation shipped — which is the
+ * false signal this whole mechanism exists to suppress.
+ *
+ * Only the source-file branch carries it. Landing pages hash a data object, which never had the
+ * line-ending problem, and bumping their version would throw away the thumbnail date they are
+ * correctly reporting.
+ */
+const HASH_V_NORMALISED_SOURCES = 2;
 const ledger: Ledger = existsSync(LEDGER_PATH) ? JSON.parse(readFileSync(LEDGER_PATH, "utf-8")) : {};
 const nextLedger: Ledger = {};
 
 const hashOf = (value: unknown) =>
   createHash("sha256").update(typeof value === "string" ? value : JSON.stringify(value)).digest("hex").slice(0, 16);
-const readSources = (files: string[]) => files.map((file) => (existsSync(file) ? readFileSync(file, "utf-8") : "")).join("\n");
+/**
+ * Newlines are normalised before hashing. The repo sets core.autocrlf=true, so a Windows working
+ * tree holds CRLF while Vercel checks the same commit out as LF — different bytes, different
+ * hash, for identical content. The ledger is written on one and read on the other, so every page
+ * hashed from source files mismatched on every Vercel build and was stamped with the build date:
+ * /about, /contact, /blog and /products were each claiming to change daily. Comparing content
+ * rather than line endings is what makes the date mean anything.
+ */
+const readSources = (files: string[]) =>
+  files
+    .map((file) => (existsSync(file) ? readFileSync(file, "utf-8") : ""))
+    .join("\n")
+    .replace(/\r\n/g, "\n");
 const todayStamp = () => new Date().toISOString().slice(0, 10);
 
 function gitDate(files: string[]): string | null {
@@ -88,17 +119,23 @@ function gitDate(files: string[]): string | null {
  * file started tracking them would stamp all 30 with today and claim the whole blog changed at
  * once.
  */
-function stamp(key: string, content: unknown, sourceFiles: string[] = [], seed?: string): string {
+function stamp(
+  key: string,
+  content: unknown,
+  sourceFiles: string[] = [],
+  options: { seed?: string; version?: number } = {}
+): string {
+  const version = options.version ?? 1;
   const hash = hashOf(content);
   const previous = ledger[key];
   const lastmod = !previous
-    ? seed ?? gitDate(sourceFiles) ?? todayStamp()
-    : (previous.v ?? 1) !== HASH_VERSION
+    ? options.seed ?? gitDate(sourceFiles) ?? todayStamp()
+    : (previous.v ?? 1) !== version
       ? previous.lastmod
       : previous.hash === hash
         ? previous.lastmod
         : todayStamp();
-  nextLedger[key] = { hash, lastmod, v: HASH_VERSION };
+  nextLedger[key] = { hash, lastmod, v: version };
   return lastmod;
 }
 
@@ -154,7 +191,9 @@ async function main() {
     const sources = pageSources[page.path] ?? [];
     const lastmod =
       page.lastmod ??
-      (landing ? stamp(page.path, landing, ["src/lib/landingPages.ts"]) : stamp(page.path, readSources(sources), sources));
+      (landing
+        ? stamp(page.path, landing, ["src/lib/landingPages.ts"])
+        : stamp(page.path, readSources(sources), sources, { version: HASH_V_NORMALISED_SOURCES }));
     return { loc: `${SITE_URL}${page.path}`, lastmod, changefreq: page.changefreq, priority: page.priority };
   });
 
@@ -178,7 +217,8 @@ async function main() {
             // Same reasoning as the blog posts below: the contextual links a product page
             // renders are decided in code, so a change there has to register as a change.
             { content, links: contextualLinks({ kind: "product", slug: product.slug }) },
-            ["src/pages/ProductDetailPage.tsx"]
+            ["src/pages/ProductDetailPage.tsx"],
+            { version: HASH_V_RENDER_INPUTS }
           ),
           changefreq: "weekly",
           priority: "0.6",
@@ -254,7 +294,7 @@ async function main() {
               links: contextualLinks({ kind: "blog", slug: post.slug }),
             },
             [],
-            contentDate
+            { seed: contentDate, version: HASH_V_RENDER_INPUTS }
           ),
           changefreq: "monthly",
           priority: "0.7",
