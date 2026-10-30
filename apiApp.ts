@@ -3,7 +3,7 @@ import helmet from "helmet";
 import rateLimit from "express-rate-limit";
 import jwt from "jsonwebtoken";
 import bcrypt from "bcryptjs";
-import { randomUUID, timingSafeEqual } from "crypto";
+import { createHmac, randomUUID, timingSafeEqual } from "crypto";
 import pool, { query, queryOne } from "./db.js";
 import {
   toFiniteNumber,
@@ -102,6 +102,8 @@ const MAX_QUOTE_ITEMS = 200;
 const MAX_CART_ITEMS = 200;
 const MAX_CART_QUANTITY = 1_000_000;
 const MAX_PREFERENCES_BYTES = 16 * 1024;
+/** Absolute origin for links sent out in notifications, where a relative path is no use. */
+const SITE_ORIGIN = (process.env.SITE_URL || "https://www.nickelbusbar.com").replace(/\/+$/, "");
 
 const emailTransporter =
   SMTP_HOST && SMTP_USER && SMTP_PASS
@@ -1782,6 +1784,212 @@ export function createApiApp() {
   if (!process.env.VERCEL) {
     void ensureSchemaReady().then(() => startCrmSyncWorker());
   }
+
+  // --- Customer reviews -------------------------------------------------------------------
+  //
+  // One shareable form (/review, or /review/<product-slug> prefilled) feeds this. Nothing
+  // reaches the site until it is approved: an open review link on a supplier's site attracts
+  // spam and competitor abuse, and junk testimonials are worse than none.
+  //
+  // Approval is a link in the alert rather than an admin screen, so it can be done from a phone
+  // in two taps. The GET renders the review with Approve/Reject buttons and the POST applies the
+  // action — deliberately not a one-tap GET, because WhatsApp and mail clients prefetch links to
+  // build previews and would silently approve every review that arrived.
+
+  const reviewLimiter = rateLimit({
+    windowMs: 60 * 60 * 1000,
+    limit: 10,
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: { error: "Too many reviews submitted. Please try again later." },
+  });
+
+  /** Ties a moderation link to one review id. Not a session: it only authorises this review. */
+  const moderationToken = (id: number) =>
+    createHmac("sha256", JWT_SECRET).update(`review:${id}`).digest("hex").slice(0, 32);
+
+  const moderationTokenValid = (id: number, token: unknown) => {
+    const expected = Buffer.from(moderationToken(id));
+    const given = Buffer.from(String(token ?? ""));
+    return expected.length === given.length && timingSafeEqual(expected, given);
+  };
+
+  app.get(
+    "/api/reviews",
+    asyncHandler(async (req, res) => {
+      const productSlug = typeof req.query.product === "string" ? req.query.product.trim() : "";
+      const generalOnly = req.query.scope === "general";
+      const limit = Math.min(Math.max(Number(req.query.limit) || 50, 1), 100);
+
+      const where = productSlug
+        ? "status = 'approved' AND product_slug = $1"
+        : generalOnly
+          ? "status = 'approved' AND product_slug IS NULL"
+          : "status = 'approved'";
+      const params = productSlug ? [productSlug] : [];
+
+      const reviews = await query<{
+        id: number;
+        product_slug: string | null;
+        reviewer_name: string;
+        reviewer_company: string | null;
+        rating: number;
+        body: string;
+        created_at: string;
+      }>(
+        // reviewer_email is never selected: it exists to reply to a customer, not to publish.
+        `SELECT id, product_slug, reviewer_name, reviewer_company, rating, body, created_at
+           FROM reviews
+          WHERE ${where}
+          ORDER BY created_at DESC
+          LIMIT ${limit}`,
+        params
+      );
+
+      const count = reviews.length;
+      const average = count
+        ? Number((reviews.reduce((sum, review) => sum + Number(review.rating), 0) / count).toFixed(1))
+        : null;
+      res.json({ product: productSlug || null, count, average, reviews });
+    })
+  );
+
+  app.post(
+    "/api/reviews",
+    reviewLimiter,
+    asyncHandler(async (req, res) => {
+      const body = req.body ?? {};
+      // Honeypot: a field hidden from people and filled in by most form bots. Answer 200 so a
+      // bot cannot tell it was caught and retry with the field blank.
+      if (typeof body.website === "string" && body.website.trim()) {
+        return res.status(201).json({ ok: true });
+      }
+
+      const name = String(body.name ?? "").trim();
+      const company = String(body.company ?? "").trim();
+      const email = String(body.email ?? "").trim();
+      const text = String(body.body ?? "").trim();
+      const rating = Number(body.rating);
+      const source = String(body.source ?? "").trim().slice(0, 40) || null;
+
+      if (!name || name.length > 80) {
+        return res.status(400).json({ error: "Please give your name (up to 80 characters)." });
+      }
+      if (!Number.isInteger(rating) || rating < 1 || rating > 5) {
+        return res.status(400).json({ error: "Please choose a rating from 1 to 5." });
+      }
+      if (text.length < 10 || text.length > 2000) {
+        return res.status(400).json({ error: "Please write between 10 and 2000 characters." });
+      }
+      if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+        return res.status(400).json({ error: "That email address does not look right." });
+      }
+
+      // An unknown slug is stored as null rather than rejected: the review is still worth having
+      // as a general one, and a stale link should not lose a customer's words.
+      const requestedSlug = String(body.productSlug ?? "").trim();
+      let productSlug: string | null = null;
+      if (requestedSlug) {
+        const product = await queryOne<{ slug: string }>(`SELECT slug FROM products WHERE slug = $1`, [
+          requestedSlug,
+        ]);
+        productSlug = product?.slug ?? null;
+      }
+
+      const inserted = await queryOne<{ id: number }>(
+        `INSERT INTO reviews (product_slug, reviewer_name, reviewer_company, reviewer_email, rating, body, source)
+         VALUES ($1, $2, $3, $4, $5, $6, $7)
+         RETURNING id`,
+        [productSlug, name, company || null, email || null, rating, text, source]
+      );
+
+      if (inserted) {
+        const moderateUrl = `${SITE_ORIGIN}/api/reviews/${inserted.id}/moderate?token=${moderationToken(inserted.id)}`;
+        runAfterResponse(
+          sendNotification(
+            `New review awaiting approval - ${productSlug || "general"}`,
+            [
+              `${rating}/5 from ${name}${company ? ` (${company})` : ""}`,
+              productSlug ? `Product: ${productSlug}` : "General review",
+              "",
+              text,
+              "",
+              `Approve or reject: ${moderateUrl}`,
+            ].join("\n")
+          )
+        );
+      }
+
+      res.status(201).json({ ok: true });
+    })
+  );
+
+  app.get(
+    "/api/reviews/:id/moderate",
+    asyncHandler(async (req, res) => {
+      const id = Number(req.params.id);
+      if (!Number.isInteger(id) || !moderationTokenValid(id, req.query.token)) {
+        return res.status(403).type("html").send("<p>That moderation link is not valid.</p>");
+      }
+      const review = await queryOne<{
+        reviewer_name: string;
+        reviewer_company: string | null;
+        product_slug: string | null;
+        rating: number;
+        body: string;
+        status: string;
+      }>(`SELECT reviewer_name, reviewer_company, product_slug, rating, body, status FROM reviews WHERE id = $1`, [id]);
+
+      if (!review) return res.status(404).type("html").send("<p>That review no longer exists.</p>");
+
+      const token = String(req.query.token);
+      const escape = (value: string) =>
+        value.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+      res
+        .type("html")
+        .send(
+          `<!doctype html><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">` +
+            `<meta name="robots" content="noindex,nofollow">` +
+            `<title>Moderate review</title>` +
+            `<body style="font-family:system-ui,sans-serif;max-width:34rem;margin:2rem auto;padding:0 1rem;line-height:1.5">` +
+            `<p style="color:#666">Status: <strong>${escape(review.status)}</strong></p>` +
+            `<p><strong>${escape(review.reviewer_name)}</strong>${review.reviewer_company ? ` — ${escape(review.reviewer_company)}` : ""}` +
+            ` · ${review.rating}/5 · ${escape(review.product_slug || "general review")}</p>` +
+            `<blockquote style="border-left:3px solid #ddd;margin:0 0 1.5rem;padding:.25rem 0 .25rem 1rem;white-space:pre-wrap">${escape(review.body)}</blockquote>` +
+            `<form method="post" style="display:inline">` +
+            `<input type="hidden" name="token" value="${escape(token)}"><input type="hidden" name="action" value="approve">` +
+            `<button style="padding:.7rem 1.4rem;font-size:1rem;background:#047857;color:#fff;border:0;border-radius:.4rem">Approve</button></form> ` +
+            `<form method="post" style="display:inline;margin-left:.5rem">` +
+            `<input type="hidden" name="token" value="${escape(token)}"><input type="hidden" name="action" value="reject">` +
+            `<button style="padding:.7rem 1.4rem;font-size:1rem;background:#fff;color:#b91c1c;border:1px solid #b91c1c;border-radius:.4rem">Reject</button></form>` +
+            `</body>`
+        );
+    })
+  );
+
+  app.post(
+    "/api/reviews/:id/moderate",
+    express.urlencoded({ extended: false }),
+    asyncHandler(async (req, res) => {
+      const id = Number(req.params.id);
+      const token = req.body?.token ?? req.query.token;
+      if (!Number.isInteger(id) || !moderationTokenValid(id, token)) {
+        return res.status(403).type("html").send("<p>That moderation link is not valid.</p>");
+      }
+      const action = req.body?.action === "reject" ? "rejected" : "approved";
+      await query(
+        `UPDATE reviews SET status = $1, approved_at = CASE WHEN $1 = 'approved' THEN now() ELSE NULL END WHERE id = $2`,
+        [action, id]
+      );
+      res
+        .type("html")
+        .send(
+          `<!doctype html><meta charset="utf-8"><meta name="robots" content="noindex,nofollow">` +
+            `<body style="font-family:system-ui,sans-serif;max-width:34rem;margin:2rem auto;padding:0 1rem">` +
+            `<p>Review ${action}.${action === "approved" ? " It is live on the site now." : ""}</p></body>`
+        );
+    })
+  );
 
   app.use("/api", (_req, res) => {
     res.status(404).json({ error: "API route not found." });

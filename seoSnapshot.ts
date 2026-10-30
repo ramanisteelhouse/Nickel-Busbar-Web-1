@@ -15,6 +15,7 @@ import {
 } from "./src/lib/contact.js";
 import { ANSWER_BLOCK, ANSWER_BLOCK_QUESTION } from "./src/lib/answerBlock.js";
 import type { StaticSnapshotRoute, NoindexSnapshotRoute } from "./src/lib/snapshotRoutes.js";
+import { noindexSnapshotPath } from "./src/lib/snapshotRoutes.js";
 import {
   RETURN_POLICY_HEADING,
   RETURN_POLICY_LINES,
@@ -1263,14 +1264,19 @@ const NOINDEX_ROUTES: Record<NoindexSnapshotRoute, { title: string; description:
     title: "Sign In | Ramani Steel House",
     description: "Sign in to your Ramani Steel House account.",
   },
+  "/review": {
+    title: "Leave a Review | Ramani Steel House",
+    description: "Tell us how the nickel strip performed in your pack.",
+  },
 };
 
 export function isNoindexSnapshotRoute(pathname: string): boolean {
-  return Object.prototype.hasOwnProperty.call(NOINDEX_ROUTES, pathname);
+  return noindexSnapshotPath(pathname) !== null;
 }
 
 export function renderNoindexSnapshot(template: string, pathname: string): SnapshotResult {
-  const route = isNoindexSnapshotRoute(pathname) ? NOINDEX_ROUTES[pathname] : undefined;
+  const key = noindexSnapshotPath(pathname);
+  const route = key ? NOINDEX_ROUTES[key] : undefined;
   if (!route) return { status: 200, html: template };
 
   const html = injectHead(template, {
@@ -1765,6 +1771,32 @@ export async function renderProductSnapshot(template: string, slug: string): Pro
   // would be a false material claim exactly where a buyer checks it.
   const productSpecs = buildProductSpecs(product as Record<string, string | null>);
 
+  // Approved customer reviews of this product.
+  //
+  // Only product reviews are marked up. Google treats a review a business collects about
+  // *itself* as self-serving and ineligible for rich results, so the general reviews on the site
+  // are for human readers only and never reach schema.org — claiming otherwise would be markup
+  // Google discounts at best.
+  //
+  // Best-effort: a reviews table that is missing or unreachable must not take the product page
+  // down, so the catch leaves the page to render without them.
+  let reviews: { reviewer_name: string; reviewer_company: string | null; rating: number; body: string; created_at: string }[] = [];
+  try {
+    reviews = await query(
+      `SELECT reviewer_name, reviewer_company, rating, body, created_at
+         FROM reviews
+        WHERE status = 'approved' AND product_slug = $1
+        ORDER BY created_at DESC
+        LIMIT 20`,
+      [productSlug]
+    );
+  } catch (error) {
+    console.warn(`[snapshot] Reviews unavailable for /product/${productSlug}.`, error);
+  }
+  const ratingAverage = reviews.length
+    ? Number((reviews.reduce((sum, review) => sum + Number(review.rating), 0) / reviews.length).toFixed(1))
+    : null;
+
   const productJsonLd = {
     "@context": "https://schema.org",
     "@type": "Product",
@@ -1778,6 +1810,29 @@ export async function renderProductSnapshot(template: string, slug: string): Pro
     sku: product.slug,
     mpn: product.slug,
     countryOfOrigin: "IN",
+    // Emitted only when real approved reviews exist. An aggregateRating with no reviews behind
+    // it is the single most common reason Google issues a manual action for structured data.
+    ...(reviews.length && ratingAverage !== null
+      ? {
+          aggregateRating: {
+            "@type": "AggregateRating",
+            ratingValue: ratingAverage,
+            reviewCount: reviews.length,
+            bestRating: 5,
+            worstRating: 1,
+          },
+          review: reviews.slice(0, 10).map((entry) => ({
+            "@type": "Review",
+            reviewRating: { "@type": "Rating", ratingValue: Number(entry.rating), bestRating: 5, worstRating: 1 },
+            author: {
+              "@type": "Person",
+              name: entry.reviewer_company ? `${entry.reviewer_name}, ${entry.reviewer_company}` : entry.reviewer_name,
+            },
+            datePublished: String(entry.created_at).slice(0, 10),
+            reviewBody: entry.body,
+          })),
+        }
+      : {}),
     // The export terms as machine-readable attributes, matching the visible table below.
     // additionalProperty is the field Google and answer engines read specifications out of, so
     // an "HS code for nickel strip" or "what Incoterms" question can be answered from the
@@ -1939,6 +1994,21 @@ export async function renderProductSnapshot(template: string, slug: string): Pro
         : ""
     }
     ${productFaqHtml}
+    ${
+      reviews.length && ratingAverage !== null
+        ? `<h2>Customer reviews</h2>
+    <p>${ratingAverage} out of 5, from ${reviews.length} ${reviews.length === 1 ? "review" : "reviews"}.</p>
+    ${reviews
+      .map(
+        (entry) =>
+          `<blockquote><p>${escapeHtml(entry.body)}</p><cite>${escapeHtml(entry.reviewer_name)}${
+            entry.reviewer_company ? `, ${escapeHtml(entry.reviewer_company)}` : ""
+          } &mdash; ${Number(entry.rating)}/5</cite></blockquote>`
+      )
+      .join("")}
+    <p><a href="${SITE_URL}/review/${encodeURIComponent(productSlug)}">Review this product</a></p>`
+        : ""
+    }
     <h2>Export supply</h2>
     <p>${escapeHtml(PRODUCT_EXPORT_LEAD)}</p>
     <p><a href="${SITE_URL}${EXPORT_PATH}">Nickel strip and busbar export enquiry</a> &mdash; send your specification, quantity and destination port for a quotation.</p>

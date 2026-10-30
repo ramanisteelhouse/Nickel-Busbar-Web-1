@@ -34,6 +34,7 @@ const GuidesIndexPage = React.lazy(() => import('./pages/GuidesIndexPage').then(
 const GuidePage = React.lazy(() => import('./pages/GuidePage').then((m) => ({ default: m.GuidePage })));
 const BlogNickelStripsLithiumPage = React.lazy(() => import('./pages/BlogNickelStripsLithiumPage').then((m) => ({ default: m.BlogNickelStripsLithiumPage })));
 const CalculatorPage = React.lazy(() => import('./pages/CalculatorPage').then((m) => ({ default: m.CalculatorPage })));
+const ReviewFormPage = React.lazy(() => import('./pages/ReviewFormPage').then((m) => ({ default: m.ReviewFormPage })));
 const NotFoundPage = React.lazy(() => import('./pages/NotFoundPage').then((m) => ({ default: m.NotFoundPage })));
 const LandingPage = React.lazy(() => import('./pages/LandingPage').then((m) => ({ default: m.LandingPage })));
 
@@ -391,6 +392,10 @@ export default function App() {
                 <Route path="/blog/nickel-strips-lithium-batteries" element={<BlogNickelStripsLithiumPage />} />
                 <Route path="/blog/:slug" element={<BlogPostPage />} />
                 <Route path="/calculator" element={<CalculatorPage />} />
+                {/* The shareable review link. The :productSlug form is what goes out after an
+                    order; the bare one is for a general review. */}
+                <Route path="/review" element={<ReviewFormPage />} />
+                <Route path="/review/:productSlug" element={<ReviewFormPage />} />
                 {/* Category and state landing pages. Enumerated from lib/landingPages rather
                     than matched with a "/:slug" wildcard, which would swallow every unknown
                     path and turn 404s into blank landing pages. */}

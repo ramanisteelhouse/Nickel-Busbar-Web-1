@@ -1,6 +1,6 @@
 import React from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import { ShoppingCart, Shield, Truck, RotateCcw, ChevronRight, X, CheckCircle2, Globe, Phone } from 'lucide-react';
+import { ShoppingCart, Shield, Truck, RotateCcw, ChevronRight, X, CheckCircle2, Globe, Phone, Star } from 'lucide-react';
 import { motion } from 'motion/react';
 import { Helmet } from 'react-helmet-async';
 import { Product } from '../types';
@@ -37,6 +37,12 @@ export const ProductDetailPage: React.FC<{ onAddToCart: (p: Product, spec?: Stri
   const { slug } = useParams();
   const navigate = useNavigate();
   const [product, setProduct] = React.useState<Product | null>(null);
+  // Approved reviews of this product. Mirrors renderProductSnapshot in seoSnapshot.ts: the
+  // snapshot renders them for crawlers and this replaces that markup on mount, so if the page
+  // did not fetch them, Google's rendering pass would see the aggregateRating disappear.
+  const [reviews, setReviews] = React.useState<
+    { id: number; reviewer_name: string; reviewer_company: string | null; rating: number; body: string; created_at: string }[]
+  >([]);
   const [loading, setLoading] = React.useState(true);
   const [fetchError, setFetchError] = React.useState<'not-found' | 'server' | null>(null);
   const [showCartToast, setShowCartToast] = React.useState(false);
@@ -73,6 +79,14 @@ export const ProductDetailPage: React.FC<{ onAddToCart: (p: Product, spec?: Stri
         const data = await res.json();
         if (!isActive) return;
         setProduct(data);
+        fetch(`/api/reviews?product=${encodeURIComponent(slug || '')}`)
+          .then((res) => (res.ok ? res.json() : null))
+          .then((payload) => {
+            if (isActive && Array.isArray(payload?.reviews)) setReviews(payload.reviews);
+          })
+          .catch(() => {
+            // Reviews are additive; a failure here must not blank the product page.
+          });
       })
       .catch((error: unknown) => {
         if (!isActive) return;
@@ -175,6 +189,9 @@ export const ProductDetailPage: React.FC<{ onAddToCart: (p: Product, spec?: Stri
   // in structured data, so the Offer node is omitted instead. Mirrored in seoSnapshot.ts.
   const numericPrice = Number(product.price);
   const hasPrice = Number.isFinite(numericPrice) && numericPrice > 0;
+  const ratingAverage = reviews.length
+    ? Number((reviews.reduce((sum, entry) => sum + Number(entry.rating), 0) / reviews.length).toFixed(1))
+    : null;
   // null until the freight figure is confirmed — see the gate in shippingPolicy.ts.
   const shippingDetails = buildShippingSchema();
 
@@ -228,6 +245,29 @@ export const ProductDetailPage: React.FC<{ onAddToCart: (p: Product, spec?: Stri
             sku: product.slug,
             mpn: product.slug,
             countryOfOrigin: 'IN',
+            // Only ever emitted when real approved reviews exist. An aggregateRating with
+            // nothing behind it is the usual cause of a structured-data manual action.
+            ...(reviews.length && ratingAverage !== null
+              ? {
+                  aggregateRating: {
+                    '@type': 'AggregateRating',
+                    ratingValue: ratingAverage,
+                    reviewCount: reviews.length,
+                    bestRating: 5,
+                    worstRating: 1,
+                  },
+                  review: reviews.slice(0, 10).map((entry) => ({
+                    '@type': 'Review',
+                    reviewRating: { '@type': 'Rating', ratingValue: Number(entry.rating), bestRating: 5, worstRating: 1 },
+                    author: {
+                      '@type': 'Person',
+                      name: entry.reviewer_company ? `${entry.reviewer_name}, ${entry.reviewer_company}` : entry.reviewer_name,
+                    },
+                    datePublished: String(entry.created_at).slice(0, 10),
+                    reviewBody: entry.body,
+                  })),
+                }
+              : {}),
             // Mirrors seoSnapshot.ts: the export terms as machine-readable attributes, matching
             // the visible Export supply table rendered further down this page.
             // Exactly the rows the visible spec table renders — Google discounts structured
@@ -610,6 +650,49 @@ export const ProductDetailPage: React.FC<{ onAddToCart: (p: Product, spec?: Stri
           </div>
         )}
       </section>
+
+      {/* Customer reviews. Not a tab, for the same reason as the panels below: the markup
+          claiming an aggregateRating has to have the reviews visible on the page, and a tab
+          panel is absent from the DOM until someone clicks it. Rendered only when there are
+          approved reviews — an empty "no reviews yet" block on a supplier's page sells nothing
+          and the markup is omitted alongside it. */}
+      {reviews.length > 0 && ratingAverage !== null && (
+        <section className="mt-16">
+          <div className="flex flex-wrap items-baseline justify-between gap-3">
+            <h2 className="text-lg font-bold text-zinc-900">Customer reviews</h2>
+            <p className="text-sm text-zinc-500">
+              <span className="font-bold text-zinc-900">{ratingAverage}</span> out of 5 · {reviews.length}{' '}
+              {reviews.length === 1 ? 'review' : 'reviews'}
+            </p>
+          </div>
+          <ul className="mt-6 space-y-6">
+            {reviews.map((entry) => (
+              <li key={entry.id} className="rounded-2xl border border-zinc-100 bg-white p-6">
+                <div className="flex items-center gap-1" aria-label={`${entry.rating} out of 5`}>
+                  {[1, 2, 3, 4, 5].map((value) => (
+                    <Star
+                      key={value}
+                      size={14}
+                      className={value <= Number(entry.rating) ? 'fill-amber-400 text-amber-400' : 'text-zinc-200'}
+                    />
+                  ))}
+                </div>
+                <p className="mt-3 text-sm leading-relaxed text-zinc-600 whitespace-pre-wrap">{entry.body}</p>
+                <p className="mt-3 text-xs font-semibold text-zinc-400">
+                  {entry.reviewer_name}
+                  {entry.reviewer_company ? `, ${entry.reviewer_company}` : ''}
+                </p>
+              </li>
+            ))}
+          </ul>
+          <Link
+            to={`/review/${product.slug}`}
+            className="mt-6 inline-block text-sm font-semibold text-emerald-700 hover:text-emerald-800"
+          >
+            Review this product
+          </Link>
+        </section>
+      )}
 
       {/* Always rendered, deliberately not a tab. Google requires the content behind a
           structured-data claim to be on the page, and the tab panels above only enter the DOM

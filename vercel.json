@@ -32,6 +32,8 @@
     { "src": "/contact/?", "dest": "/api/render?path=/contact" },
     { "src": "/export-enquiry/?", "dest": "/api/render?path=/export-enquiry" },
     { "src": "/calculator/?", "dest": "/api/render?path=/calculator" },
+    { "src": "/review/?", "dest": "/api/render?path=/review" },
+    { "src": "/review/[^/]+/?", "dest": "/api/render" },
     { "src": "/guides/?", "dest": "/api/render?path=/guides" },
     { "src": "/guides/[^/]+/?", "dest": "/api/render" },
     { "src": "/blog/?", "dest": "/api/render?path=/blog" },

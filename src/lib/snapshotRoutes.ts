@@ -22,9 +22,29 @@
 export const STATIC_SNAPSHOT_ROUTES = ["/", "/about", "/contact", "/calculator", "/export-enquiry"] as const;
 export type StaticSnapshotRoute = (typeof STATIC_SNAPSHOT_ROUTES)[number];
 
-/** Routes rendered with a noindex header — a cart or a login has nothing to rank. */
-export const NOINDEX_SNAPSHOT_ROUTES = ["/cart", "/checkout", "/login"] as const;
+/**
+ * Routes rendered with a noindex header — a cart or a login has nothing to rank.
+ *
+ * /review is here for the same reason: it is a form a customer reaches from a link we shared,
+ * not a page anyone should find in search. /review/<product-slug> is normalised onto it by
+ * noindexSnapshotPath below, so the per-product variants are covered without listing every slug.
+ */
+export const NOINDEX_SNAPSHOT_ROUTES = ["/cart", "/checkout", "/login", "/review"] as const;
 export type NoindexSnapshotRoute = (typeof NOINDEX_SNAPSHOT_ROUTES)[number];
+
+/**
+ * The noindex route a path belongs to, or null. /review/ni-32650-2p-h-type is the review form
+ * for one product and gets the same treatment as /review itself — without this it would fall
+ * through to the untouched SPA shell, which carries the homepage's title, canonical and
+ * `robots: index, follow`.
+ */
+export function noindexSnapshotPath(pathname: string): NoindexSnapshotRoute | null {
+  const clean = pathname.replace(/\/+$/, "") || "/";
+  if (clean === "/review" || clean.startsWith("/review/")) return "/review";
+  return (NOINDEX_SNAPSHOT_ROUTES as readonly string[]).includes(clean)
+    ? (clean as NoindexSnapshotRoute)
+    : null;
+}
 
 /**
  * Routes the React app serves that have no snapshot of their own.
