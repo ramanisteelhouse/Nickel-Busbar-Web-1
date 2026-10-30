@@ -76,7 +76,183 @@ const ARTICLE_PRODUCTS: Readonly<Record<string, readonly string[]>> = {
     'Copper-Busbar',
     'Plain-Nickel-Strips',
   ],
+
+  // ---------------------------------------------------------------------------------------
+  // Checked 2026-10-30 by counting product terms in each published body and FAQ, boundary-safe
+  // so that "explain" is not "plain", "customer" is not "custom" and "confuse" is not "fuse" -
+  // an earlier pass without those boundaries over-counted all three and would have produced
+  // mappings resting on words the articles never used. Counts quoted below are from that pass.
+  //
+  // Six posts are deliberately absent, listed under UNMAPPED at the foot of this file.
+  // ---------------------------------------------------------------------------------------
+
+  // Zig-zag 4 and H-type 4 across both vehicle cell ranges: 18650/21700 for e-bikes, 32650/32700
+  // for e-rickshaws. The article's own argument is that vibration favours zig-zag, so that part
+  // leads.
+  'nickel-strip-e-rickshaw-e-bike-battery-packs-india': [
+    'ni-18650-2p-zig-zag-no-fuse-type',
+    'ni-32650-2p-h-type',
+    'ni-21700-2p-h-type-v3',
+    'ni-fuse-type-32700-2p-zig-zag-honeycomb',
+  ],
+  // Prices plain stock against patterned: plain 4, H-type 4, zig-zag 3, fuse 3, and no cell
+  // format named anywhere - so the links are the forms being priced, not a format.
+  'nickel-strip-price-per-kg-india': [
+    'Plain-Nickel-Strips',
+    'ni-18650-2p-h-type',
+    'ni-18650-2p-zig-zag-no-fuse-type',
+  ],
+  // The widest spread of any post, because MOQ is explained across the whole catalogue: 18650 4,
+  // 21700 2, 32650 2, 32700 2, H-type 5, zig-zag 4, honeycomb 3, fuse 4, custom 2. A
+  // representative four rather than a list of sixteen.
+  'nickel-strip-minimum-order-quantity': [
+    'Plain-Nickel-Strips',
+    'ni-18650-2p-h-type',
+    'ni-21700-2p-h-type-v3',
+    'ni-customizable',
+  ],
+  // 18650 11 and 21700 16, with 2P/3P/4P three times each: both formats at both ends of the
+  // parallel-count range, which is what changing cell format actually costs you.
+  '18650-vs-21700-nickel-strip-cell-format': [
+    'ni-18650-2p-h-type',
+    'ni-21700-2p-h-type-v3',
+    'ni-18650-4p-h-type',
+    'ni-21700-4p-h-type',
+  ],
+  // Fuse 10 is the highest in the set outside the fuse comparison itself, with plain 6, H-type 6,
+  // zig-zag 4 and honeycomb 3: the article prices a fused pattern against plain stock.
+  'nickel-strip-pricing-guide-battery-pack-orders': [
+    'Plain-Nickel-Strips',
+    'ni-fuse-type-18650-2p-h-type-honeycomb',
+    'ni-18650-2p-h-type',
+    'ni-customizable',
+  ],
+  // The pattern comparison, and the counts say so plainly: zig-zag 40, H-type 38, fuse 18,
+  // honeycomb 3. Both patterns linked in both their plain and fused forms.
+  'zig-zag-vs-h-type-nickel-strip': [
+    'ni-18650-2p-zig-zag-no-fuse-type',
+    'ni-18650-2p-h-type',
+    'ni-fuse-type-18650-2p-zig-zag-honeycomb',
+    'ni-fuse-type-18650-2p-h-type-honeycomb',
+  ],
+  // 4P 31, 2P 26, 3P 20 - the ladder the article is about, on the format it uses throughout
+  // (18650 9, 21700 9). Custom 6 is real: it closes on when to go beyond a stock stamping.
+  '2p-vs-3p-vs-4p-nickel-strip-interconnect-design': [
+    'ni-18650-2p-h-type',
+    'ni-18650-3p-h-type',
+    'ni-18650-4p-h-type',
+    'ni-21700-4p-h-type',
+    'ni-customizable',
+  ],
+  // An alloy comparison rather than a format one: no cell format passes 1, while H-type 6,
+  // plain 5, fuse 5 and honeycomb 4 describe the forms the alloy is supplied in.
+  'nickel-200-vs-nickel-201-battery-strip': [
+    'Plain-Nickel-Strips',
+    'ni-18650-2p-h-type',
+    'ni-fuse-type-18650-2p-h-type-honeycomb',
+  ],
+  // Custom 5 and busbar 2 in 407 words: the export paperwork is written around bulk plain stock,
+  // busbar and made-to-drawing work, which is what actually ships in a container.
+  'export-documentation-guide-nickel-strips-india': [
+    'Plain-Nickel-Strips',
+    'Copper-Busbar',
+    'ni-customizable',
+  ],
+  // Fuse 8 in 494 words, and the defects described are fuse-neck ones. Plain stock is linked as
+  // the comparison the article keeps returning to.
+  'common-nickel-strip-defects-battery-manufacturing': [
+    'ni-fuse-type-18650-2p-h-type-honeycomb',
+    'Plain-Nickel-Strips',
+  ],
+  // Modest but real: 18650 3, 21700 2, 32650 1, busbar 2. Welding parameters are given for the
+  // strip being welded, so the links are the stock a reader would be welding.
+  'battery-spot-welding-tips-nickel-strip': [
+    'Plain-Nickel-Strips',
+    'ni-18650-2p-h-type',
+    'ni-21700-2p-h-type-v3',
+  ],
+  // H-type 10, 18650 8, busbar 6, custom 6, fuse 6, 21700 4, 32650 3. The busbar links are not
+  // incidental: the article hands 0.30-0.50 mm explicitly to "busbar-grade applications".
+  'nickel-strip-thickness-guide': [
+    'Plain-Nickel-Strips',
+    'ni-18650-2p-h-type',
+    'ni-21700-2p-h-type-v3',
+    'Copper-Busbar',
+    'ni-customizable',
+  ],
+  // Busbar 17 and copper 5, because the article covers interconnects and busbars together, and
+  // custom 9. It names no cell format at all, so the links are material-level, not format-level.
+  'pure-nickel-strip-vs-nickel-plated-steel-strip': [
+    'Plain-Nickel-Strips',
+    'Copper-Busbar',
+    'ni-customizable',
+  ],
+  // Reads as a catalogue overview for a market, and lists its own range in the body: "Pure Nickel
+  // Strips, H-Type Nickel Strips, Fuse Type Nickel Strips, Copper Busbars, and Custom Battery
+  // Interconnect Components". Custom 14, busbar 8, copper 4, H-type 2, fuse 2. Linked to match.
+  'nickel-strip-manufacturer-uk-battery-industry': [
+    'Plain-Nickel-Strips',
+    'ni-18650-2p-h-type',
+    'ni-fuse-type-18650-2p-h-type-honeycomb',
+    'Copper-Busbar',
+    'ni-customizable',
+  ],
+  // Same shape as the UK post: custom 12, busbar 8, copper 8, and its own list names "Pure Nickel
+  // Strips, Copper Strips, Custom Busbars". 21700 is included as the format EV packs moved to.
+  'nickel-strips-for-electric-vehicles': [
+    'Plain-Nickel-Strips',
+    'Copper-Busbar',
+    'ni-customizable',
+    'ni-21700-2p-h-type-v3',
+  ],
+  // Busbar 15 and custom 12 in a post about stamped busbars to drawing - the clearest match in
+  // the set. Plain stock trails as the material those busbars are stamped from.
+  'sourcing-custom-stamped-nickel-busbars': [
+    'Copper-Busbar',
+    'ni-customizable',
+    'Plain-Nickel-Strips',
+  ],
+  // 18650 5, 21700 3, and "pure nickel strip" three times: the mistakes are about buying the
+  // wrong material and the wrong format, so both are linked.
+  '5-nickel-strip-buying-mistakes': [
+    'Plain-Nickel-Strips',
+    'ni-18650-2p-h-type',
+    'ni-21700-2p-h-type-v3',
+  ],
+  // A weight chart covering plain stock and H-type patterns: H-type 4, "pure nickel strip" 2.
+  // Nothing else in the catalogue is weighed, so nothing else is linked.
+  'nickel-strip-weight-per-metre': [
+    'Plain-Nickel-Strips',
+    'ni-18650-2p-h-type',
+  ],
 };
+
+/**
+ * Posts deliberately left without a block, and why.
+ *
+ * Each was checked on 2026-10-30 and carries no usable product evidence: not one cell format,
+ * pattern, fuse, busbar or plain-stock mention between them beyond a stray single hit. They are
+ * about process and paperwork rather than parts, and this file's rule is that a link to a product
+ * the article never mentions is worse for a reader than no link at all.
+ *
+ *   how-to-read-nickel-strip-material-test-certificate  672 words, no product terms
+ *   nickel-strip-sample-before-bulk-order               612 words, no product terms
+ *   nickel-strip-storage-handling-shelf-life            622 words, no product terms
+ *   nickel-strip-surface-finish-guide                   435 words, zero across every term
+ *   how-to-choose-nickel-strip-manufacturer-india       422 words, no product terms
+ *   why-nickel-purity-matters                           781 words, no product terms
+ *
+ * The honest fix for these is editorial — give the article a paragraph that names the product it
+ * is really about — not a mapping bolted on here.
+ */
+export const UNMAPPED_BY_DESIGN: readonly string[] = [
+  'how-to-read-nickel-strip-material-test-certificate',
+  'nickel-strip-sample-before-bulk-order',
+  'nickel-strip-storage-handling-shelf-life',
+  'nickel-strip-surface-finish-guide',
+  'how-to-choose-nickel-strip-manufacturer-india',
+  'why-nickel-purity-matters',
+];
 
 const BY_SLUG = new Map(PRODUCT_LINKS.map((product) => [product.slug, product]));
 
