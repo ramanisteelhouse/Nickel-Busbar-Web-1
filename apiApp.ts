@@ -1796,6 +1796,17 @@ export function createApiApp() {
   // action — deliberately not a one-tap GET, because WhatsApp and mail clients prefetch links to
   // build previews and would silently approve every review that arrived.
 
+  /**
+   * Postgres 42P01 is undefined_table. The reviews table ships as a migration that has to be run
+   * by hand (supabase/reviews.sql), so "I deployed but the form 500s" is the predictable first
+   * experience, and a bare "Internal server error" says nothing about which of the two databases
+   * the migration landed in. 503 rather than 500: the service is fine, this one table is not
+   * there yet.
+   */
+  const MISSING_REVIEWS_TABLE =
+    "The reviews table does not exist in the database this site reads. Run supabase/reviews.sql against project fzrnezhbfyrpvudlsqny.";
+  const isMissingTable = (error: unknown) => (error as { code?: string })?.code === "42P01";
+
   const reviewLimiter = rateLimit({
     windowMs: 60 * 60 * 1000,
     limit: 10,
@@ -1828,7 +1839,7 @@ export function createApiApp() {
           : "status = 'approved'";
       const params = productSlug ? [productSlug] : [];
 
-      const reviews = await query<{
+      type ReviewRow = {
         id: number;
         product_slug: string | null;
         reviewer_name: string;
@@ -1836,15 +1847,27 @@ export function createApiApp() {
         rating: number;
         body: string;
         created_at: string;
-      }>(
+      };
+      let reviews: ReviewRow[];
+      try {
+        reviews = await query<ReviewRow>(
         // reviewer_email is never selected: it exists to reply to a customer, not to publish.
         `SELECT id, product_slug, reviewer_name, reviewer_company, rating, body, created_at
            FROM reviews
           WHERE ${where}
           ORDER BY created_at DESC
           LIMIT ${limit}`,
-        params
-      );
+          params
+        );
+      } catch (error) {
+        if (isMissingTable(error)) {
+          console.error("[reviews] " + MISSING_REVIEWS_TABLE);
+          // The callers treat a non-ok response as "no reviews", so the homepage and the
+          // product pages still render while this is outstanding.
+          return res.status(503).json({ error: MISSING_REVIEWS_TABLE });
+        }
+        throw error;
+      }
 
       const count = reviews.length;
       const average = count
@@ -1896,12 +1919,23 @@ export function createApiApp() {
         productSlug = product?.slug ?? null;
       }
 
-      const inserted = await queryOne<{ id: number }>(
-        `INSERT INTO reviews (product_slug, reviewer_name, reviewer_company, reviewer_email, rating, body, source)
-         VALUES ($1, $2, $3, $4, $5, $6, $7)
-         RETURNING id`,
-        [productSlug, name, company || null, email || null, rating, text, source]
-      );
+      // A failed insert must never look like success: the customer has just written a review
+      // and would be told it was received. 503 so the form shows a real error.
+      let inserted: { id: number } | null;
+      try {
+        inserted = await queryOne<{ id: number }>(
+          `INSERT INTO reviews (product_slug, reviewer_name, reviewer_company, reviewer_email, rating, body, source)
+           VALUES ($1, $2, $3, $4, $5, $6, $7)
+           RETURNING id`,
+          [productSlug, name, company || null, email || null, rating, text, source]
+        );
+      } catch (error) {
+        if (isMissingTable(error)) {
+          console.error("[reviews] " + MISSING_REVIEWS_TABLE);
+          return res.status(503).json({ error: "Reviews are not accepting submissions yet. Please try again shortly." });
+        }
+        throw error;
+      }
 
       if (inserted) {
         const moderateUrl = `${SITE_ORIGIN}/api/reviews/${inserted.id}/moderate?token=${moderationToken(inserted.id)}`;
