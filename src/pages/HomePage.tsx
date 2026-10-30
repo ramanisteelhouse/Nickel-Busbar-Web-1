@@ -139,6 +139,10 @@ export const HomePage: React.FC = () => {
   const [dynamicProducts, setDynamicProducts] = React.useState<Product[]>([]);
   const [categories, setCategories] = React.useState<Category[]>([]);
   const [blogPosts, setBlogPosts] = React.useState<BlogPost[]>([]);
+  /** Approved reviews with no product attached. Product reviews live on their product page. */
+  const [generalReviews, setGeneralReviews] = React.useState<
+    { id: number; reviewer_name: string; reviewer_company: string | null; rating: number; body: string }[]
+  >([]);
   const [formState, setFormState] = React.useState({
     name: '',
     email: '',
@@ -188,6 +192,18 @@ export const HomePage: React.FC = () => {
       .then((data) => Array.isArray(data) && setDynamicProducts(data))
       .catch(() => {
         setDynamicProducts([]);
+      });
+  }, []);
+
+  React.useEffect(() => {
+    fetch('/api/reviews?scope=general&limit=6')
+      .then((res) => (res.ok ? res.json() : null))
+      .then((payload) => {
+        setGeneralReviews(Array.isArray(payload?.reviews) ? payload.reviews : []);
+      })
+      .catch(() => {
+        // The block hides itself when empty, so a failure here just leaves it out.
+        setGeneralReviews([]);
       });
   }, []);
 
@@ -994,6 +1010,54 @@ export const HomePage: React.FC = () => {
           </div>
         </div>
       </section>
+
+      {/* General customer reviews. Mirrors homeReviewsHtml() in seoSnapshot.ts, which renders
+          the same block for crawlers — this replaces it on mount, so the two have to agree.
+
+          No schema.org markup here, unlike the product pages: Google treats reviews a business
+          collects about itself as self-serving and ineligible for rich results, so marking these
+          up would claim a rating it will not show. They are here to be read.
+
+          Hidden entirely when there are none. An empty "no reviews yet" panel on a supplier's
+          homepage argues against you. */}
+      {generalReviews.length > 0 && (
+        <section className="py-20 bg-slate-50">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-6 mb-10">
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-[0.3em] text-brand">In Their Words</p>
+                <h2 className="mt-3 text-3xl md:text-4xl font-display font-bold text-brand">What Customers Say</h2>
+                <p className="mt-2 text-slate-500">From battery pack builders and engineering buyers we supply.</p>
+              </div>
+              <Link to="/review" className="text-sm font-semibold text-brand hover:underline whitespace-nowrap">
+                Leave a review
+              </Link>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {generalReviews.map((review) => (
+                <figure key={review.id} className="rounded-3xl bg-white border border-slate-100 p-7 flex flex-col">
+                  <div className="flex items-center gap-1" aria-label={`${review.rating} out of 5`}>
+                    {[1, 2, 3, 4, 5].map((value) => (
+                      <Star
+                        key={value}
+                        size={14}
+                        className={value <= Number(review.rating) ? 'fill-amber-400 text-amber-400' : 'text-slate-200'}
+                      />
+                    ))}
+                  </div>
+                  <blockquote className="mt-4 flex-1 text-sm leading-relaxed text-slate-600 whitespace-pre-wrap">
+                    {review.body}
+                  </blockquote>
+                  <figcaption className="mt-5 text-xs font-semibold text-slate-400">
+                    {review.reviewer_name}
+                    {review.reviewer_company ? `, ${review.reviewer_company}` : ''}
+                  </figcaption>
+                </figure>
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
 
       <section className="py-20 bg-brand">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">

@@ -839,6 +839,7 @@ export async function renderProductListSnapshot(template: string, isCategoriesRo
 // Where the homepage snapshot gets its database-backed blocks; see homeRangeHtml below.
 const HOME_RANGE_TOKEN = "%%HOME_PRODUCT_RANGE%%";
 const HOME_ARTICLES_TOKEN = "%%HOME_LATEST_ARTICLES%%";
+const HOME_REVIEWS_TOKEN = "%%HOME_REVIEWS%%";
 
 // The content routes below have no per-URL database record behind them, so before this they
 // were served the unmodified dist/index.html — which carries the *homepage's* title and, worse,
@@ -935,6 +936,7 @@ const STATIC_ROUTE_SEO: Record<StaticSnapshotRoute, { title: string; description
     </table>
     ${HOME_RANGE_TOKEN}
     ${HOME_ARTICLES_TOKEN}
+    ${HOME_REVIEWS_TOKEN}
     <h2>Applications</h2>
     <ul>${HOME_APPLICATIONS.map((item) => `<li>${escapeHtml(item)}</li>`).join("")}</ul>
     <h2>Industries served</h2>
@@ -1584,6 +1586,44 @@ async function homeRangeHtml(): Promise<string> {
   }
 }
 
+/**
+ * General customer reviews for the homepage.
+ *
+ * Deliberately no schema.org markup, unlike the product pages. Google treats reviews a business
+ * collects about itself as self-serving and ineligible for rich results, so marking these up
+ * would claim a rating Google will not show and may flag. They are here to be read by people.
+ *
+ * Only reviews with no product_slug: a review of one product belongs on that product's page,
+ * where it is eligible for markup, not duplicated onto the homepage.
+ */
+async function homeReviewsHtml(): Promise<string> {
+  try {
+    const reviews = await query<{ reviewer_name: string; reviewer_company: string | null; rating: number; body: string }>(
+      `SELECT reviewer_name, reviewer_company, rating, body
+         FROM reviews
+        WHERE status = 'approved' AND product_slug IS NULL
+        ORDER BY created_at DESC
+        LIMIT 6`
+    );
+    if (!reviews.length) return "";
+    return (
+      `<h2>What customers say</h2>` +
+      reviews
+        .map(
+          (review) =>
+            `<blockquote><p>${escapeHtml(review.body)}</p><cite>${escapeHtml(review.reviewer_name)}${
+              review.reviewer_company ? `, ${escapeHtml(review.reviewer_company)}` : ""
+            } &mdash; ${Number(review.rating)}/5</cite></blockquote>`
+        )
+        .join("") +
+      `<p><a href="${SITE_URL}/review">Leave a review</a></p>`
+    );
+  } catch (error) {
+    console.warn("[snapshot] Homepage reviews unavailable; omitting the block.", error);
+    return "";
+  }
+}
+
 async function homeArticlesHtml(): Promise<string> {
   try {
     const posts = await query<BlogCardRow>(
@@ -1620,6 +1660,7 @@ export async function renderStaticRouteSnapshot(template: string, pathname: stri
       ? route.body
           .replace(HOME_RANGE_TOKEN, await homeRangeHtml())
           .replace(HOME_ARTICLES_TOKEN, await homeArticlesHtml())
+          .replace(HOME_REVIEWS_TOKEN, await homeReviewsHtml())
       : route.body,
   });
 
