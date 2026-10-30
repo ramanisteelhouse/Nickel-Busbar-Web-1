@@ -5,6 +5,8 @@ import path from "path";
 import { LANDING_PAGES, LANDING_PATHS } from "../src/lib/landingPages.js";
 import { productImageUrl } from "../src/lib/productImage.js";
 import { GUIDES, GUIDES_PATH, guidePath } from "../src/lib/guides.js";
+import { blogProductsFor } from "../src/lib/blogProducts.js";
+import { contextualLinks } from "../src/lib/contextualLinks.js";
 
 const SITE_URL = "https://www.nickelbusbar.com";
 
@@ -43,7 +45,22 @@ const staticPages: Array<{ path: string; changefreq: string; priority: string; l
  * dated from the last git commit that touched its source (full clones only), else today.
  */
 const LEDGER_PATH = path.resolve(process.cwd(), "scripts/sitemap-lastmod.json");
-type Ledger = Record<string, { hash: string; lastmod: string }>;
+type Ledger = Record<string, { hash: string; lastmod: string; v?: number }>;
+
+/**
+ * Bump when the *shape* of what a page hashes changes — a new field folded into the hash, a
+ * field removed — as opposed to the page's content changing.
+ *
+ * Without this, widening a hash rewrites every hash at once and the ledger reads that as every
+ * page changing today, which is exactly the "39 of 72 URLs changed" signal this file exists to
+ * avoid. On a version change the new hash is recorded as the baseline and the existing lastmod
+ * is kept, so the next real change is still detected and nothing is falsely re-dated.
+ *
+ *   v1  content only
+ *   v2  content plus the per-page rendering inputs (product block, contextual links), so a code
+ *       change that alters what the page renders moves lastmod as a database edit would
+ */
+const HASH_VERSION = 2;
 const ledger: Ledger = existsSync(LEDGER_PATH) ? JSON.parse(readFileSync(LEDGER_PATH, "utf-8")) : {};
 const nextLedger: Ledger = {};
 
@@ -65,13 +82,28 @@ function gitDate(files: string[]): string | null {
   }
 }
 
-function stamp(key: string, content: unknown, sourceFiles: string[] = []): string {
+/**
+ * `seed` is the date to use for a page the ledger has never seen, in place of the git date or
+ * today. Blog posts pass their published/updated date: without it, the first build after this
+ * file started tracking them would stamp all 30 with today and claim the whole blog changed at
+ * once.
+ */
+function stamp(key: string, content: unknown, sourceFiles: string[] = [], seed?: string): string {
   const hash = hashOf(content);
   const previous = ledger[key];
-  const lastmod = !previous ? gitDate(sourceFiles) ?? todayStamp() : previous.hash === hash ? previous.lastmod : todayStamp();
-  nextLedger[key] = { hash, lastmod };
+  const lastmod = !previous
+    ? seed ?? gitDate(sourceFiles) ?? todayStamp()
+    : (previous.v ?? 1) !== HASH_VERSION
+      ? previous.lastmod
+      : previous.hash === hash
+        ? previous.lastmod
+        : todayStamp();
+  nextLedger[key] = { hash, lastmod, v: HASH_VERSION };
   return lastmod;
 }
+
+/** Both are YYYY-MM-DD, so the later one is just the larger string. */
+const laterOf = (a: string, b: string) => (a > b ? a : b);
 
 type SitemapImage = { loc: string; title: string };
 
@@ -141,7 +173,13 @@ async function main() {
         const { image: _image, stock: _stock, id: _id, created_at: _createdAt, ...content } = product;
         urls.push({
           loc: `${SITE_URL}/product/${encodeURIComponent(product.slug)}`,
-          lastmod: stamp(`/product/${product.slug}`, content, ["src/pages/ProductDetailPage.tsx"]),
+          lastmod: stamp(
+            `/product/${product.slug}`,
+            // Same reasoning as the blog posts below: the contextual links a product page
+            // renders are decided in code, so a change there has to register as a change.
+            { content, links: contextualLinks({ kind: "product", slug: product.slug }) },
+            ["src/pages/ProductDetailPage.tsx"]
+          ),
           changefreq: "weekly",
           priority: "0.6",
           // productImageUrl resolves to the synced WebP on our own origin, never the signed
@@ -162,8 +200,14 @@ async function main() {
     }
 
     try {
-      const posts = await query<{ slug: string; published_at: string | null }>(
-        `SELECT slug, published_at FROM blog_posts
+      const posts = await query<{
+        slug: string;
+        published_at: string | null;
+        updated_at: string | null;
+        cover_image_url: string | null;
+        [key: string]: unknown;
+      }>(
+        `SELECT * FROM blog_posts
          WHERE status = 'published' AND (published_at IS NULL OR published_at <= now())
            AND slug IS NOT NULL AND slug <> ''
          -- id breaks ties so the generated sitemap is byte-stable between builds when
@@ -171,9 +215,47 @@ async function main() {
          ORDER BY published_at DESC NULLS LAST, id DESC`
       );
       for (const post of posts) {
+        // Excluded from the hash: cover_image_url is a signed Supabase URL whose token is
+        // re-issued on read, so hashing it would report every post as changed on every build —
+        // the same reason products drop `image`. The id and the three dates are bookkeeping; the
+        // copy columns are what actually decide whether the page changed.
+        const {
+          cover_image_url: _cover,
+          id: _id,
+          created_at: _createdAt,
+          published_at: publishedAt,
+          updated_at: updatedAt,
+          ...content
+        } = post;
+
+        // published_at alone was being advertised, so 22 of 30 posts edited after publication
+        // were telling crawlers they had not changed since the day they went up.
+        //
+        // Only dates that exist are considered. toDateStamp() answers today for a null, and two
+        // posts carry a null published_at, so folding it in unconditionally would have dated
+        // both to the build date on every build — a daily "this changed" for a page that had
+        // not, which is the signal this file exists to avoid. Today is used only when a post
+        // has neither date.
+        const knownDates = [publishedAt, updatedAt].filter(Boolean).map((value) => toDateStamp(value as string));
+        const contentDate = knownDates.length ? knownDates.reduce(laterOf) : todayStamp();
+
         urls.push({
           loc: `${SITE_URL}/blog/${encodeURIComponent(post.slug)}`,
-          lastmod: toDateStamp(post.published_at),
+          // Hashing the rendering inputs alongside the copy is what makes a code-level change
+          // count: adding a post to ARTICLE_PRODUCTS or to contextualLinks changes what the page
+          // renders without touching a single database row, and until now the sitemap said
+          // nothing had changed. Both are per-slug, so editing one post's block re-dates that
+          // post and leaves the other 29 alone.
+          lastmod: stamp(
+            `/blog/${post.slug}`,
+            {
+              content,
+              products: blogProductsFor(post.slug).map((product) => product.slug),
+              links: contextualLinks({ kind: "blog", slug: post.slug }),
+            },
+            [],
+            contentDate
+          ),
           changefreq: "monthly",
           priority: "0.7",
         });
