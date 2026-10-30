@@ -18,7 +18,8 @@
     "check:titles": "tsx scripts/check-titles.ts",
     "build:cloudflare": "npm run build && tsx scripts/strip-cloudflare-incompatibles.ts",
     "cf:dev": "wrangler dev",
-    "cf:deploy": "npm run build:cloudflare && wrangler deploy"
+    "cf:deploy": "npm run build:cloudflare && wrangler deploy",
+    "review:queue": "tsx scripts/review-queue-url.ts"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.102.1",

@@ -1825,6 +1825,70 @@ export function createApiApp() {
     return expected.length === given.length && timingSafeEqual(expected, given);
   };
 
+  /**
+   * The queue's own token. Derived from a constant rather than a review id, so the URL is stable
+   * and can be bookmarked once; it changes only if JWT_SECRET is rotated.
+   *
+   * The queue exists because moderation otherwise depends entirely on an alert arriving.
+   * sendNotification returns silently when neither SMTP nor Twilio is configured, so a review
+   * could be stored correctly and leave no trace anyone would see — pending forever, with
+   * nothing pointing at it. A bookmarked list cannot fail that way.
+   *
+   * Not the x-admin-api-key the blog endpoint uses: a header cannot be set by tapping a link on
+   * a phone, which is the whole point of this page.
+   */
+  const queueToken = () => createHmac("sha256", JWT_SECRET).update("reviews:pending").digest("hex").slice(0, 32);
+
+  const queueTokenValid = (token: unknown) => {
+    const expected = Buffer.from(queueToken());
+    const given = Buffer.from(String(token ?? ""));
+    return expected.length === given.length && timingSafeEqual(expected, given);
+  };
+
+  const queueUrl = () => `${SITE_ORIGIN}/api/reviews/pending?token=${queueToken()}`;
+
+  const htmlEscape = (value: string) =>
+    value.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+
+  /** Shared chrome so the queue and the single-review page look like one thing. */
+  const moderationPage = (title: string, inner: string) =>
+    `<!doctype html><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">` +
+    `<meta name="robots" content="noindex,nofollow"><title>${htmlEscape(title)}</title>` +
+    `<body style="font-family:system-ui,sans-serif;max-width:40rem;margin:2rem auto;padding:0 1rem;line-height:1.5;color:#18181b">` +
+    inner +
+    `</body>`;
+
+  const reviewCardHtml = (review: {
+    id: number;
+    reviewer_name: string;
+    reviewer_company: string | null;
+    product_slug: string | null;
+    rating: number;
+    body: string;
+    created_at: string;
+  }) => {
+    const token = moderationToken(review.id);
+    const button = (action: string, label: string, style: string) =>
+      `<form method="post" action="/api/reviews/${review.id}/moderate" style="display:inline">` +
+      `<input type="hidden" name="token" value="${token}">` +
+      `<input type="hidden" name="action" value="${action}">` +
+      `<input type="hidden" name="return" value="queue">` +
+      `<button style="padding:.6rem 1.2rem;font-size:.95rem;border-radius:.4rem;${style}">${label}</button></form>`;
+    return (
+      `<article style="border:1px solid #e4e4e7;border-radius:.75rem;padding:1.25rem;margin-bottom:1rem">` +
+      `<p style="margin:0 0 .5rem;font-size:.85rem;color:#71717a">` +
+      `<strong style="color:#18181b">${htmlEscape(review.reviewer_name)}</strong>` +
+      `${review.reviewer_company ? ` &middot; ${htmlEscape(review.reviewer_company)}` : ""}` +
+      ` &middot; ${Number(review.rating)}/5 &middot; ${htmlEscape(review.product_slug || "general")}` +
+      ` &middot; ${htmlEscape(String(review.created_at).slice(0, 10))}</p>` +
+      `<p style="margin:0 0 1rem;white-space:pre-wrap">${htmlEscape(review.body)}</p>` +
+      button("approve", "Approve", "background:#047857;color:#fff;border:0") +
+      " " +
+      button("reject", "Reject", "background:#fff;color:#b91c1c;border:1px solid #b91c1c") +
+      `</article>`
+    );
+  };
+
   app.get(
     "/api/reviews",
     asyncHandler(async (req, res) => {
@@ -1949,12 +2013,60 @@ export function createApiApp() {
               text,
               "",
               `Approve or reject: ${moderateUrl}`,
+              // The queue link rides along with every alert so the bookmark is always to hand,
+              // and so it can be recovered from any past alert if the bookmark is lost.
+              `All pending: ${queueUrl()}`,
             ].join("\n")
           )
         );
       }
 
       res.status(201).json({ ok: true });
+    })
+  );
+
+  // Registered before /api/reviews/:id/moderate so "pending" is never read as an id.
+  app.get(
+    "/api/reviews/pending",
+    asyncHandler(async (req, res) => {
+      if (!queueTokenValid(req.query.token)) {
+        return res.status(403).type("html").send(moderationPage("Not valid", "<p>That link is not valid.</p>"));
+      }
+      res.setHeader("Cache-Control", "no-store");
+
+      let pending: Parameters<typeof reviewCardHtml>[0][] = [];
+      let approvedCount = 0;
+      try {
+        // Oldest first: a queue worked newest-first strands whoever has waited longest.
+        pending = await query(
+          `SELECT id, reviewer_name, reviewer_company, product_slug, rating, body, created_at
+             FROM reviews
+            WHERE status = 'pending'
+            ORDER BY created_at ASC
+            LIMIT 100`
+        );
+        const approved = await queryOne<{ count: string }>(
+          `SELECT count(*)::text AS count FROM reviews WHERE status = 'approved'`
+        );
+        approvedCount = Number(approved?.count ?? 0);
+      } catch (error) {
+        if (isMissingTable(error)) {
+          return res.status(503).type("html").send(moderationPage("Not set up", `<p>${htmlEscape(MISSING_REVIEWS_TABLE)}</p>`));
+        }
+        throw error;
+      }
+
+      res.type("html").send(
+        moderationPage(
+          `Review queue (${pending.length})`,
+          `<h1 style="font-size:1.4rem;margin:0 0 .25rem">Review queue</h1>` +
+            `<p style="margin:0 0 1.5rem;color:#71717a">` +
+            `${pending.length} waiting &middot; ${approvedCount} live on the site</p>` +
+            (pending.length
+              ? pending.map(reviewCardHtml).join("")
+              : `<p style="color:#71717a">Nothing waiting. Approved reviews appear on the site immediately.</p>`)
+        )
+      );
     })
   );
 
@@ -2015,12 +2127,21 @@ export function createApiApp() {
         `UPDATE reviews SET status = $1, approved_at = CASE WHEN $1 = 'approved' THEN now() ELSE NULL END WHERE id = $2`,
         [action, id]
       );
+
+      // Straight back to the queue when that is where the click came from, so a backlog can be
+      // worked through without going back by hand. 303 so a refresh does not re-POST.
+      if (req.body?.return === "queue") {
+        return res.redirect(303, queueUrl());
+      }
+
       res
         .type("html")
         .send(
-          `<!doctype html><meta charset="utf-8"><meta name="robots" content="noindex,nofollow">` +
-            `<body style="font-family:system-ui,sans-serif;max-width:34rem;margin:2rem auto;padding:0 1rem">` +
-            `<p>Review ${action}.${action === "approved" ? " It is live on the site now." : ""}</p></body>`
+          moderationPage(
+            `Review ${action}`,
+            `<p>Review ${action}.${action === "approved" ? " It is live on the site now." : ""}</p>` +
+              `<p><a href="${queueUrl()}">Open the review queue</a></p>`
+          )
         );
     })
   );
