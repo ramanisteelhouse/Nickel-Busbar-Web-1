@@ -815,6 +815,9 @@ export async function renderProductListSnapshot(template: string, isCategoriesRo
     title,
     description,
     canonical,
+    // The catalogue hub showed the brand card, which says nothing a shopper wants to know. Plain
+    // stock is the one photo that fairly represents a page listing every pattern and format.
+    ogImage: productImageUrl(SITE_URL, "Plain-Nickel-Strips"),
     jsonLd: [collectionJsonLd, breadcrumbJsonLd([{ name: "Products", url: SITE_URL + "/products" }])],
     snapshotBody: `<article>
     <h1>${escapeHtml(isCategoriesRoute ? "Nickel Strip Categories" : "Nickel Strip Products")}</h1>
@@ -1373,7 +1376,11 @@ export async function renderLandingSnapshot(
     title: page.title,
     description: page.description,
     canonical,
-    ogImage: SITE_OG_IMAGE_URL,
+    // All 22 landing pages shared the brand share card, so nothing in a search or social result
+    // told anyone what the page was about. Each now shows the product it is actually written
+    // around; productImageUrl prefers the synced 900px WebP on our own origin, which is both
+    // relevant and indexable. The brand card stays as the fallback for a page with no photo set.
+    ogImage: page.productPhoto ? productImageUrl(SITE_URL, page.productPhoto) : SITE_OG_IMAGE_URL,
     keywords: [...page.keywords],
     jsonLd: [
       {

@@ -54,6 +54,17 @@ export type LandingPage = {
    * snapshot to list the same products for crawlers. Omitted means no product grid.
    */
   productSearch?: string;
+  /**
+   * A product slug from PRODUCT_LINKS, used as this page's og:image and twitter:image.
+   *
+   * Every landing page previously fell back to the brand share card, so all 22 of them shared
+   * one thumbnail — nothing in a search or social result said what the page was about. These
+   * resolve through productImagePath(), which prefers the synced 900px WebP on our own origin,
+   * so the picture is both relevant and indexable. Pick the product the page is genuinely
+   * about; a region page showing plain stock is honest, a region page showing a fuse-type
+   * honeycomb it never mentions is not.
+   */
+  productPhoto?: string;
   /** Label used in the breadcrumb trail and in schema.org BreadcrumbList. */
   breadcrumbName: string;
 };
@@ -69,6 +80,7 @@ const SPEC_BULLETS = [
 
 const H_TYPE_PAGE: LandingPage = {
   slug: 'h-type-nickel-strip',
+  productPhoto: 'ni-18650-2p-h-type',
   title: 'H Type Nickel Strip Manufacturer in India | Supplier',
   description:
     'H type nickel strip manufacturer in India. Pure nickel H type strip for 18650, 21700, 32650 and 32700 packs, in 2P, 3P and 4P layouts. Bulk and export supply.',
@@ -319,6 +331,9 @@ const regionLandingPage = (region: Region): LandingPage => {
 
   return {
     slug: `nickel-strip-manufacturer-in-${region.slug}`,
+    // A region page sells the whole range, so it shows the stock every variant is cut from
+    // rather than a pattern the page never singles out.
+    productPhoto: 'Plain-Nickel-Strips',
     title: regionTitle(region),
     description: regionDescription(region),
     h1: `Nickel Strip Manufacturer Supplying ${region.name}`,
@@ -383,6 +398,7 @@ const regionLandingPage = (region: Region): LandingPage => {
  */
 const MUMBAI_PAGE: LandingPage = {
   slug: 'nickel-strip-manufacturer-in-mumbai',
+  productPhoto: 'Plain-Nickel-Strips',
   title: 'Nickel Strip Manufacturer in Mumbai | Supplier & Exporter',
   description:
     'Nickel strip manufacturer, supplier and exporter in Mumbai since 1974. Pure nickel strip, H type strip and busbar from our C.P. Tank Road works.',
@@ -456,6 +472,7 @@ const MUMBAI_PAGE: LandingPage = {
  */
 const TRADE_BUYER_PAGE: LandingPage = {
   slug: 'nickel-strip-wholesaler-and-distributor',
+  productPhoto: 'Plain-Nickel-Strips',
   title: 'Nickel Strip Wholesaler & Distributor India | 5 kg MOQ',
   description:
     'Nickel strip and busbar wholesaler, stockist and distributor backed by our own Mumbai manufacturing. 99.8% pure nickel from 5 kg, PAN India and export.',
@@ -618,6 +635,8 @@ const STRIP_SIZES: readonly StripSize[] = [
 
 const stripSizePage = (size: StripSize): LandingPage => ({
   slug: size.slug,
+  // Both size pages sell plain stock cut to a dimension, so plain strip is the honest photo.
+  productPhoto: 'Plain-Nickel-Strips',
   title: size.title,
   description: size.description,
   h1: `Pure Nickel Strip ${size.thickness} × ${size.width}`,
@@ -709,6 +728,7 @@ const stripSizePage = (size: StripSize): LandingPage => ({
  */
 const EXPORT_PAGE: LandingPage = {
   slug: 'nickel-strip-exporter-india',
+  productPhoto: 'Plain-Nickel-Strips',
   title: 'Nickel Strip Exporter in India | Strip & Busbar Export',
   description:
     'Nickel strip and busbar exporter in Mumbai, shipping to 17+ countries through Nhava Sheva with certificate of origin, test certificate and HS code.',
@@ -797,6 +817,7 @@ const EXPORT_PAGE: LandingPage = {
 const APPLICATION_PAGES: readonly LandingPage[] = [
   {
     slug: 'nickel-strip-for-battery-pack-welding',
+    productPhoto: 'ni-18650-2p-h-type',
     title: 'Battery Pack Welding Nickel Strip | Manufacturer, Supplier',
     description:
       'Nickel strip for battery pack spot welding: 99.8% pure nickel, 0.10-0.50mm, cut to cell pitch. Welds cleanly on 18650, 21700 and 32700 packs. Made in Mumbai.',
@@ -855,6 +876,7 @@ const APPLICATION_PAGES: readonly LandingPage[] = [
   },
   {
     slug: 'nickel-strip-for-lithium-ion-battery-manufacturers',
+    productPhoto: 'ni-21700-2p-h-type-v3',
     title: 'Nickel Strip Supplier for Lithium-Ion Battery Manufacturers',
     description:
       'Bulk nickel strip for lithium-ion battery manufacturers: 99.8% pure nickel, custom slitting, test certificates, PAN India supply and export to 17+ countries.',
@@ -912,6 +934,7 @@ const APPLICATION_PAGES: readonly LandingPage[] = [
   },
   {
     slug: 'nickel-busbar-for-battery-applications',
+    productPhoto: 'Copper-Busbar',
     title: 'Nickel Busbar Manufacturer & Supplier for Batteries | India',
     description:
       'Nickel busbar for battery applications: pure nickel interconnects for EV, storage and industrial packs. Custom width and thickness, made in Mumbai since 1974.',
