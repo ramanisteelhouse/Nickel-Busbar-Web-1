@@ -4,6 +4,7 @@ import { Link } from 'react-router-dom';
 import { ArrowRight, MessageCircle } from 'lucide-react';
 import { cn, logCallClick } from '../lib/utils';
 import { PRIMARY_WHATSAPP, buildWhatsAppUrl } from '../lib/contact';
+import { STANDARD_THICKNESSES_MM, THICKNESS_RANGE_MM } from '../lib/stripSizes';
 
 /**
  * Nickel strip weight calculator.
@@ -75,6 +76,38 @@ const fmt = (value: number, digits = 2) =>
 
 const inputClass =
   'w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-base text-brand outline-none transition placeholder:text-slate-400 focus:border-brand focus:ring-2 focus:ring-brand/20';
+
+/**
+ * Thicknesses actually supplied, offered as one tap each.
+ *
+ * Strip is made to order and the field still accepts anything, but a buyer rarely wants an
+ * arbitrary gauge: most orders are 0.12 mm or 0.15 mm and the rest are almost always another
+ * value from this list. Typing "0.15" is not hard; knowing that 0.15 is a normal thing to ask
+ * for is the part the page can answer.
+ *
+ * Only in mm. These are millimetre stock sizes, and rendering them as 0.0059 in would be
+ * offering a number nobody orders by.
+ */
+const ThicknessPresets: React.FC<{ value: string; onPick: (value: string) => void }> = ({ value, onPick }) => (
+  <div className="mt-2 flex flex-wrap gap-1.5">
+    {STANDARD_THICKNESSES_MM.map((preset) => (
+      <button
+        key={preset}
+        type="button"
+        onClick={() => onPick(preset)}
+        aria-pressed={parseNumber(value) === parseNumber(preset)}
+        className={cn(
+          'rounded-full px-2.5 py-1 text-xs font-semibold transition-colors',
+          parseNumber(value) === parseNumber(preset)
+            ? 'bg-brand text-white'
+            : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+        )}
+      >
+        {preset}
+      </button>
+    ))}
+  </div>
+);
 
 const Field: React.FC<{
   id: string;
@@ -179,6 +212,46 @@ export const CalculatorPage: React.FC = () => {
       case 'quantity':
         return { label: 'Number of pieces', value: `${Math.floor(result.q).toLocaleString('en-IN')} pcs` };
     }
+  })();
+
+  /**
+   * The nearest thickness actually supplied, when thickness is the answer.
+   *
+   * Solving for thickness gives a number like 0.1407 mm, which is arithmetically right and not
+   * orderable: strip comes in the gauges in STANDARD_THICKNESSES_MM, and which one a customer
+   * takes is a decision, not a rounding. So the exact figure stays the headline and this says
+   * what it is nearest to, with the weight that gauge would actually give at the same size — the
+   * number they would be quoted against.
+   */
+  const nearestStandard = (() => {
+    if (target !== 'thickness' || !result.ok) return null;
+    const exactMm = result.t * 10;
+    const nearest = STANDARD_THICKNESSES_MM.reduce((best, candidate) =>
+      Math.abs(Number(candidate) - exactMm) < Math.abs(Number(best) - exactMm) ? candidate : best
+    );
+    const nearestMm = Number(nearest);
+
+    // Outside the range nickel strip is made in, there is no "nearest" worth naming. Solving
+    // 0.5 kg across ten 8 x 100 mm pieces wants 7 mm, and answering that with "supplied as
+    // 0.30 mm, 21 g at this size" sets a stock gauge beside a weight 23 times smaller and calls
+    // it the nearest thing to what was asked for. The honest answer is that the inputs do not
+    // describe a strip, so say which way they have to move.
+    if (exactMm < THICKNESS_RANGE_MM.min || exactMm > THICKNESS_RANGE_MM.max) {
+      return {
+        kind: 'out-of-range' as const,
+        tooThick: exactMm > THICKNESS_RANGE_MM.max,
+      };
+    }
+
+    // Already on a stock gauge to three decimals: saying "nearest" would be noise.
+    if (Math.abs(nearestMm - exactMm) < 0.0005) return null;
+    const gramsAtNearest = (nearestMm / 10) * result.w * result.l * density * result.q;
+    return {
+      kind: 'nearest' as const,
+      mm: nearest,
+      kg: gramsAtNearest / 1000,
+      grams: gramsAtNearest,
+    };
   })();
 
   // What the 5 kg minimum amounts to at this cross-section, in the terms a buyer thinks in.
@@ -315,7 +388,10 @@ export const CalculatorPage: React.FC = () => {
                 </div>
               ) : null}
               {showField('thickness') ? (
-                <Field id="calc-thickness" label="Thickness" suffix={unit} value={thickness} onChange={setThickness} />
+                <div>
+                  <Field id="calc-thickness" label="Thickness" suffix={unit} value={thickness} onChange={setThickness} />
+                  {unit === 'mm' ? <ThicknessPresets value={thickness} onPick={setThickness} /> : null}
+                </div>
               ) : null}
               <Field id="calc-width" label="Width" suffix={unit} value={width} onChange={setWidth} />
               {showField('length') ? (
@@ -332,6 +408,31 @@ export const CalculatorPage: React.FC = () => {
             <div className="rounded-3xl bg-brand p-6 text-white shadow-lg sm:p-7 lg:sticky lg:top-28" aria-live="polite">
               <p className="text-sm text-white/70">{headline.label}</p>
               <p className="mt-1 text-4xl font-display font-bold tracking-tight">{headline.value}</p>
+
+              {/* Strip is supplied in set gauges, so the exact figure above is the arithmetic and
+                  this is what it means at the counter. The weight is recalculated at the stock
+                  gauge, because that is the figure the order would actually be quoted against. */}
+              {nearestStandard?.kind === 'nearest' ? (
+                <p className="mt-3 rounded-xl bg-white/10 px-3 py-2 text-sm text-white/80">
+                  Supplied as{' '}
+                  <strong className="font-semibold text-white">{nearestStandard.mm} mm</strong>, the nearest
+                  standard thickness —{' '}
+                  {nearestStandard.kg < 1
+                    ? `${fmt(nearestStandard.grams)} g`
+                    : `${fmt(nearestStandard.kg, 3)} kg`}{' '}
+                  at this size.
+                </p>
+              ) : null}
+
+              {nearestStandard?.kind === 'out-of-range' ? (
+                <p className="mt-3 rounded-xl bg-amber-400/15 px-3 py-2 text-sm text-amber-100">
+                  That is {nearestStandard.tooThick ? 'thicker' : 'thinner'} than nickel strip is made —
+                  standard is {THICKNESS_RANGE_MM.min}–{THICKNESS_RANGE_MM.max} mm.{' '}
+                  {nearestStandard.tooThick
+                    ? 'For this weight you need more pieces, a wider strip or a longer cut.'
+                    : 'For this weight you need fewer pieces, a narrower strip or a shorter cut.'}
+                </p>
+              ) : null}
 
               <dl className="mt-6 space-y-2 border-t border-white/15 pt-5 text-sm">
                 {target !== 'weight' && result.ok ? (
